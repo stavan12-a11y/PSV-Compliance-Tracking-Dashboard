@@ -1,12 +1,4 @@
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  Gauge,
-  Package,
-  ShieldCheck,
-  Wrench,
-} from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock, Gauge, Package, Wrench } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { KPISummary } from '../types';
 
@@ -78,14 +70,6 @@ export function KPIGrid({ summary }: { summary: KPISummary }) {
         icon={AlertTriangle}
         accent="text-red-600"
         iconBg="bg-red-50"
-      />
-      <KPICard
-        label="Compliance Rate"
-        value={`${summary.complianceRate}%`}
-        icon={ShieldCheck}
-        accent={summary.complianceRate >= 90 ? 'text-emerald-600' : 'text-maroon-700'}
-        iconBg={summary.complianceRate >= 90 ? 'bg-emerald-50' : 'bg-maroon-50'}
-        hint="of installed PSVs"
       />
     </div>
   );

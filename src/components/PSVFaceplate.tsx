@@ -64,19 +64,20 @@ export function PSVFaceplate({ psv }: { psv: PSV }) {
             {psv.datasheet.make} {psv.datasheet.model} · {psv.datasheet.setPressure}{' '}
             {psv.datasheet.pressureUnit}
           </p>
-          {compliance.dueDate ? (
-            <p className="flex items-center gap-1.5">
-              <CalendarClock className="h-3.5 w-3.5 text-slate-400" />
-              Due {formatDate(compliance.dueDate)}
-              <span className={dueColor(compliance.daysRemaining)}>
-                ({relativeDays(compliance.daysRemaining)})
-              </span>
-            </p>
-          ) : (
-            <p className="flex items-center gap-1.5 text-slate-400">
-              <CalendarClock className="h-3.5 w-3.5" />
-              Last installed {formatDate(compliance.lastInstallDate)}
-            </p>
+          {compliance.dueDate && (
+            <>
+              <p className="flex items-center gap-1.5">
+                <Wrench className="h-3.5 w-3.5 text-slate-400" />
+                Installed {formatDate(compliance.lastInstallDate)}
+              </p>
+              <p className="flex items-center gap-1.5">
+                <CalendarClock className="h-3.5 w-3.5 text-slate-400" />
+                Due {formatDate(compliance.dueDate)}
+                <span className={dueColor(compliance.daysRemaining)}>
+                  ({relativeDays(compliance.daysRemaining)})
+                </span>
+              </p>
+            </>
           )}
           {onSite && (
             <p className="flex items-center gap-1.5 text-slate-500">
