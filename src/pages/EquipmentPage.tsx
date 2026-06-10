@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ChevronRight, MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ChevronRight, FileSpreadsheet, MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 import { getCompliance, summarize } from '../utils/compliance';
+import { exportToExcel } from '../utils/excelExport';
 import { equipmentIcon } from '../utils/equipmentIcon';
 import { formatDate, relativeDays } from '../utils/dates';
 import { KPIGrid } from '../components/KPIGrid';
@@ -16,8 +17,14 @@ import type { Location, PSV } from '../types';
 export function EquipmentPage() {
   const { equipmentId = '' } = useParams();
   const navigate = useNavigate();
-  const { getEquipment, locationsForEquipment, psvsForEquipment, psvsForLocation, deleteLocation } =
-    usePSV();
+  const {
+    data,
+    getEquipment,
+    locationsForEquipment,
+    psvsForEquipment,
+    psvsForLocation,
+    deleteLocation,
+  } = usePSV();
 
   const equipment = getEquipment(equipmentId);
   const [editEquipment, setEditEquipment] = useState(false);
@@ -67,10 +74,20 @@ export function EquipmentPage() {
               )}
             </div>
           </div>
-          <button className="btn-secondary" onClick={() => setEditEquipment(true)}>
-            <Pencil className="h-4 w-4" />
-            Edit
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              className="btn-secondary"
+              onClick={() => exportToExcel(data, { equipment })}
+              title="Export this equipment's PSV report to Excel"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Export Excel
+            </button>
+            <button className="btn-secondary" onClick={() => setEditEquipment(true)}>
+              <Pencil className="h-4 w-4" />
+              Edit
+            </button>
+          </div>
         </div>
       </div>
 

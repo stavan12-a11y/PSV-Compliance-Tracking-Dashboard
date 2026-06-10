@@ -71,6 +71,20 @@ The data hierarchy is **Site → Equipment → Location → PSV (serial number)*
 
 Both thresholds live in `src/utils/dates.ts`.
 
+## Exporting reports to Excel
+
+Use the **Export Excel** button on the dashboard (whole site) or on an equipment
+page (scoped to that equipment) to download a multi-sheet `.xlsx` workbook:
+
+- **PSV Register** — every PSV with equipment/location, status, datasheet, last
+  install/service dates, due date, days remaining, and compliance state.
+- **Compliance Summary** — per-equipment counts plus a site total row.
+- **Due & Overdue** — installed PSVs sorted by urgency.
+- **History Log** — every recorded change.
+
+The Excel library is loaded on demand (only when you export) to keep the app
+fast on first load.
+
 ## Replacing the mock data
 
 All seed data lives in `src/data/mockData.ts`. Replace the `equipment`,

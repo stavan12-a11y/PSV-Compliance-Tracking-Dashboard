@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { FileSpreadsheet, Plus } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 import { summarize } from '../utils/compliance';
+import { exportToExcel } from '../utils/excelExport';
 import { KPIGrid } from '../components/KPIGrid';
 import { EquipmentCard } from '../components/EquipmentCard';
 import { UrgencyHistoryPanel } from '../components/UrgencyHistoryPanel';
@@ -23,6 +24,15 @@ export function Dashboard() {
             Pressure Safety Valve tracking across all monitored equipment.
           </p>
         </div>
+        <button
+          className="btn-secondary"
+          onClick={() => exportToExcel(data)}
+          disabled={data.psvs.length === 0}
+          title="Export the full PSV register and compliance report to Excel"
+        >
+          <FileSpreadsheet className="h-4 w-4" />
+          Export Excel
+        </button>
       </div>
 
       <KPIGrid summary={summary} />
