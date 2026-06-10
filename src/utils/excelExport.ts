@@ -1,5 +1,5 @@
 import type { WorkSheet } from 'xlsx';
-import type { AppData, Equipment } from '../types';
+import type { AppData, Equipment, PSV } from '../types';
 import {
   COMPLIANCE_LABELS,
   STATUS_LABELS,
@@ -159,6 +159,88 @@ export async function exportToExcel(data: AppData, scope: ExportScope = {}) {
     : 'All-Equipment';
   const filename = `PSV-Report_${scopeName}_${todayISO()}.xlsx`;
   XLSX.writeFile(wb, filename);
+}
+
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  created: 'Created',
+  'status-change': 'Status Change',
+  service: 'On-site Service',
+  'datasheet-update': 'Datasheet Update',
+  'history-edit': 'History Edit',
+  note: 'Note',
+};
+
+/**
+ * Builds and downloads an Excel workbook for a single PSV: a summary/datasheet
+ * sheet plus the full chronological history (status changes, services, etc.).
+ */
+export async function exportPSVToExcel(data: AppData, psv: PSV) {
+  const XLSX = await import('xlsx');
+  const loc = data.locations.find((l) => l.id === psv.locationId);
+  const eq = loc ? data.equipment.find((e) => e.id === loc.equipmentId) : undefined;
+  const c = getCompliance(psv);
+
+  const wb = XLSX.utils.book_new();
+
+  // --- Sheet 1: Summary & Datasheet ----------------------------------------
+  const summaryAoa: Array<[string, string | number]> = [
+    ['PSV SUMMARY', ''],
+    ['Serial Number', psv.serialNumber],
+    ['PSV Tag', psv.tag ?? ''],
+    ['Equipment', eq?.name ?? ''],
+    ['Equipment Tag', eq?.tag ?? ''],
+    ['Location', loc?.name ?? ''],
+    ['Current Status', STATUS_LABELS[psv.status]],
+    ['Serviced On Site', psv.servicedOnSite ? 'Yes' : 'No'],
+    ['Last Install Date', formatDate(lastInstallDate(psv))],
+    ['Last Service Date', formatDate(lastServiceDate(psv))],
+    ['Recert Due Date', c.dueDate ? formatDate(c.dueDate) : 'Not installed'],
+    ['Days Remaining', c.daysRemaining ?? ''],
+    ['Compliance', COMPLIANCE_LABELS[c.state]],
+    ['', ''],
+    ['DATASHEET', ''],
+    ['Make / Manufacturer', psv.datasheet.make],
+    ['Model Number', psv.datasheet.model],
+    ['Type', psv.datasheet.type],
+    ['Set Pressure', `${psv.datasheet.setPressure} ${psv.datasheet.pressureUnit}`],
+    ['Capacity', psv.datasheet.capacity],
+    ['Inlet Size', psv.datasheet.inletSize],
+    ['Outlet Size', psv.datasheet.outletSize],
+    ['Orifice', psv.datasheet.orifice],
+    ['Body Material', psv.datasheet.bodyMaterial],
+    ['Spring Material', psv.datasheet.springMaterial ?? ''],
+    ['Connection Type', psv.datasheet.connectionType ?? ''],
+    ['Cold Diff. Test Pressure', psv.datasheet.coldDifferentialTestPressure ?? ''],
+    ['Service Medium', psv.datasheet.serviceMedium ?? ''],
+    ['National Board No.', psv.datasheet.nationalBoardNumber ?? ''],
+    ['Manufacture Year', psv.datasheet.manufactureYear ?? ''],
+  ];
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryAoa);
+  wsSummary['!cols'] = [{ wch: 28 }, { wch: 40 }];
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+  // --- Sheet 2: History -----------------------------------------------------
+  const historyRows = [...psv.events]
+    .sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return a.recordedAt < b.recordedAt ? 1 : -1;
+    })
+    .map((e) => ({
+      'Event Date': formatDate(e.date),
+      Type: EVENT_TYPE_LABELS[e.type] ?? e.type,
+      Status: e.status ? STATUS_LABELS[e.status] : '',
+      Description: e.description,
+      Note: e.note ?? '',
+      'Recorded At': formatDateTime(e.recordedAt),
+    }));
+  const wsHistory = XLSX.utils.json_to_sheet(
+    historyRows.length ? historyRows : [{ Note: 'No history recorded.' }],
+  );
+  autoWidth(wsHistory, historyRows);
+  XLSX.utils.book_append_sheet(wb, wsHistory, 'History');
+
+  const safeSn = psv.serialNumber.replace(/[^\w.-]+/g, '-');
+  XLSX.writeFile(wb, `PSV_${safeSn}_${todayISO()}.xlsx`);
 }
 
 /** Sets reasonable column widths based on header + content length. */

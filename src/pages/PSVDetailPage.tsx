@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   CalendarClock,
   ClipboardList,
+  FileSpreadsheet,
   Pencil,
   Plus,
   ToggleRight,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 import { getCompliance, lastServiceDate } from '../utils/compliance';
+import { exportPSVToExcel } from '../utils/excelExport';
 import { formatDate, formatDateTime, relativeDays, RECERT_INTERVAL_YEARS } from '../utils/dates';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { ComplianceBadge, StatusBadge } from '../components/Badges';
@@ -21,7 +23,7 @@ import type { PSVDatasheet, PSVEvent } from '../types';
 export function PSVDetailPage() {
   const { psvId = '' } = useParams();
   const navigate = useNavigate();
-  const { getPSV, getLocation, getEquipment, deletePSV, deleteHistoryEvent } = usePSV();
+  const { data, getPSV, getLocation, getEquipment, deletePSV, deleteHistoryEvent } = usePSV();
 
   const psv = getPSV(psvId);
   const location = psv ? getLocation(psv.locationId) : undefined;
@@ -83,6 +85,14 @@ export function PSVDetailPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              className="btn-secondary"
+              onClick={() => exportPSVToExcel(data, psv)}
+              title="Export this PSV's datasheet and full history to Excel"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Export Excel
+            </button>
             <button className="btn-secondary" onClick={() => setEditPSV(true)}>
               <Pencil className="h-4 w-4" />
               Edit PSV
