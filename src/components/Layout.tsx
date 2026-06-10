@@ -1,0 +1,58 @@
+import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Gauge, RotateCcw, ShieldCheck } from 'lucide-react';
+import { usePSV } from '../store/PSVContext';
+
+export function Layout() {
+  const { resetToSeed } = usePSV();
+  const location = useLocation();
+  const isHome = location.pathname === '/';
+
+  return (
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-40 border-b border-maroon-800 bg-maroon-900 text-white shadow-md">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
+              <ShieldCheck className="h-6 w-6" />
+            </div>
+            <div className="leading-tight">
+              <h1 className="text-base font-bold sm:text-lg">PSV Tracking Dashboard</h1>
+              <p className="text-[11px] text-maroon-200 sm:text-xs">
+                Texas A&amp;M University · Utilities &amp; Energy Services
+              </p>
+            </div>
+          </Link>
+
+          <div className="flex items-center gap-2">
+            {!isHome && (
+              <Link to="/" className="hidden items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-maroon-100 hover:bg-white/10 sm:inline-flex">
+                <Gauge className="h-4 w-4" />
+                Dashboard
+              </Link>
+            )}
+            <button
+              onClick={() => {
+                if (
+                  confirm(
+                    'Reset all data back to the original mock dataset? Any changes you made will be lost.',
+                  )
+                ) {
+                  resetToSeed();
+                }
+              }}
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-maroon-100 hover:bg-white/10"
+              title="Reset to mock data"
+            >
+              <RotateCcw className="h-4 w-4" />
+              <span className="hidden sm:inline">Reset Data</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
+        <Outlet />
+      </main>
+    </div>
+  );
+}
