@@ -10,7 +10,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
-import { getCompliance } from '../utils/compliance';
+import { getCompliance, lastServiceDate } from '../utils/compliance';
 import { formatDate, formatDateTime, relativeDays, RECERT_INTERVAL_YEARS } from '../utils/dates';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { ComplianceBadge, StatusBadge } from '../components/Badges';
@@ -105,12 +105,14 @@ export function PSVDetailPage() {
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <KeyFact
             icon={Wrench}
-            label="Last Install Date"
-            value={formatDate(compliance.lastInstallDate)}
+            label={psv.servicedOnSite ? 'Last Service Date' : 'Last Install Date'}
+            value={formatDate(
+              psv.servicedOnSite ? lastServiceDate(psv) ?? compliance.lastInstallDate : compliance.lastInstallDate,
+            )}
           />
           <KeyFact
             icon={CalendarClock}
-            label={`Recert Due (install + ${RECERT_INTERVAL_YEARS} yrs)`}
+            label={`Recert Due (${psv.servicedOnSite ? 'service' : 'install'} + ${RECERT_INTERVAL_YEARS} yrs)`}
             value={compliance.dueDate ? formatDate(compliance.dueDate) : 'Not installed'}
             sub={compliance.dueDate ? relativeDays(compliance.daysRemaining) : undefined}
             tone={
@@ -121,7 +123,11 @@ export function PSVDetailPage() {
                   : 'normal'
             }
           />
-          <KeyFact icon={ToggleRight} label="Current Status" value={statusText(psv.status)} />
+          <KeyFact
+            icon={ToggleRight}
+            label="Current Status"
+            value={psv.servicedOnSite ? 'Serviced on site' : statusText(psv.status)}
+          />
         </div>
       </div>
 
@@ -254,7 +260,11 @@ function HistoryItem({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const dot = event.status ? DOT_COLORS[event.status] : 'bg-slate-400';
+  const dot = event.status
+    ? DOT_COLORS[event.status]
+    : event.type === 'service'
+      ? 'bg-maroon-700'
+      : 'bg-slate-400';
   return (
     <li className="group relative flex gap-3 rounded-lg py-2 pl-1 pr-1 hover:bg-slate-50">
       <span className={`relative z-10 mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full ring-4 ring-white ${dot}`} />

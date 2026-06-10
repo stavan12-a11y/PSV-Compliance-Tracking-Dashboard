@@ -22,15 +22,40 @@ export function lastInstallDate(psv: PSV): string | null {
   return installs.length ? installs[installs.length - 1] : null;
 }
 
+/** Returns the most recent on-site service date (YYYY-MM-DD), or null. */
+export function lastServiceDate(psv: PSV): string | null {
+  const services = psv.events
+    .filter((e) => e.type === 'service')
+    .map((e) => e.date)
+    .sort();
+  return services.length ? services[services.length - 1] : null;
+}
+
 /**
- * Computes compliance for a PSV. The recertification due date is always measured
- * from the most recent INSTALL date (not the service date) + the recert interval.
- * PSVs that are not currently installed do not contribute a live due date.
+ * Returns the date the recertification clock starts from.
+ * - Swap valves: the most recent INSTALL date (a spare's off-site service does
+ *   not start the clock — only installation does).
+ * - On-site serviced valves (no spare): the most recent SERVICE date, since they
+ *   are recertified in place; falls back to the install date if never serviced.
+ */
+export function getCertDate(psv: PSV): string | null {
+  if (psv.servicedOnSite) {
+    return lastServiceDate(psv) ?? lastInstallDate(psv);
+  }
+  return lastInstallDate(psv);
+}
+
+/**
+ * Computes compliance for a PSV. The due date = certification date + recert
+ * interval (3 years). PSVs that are not currently installed (and not serviced
+ * on site) do not contribute a live due date.
  */
 export function getCompliance(psv: PSV): ComplianceInfo {
   const installDate = lastInstallDate(psv);
+  const certDate = getCertDate(psv);
+  const active = psv.servicedOnSite || psv.status === 'installed';
 
-  if (psv.status !== 'installed' || !installDate) {
+  if (!active || !certDate) {
     return {
       state: 'not_installed',
       dueDate: null,
@@ -39,7 +64,7 @@ export function getCompliance(psv: PSV): ComplianceInfo {
     };
   }
 
-  const dueDate = addYears(installDate, RECERT_INTERVAL_YEARS);
+  const dueDate = addYears(certDate, RECERT_INTERVAL_YEARS);
   const daysRemaining = daysBetween(todayISO(), dueDate);
 
   let state: ComplianceState;

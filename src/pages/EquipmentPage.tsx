@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronRight, MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 import { getCompliance, summarize } from '../utils/compliance';
+import { equipmentIcon } from '../utils/equipmentIcon';
 import { formatDate, relativeDays } from '../utils/dates';
 import { KPIGrid } from '../components/KPIGrid';
 import { Breadcrumbs } from '../components/Breadcrumbs';
@@ -37,27 +38,34 @@ export function EquipmentPage() {
     );
   }
 
+  const EqIcon = equipmentIcon(equipment.type, equipment.name);
+
   return (
     <div className="space-y-6">
       <Breadcrumbs items={[{ label: equipment.name }]} />
 
       <div className="card p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-2xl font-bold text-slate-900">{equipment.name}</h2>
-              <span className="rounded-md bg-maroon-50 px-2 py-0.5 text-sm font-semibold text-maroon-800">
-                {equipment.tag}
-              </span>
+          <div className="flex gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-maroon-50 text-maroon-800">
+              <EqIcon className="h-7 w-7" />
             </div>
-            <p className="mt-1 text-sm text-slate-600">{equipment.type}</p>
-            <p className="mt-1 flex items-center gap-1 text-sm text-slate-400">
-              <MapPin className="h-4 w-4" />
-              {equipment.area}
-            </p>
-            {equipment.description && (
-              <p className="mt-2 max-w-2xl text-sm text-slate-500">{equipment.description}</p>
-            )}
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-2xl font-bold text-slate-900">{equipment.name}</h2>
+                <span className="rounded-md bg-maroon-50 px-2 py-0.5 text-sm font-semibold text-maroon-800">
+                  {equipment.tag}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-slate-600">{equipment.type}</p>
+              <p className="mt-1 flex items-center gap-1 text-sm text-slate-400">
+                <MapPin className="h-4 w-4" />
+                {equipment.area}
+              </p>
+              {equipment.description && (
+                <p className="mt-2 max-w-2xl text-sm text-slate-500">{equipment.description}</p>
+              )}
+            </div>
           </div>
           <button className="btn-secondary" onClick={() => setEditEquipment(true)}>
             <Pencil className="h-4 w-4" />
@@ -101,7 +109,6 @@ export function EquipmentPage() {
         </section>
 
         <section className="lg:col-span-1">
-          <h3 className="mb-4 text-lg font-bold text-slate-900">Urgency &amp; History</h3>
           <div className="h-[640px]">
             <UrgencyHistoryPanel equipmentId={equipmentId} />
           </div>

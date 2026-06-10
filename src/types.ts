@@ -16,6 +16,7 @@ export type PSVStatus = 'installed' | 'out_for_service' | 'inventory';
 export type PSVEventType =
   | 'created'
   | 'status-change'
+  | 'service'
   | 'datasheet-update'
   | 'history-edit'
   | 'note';
@@ -64,6 +65,12 @@ export interface PSV {
   tag?: string;
   locationId: string;
   status: PSVStatus;
+  /**
+   * When true, this PSV has no spare and is recertified in place (on site).
+   * Such valves stay installed and are tracked by service date instead of
+   * install/inventory swaps; their due date is measured from the last service.
+   */
+  servicedOnSite?: boolean;
   datasheet: PSVDatasheet;
   events: PSVEvent[];
   createdAt: string;

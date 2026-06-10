@@ -8,6 +8,7 @@ import {
   PencilLine,
   StickyNote,
   ToggleRight,
+  Wrench,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
@@ -22,6 +23,7 @@ type Tab = 'due' | 'history';
 const EVENT_ICONS: Record<PSVEventType, LucideIcon> = {
   created: FilePlus2,
   'status-change': ToggleRight,
+  service: Wrench,
   'datasheet-update': PencilLine,
   'history-edit': PencilLine,
   note: StickyNote,
@@ -56,10 +58,10 @@ export function UrgencyHistoryPanel({ equipmentId }: { equipmentId?: string }) {
     <div className="card flex h-full flex-col">
       <div className="flex items-center gap-1 border-b border-slate-200 p-2">
         <TabButton active={tab === 'due'} onClick={() => setTab('due')} icon={CalendarClock}>
-          Due Dates
+          Upcoming Due
         </TabButton>
         <TabButton active={tab === 'history'} onClick={() => setTab('history')} icon={History}>
-          History
+          Status Changes
         </TabButton>
       </div>
 

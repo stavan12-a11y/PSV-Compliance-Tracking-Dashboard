@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Gauge, RotateCcw, ShieldCheck } from 'lucide-react';
+import { Database, Eraser, Gauge, RotateCcw, ShieldCheck } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 
 export function Layout() {
-  const { resetToSeed } = usePSV();
+  const { resetToSeed, clearAll } = usePSV();
   const location = useLocation();
   const isHome = location.pathname === '/';
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen">
@@ -30,22 +32,55 @@ export function Layout() {
                 Dashboard
               </Link>
             )}
-            <button
-              onClick={() => {
-                if (
-                  confirm(
-                    'Reset all data back to the original mock dataset? Any changes you made will be lost.',
-                  )
-                ) {
-                  resetToSeed();
-                }
-              }}
-              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-maroon-100 hover:bg-white/10"
-              title="Reset to mock data"
-            >
-              <RotateCcw className="h-4 w-4" />
-              <span className="hidden sm:inline">Reset Data</span>
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((o) => !o)}
+                className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-maroon-100 hover:bg-white/10"
+                title="Manage data"
+              >
+                <Database className="h-4 w-4" />
+                <span className="hidden sm:inline">Data</span>
+              </button>
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
+                  <div className="absolute right-0 z-20 mt-2 w-60 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-slate-700 shadow-xl">
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        if (
+                          confirm(
+                            'Reset all data back to the original sample dataset? Any changes you made will be lost.',
+                          )
+                        ) {
+                          resetToSeed();
+                        }
+                      }}
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-slate-50"
+                    >
+                      <RotateCcw className="h-4 w-4 text-slate-400" />
+                      Reset to sample data
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        if (
+                          confirm(
+                            'Clear ALL data so you can enter your own? This removes every equipment, location, and PSV and cannot be undone.',
+                          )
+                        ) {
+                          clearAll();
+                        }
+                      }}
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <Eraser className="h-4 w-4" />
+                      Clear all data
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>

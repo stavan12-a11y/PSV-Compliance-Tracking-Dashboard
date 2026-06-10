@@ -21,7 +21,7 @@ import { uid } from '../utils/id';
 import { todayISO } from '../utils/dates';
 import { STATUS_LABELS } from '../utils/compliance';
 
-const STORAGE_KEY = 'psv-dashboard-data-v2';
+const STORAGE_KEY = 'psv-dashboard-data-v3';
 
 function loadData(): AppData {
   try {
@@ -61,7 +61,10 @@ interface PSVContextValue {
 
   // PSV CRUD
   addPSV: (input: NewPSVInput) => PSV;
-  updatePSV: (id: string, patch: Partial<Pick<PSV, 'serialNumber' | 'tag' | 'locationId'>>) => void;
+  updatePSV: (
+    id: string,
+    patch: Partial<Pick<PSV, 'serialNumber' | 'tag' | 'locationId' | 'servicedOnSite'>>,
+  ) => void;
   updateDatasheet: (id: string, datasheet: PSVDatasheet) => void;
   deletePSV: (id: string) => void;
 
@@ -73,6 +76,7 @@ interface PSVContextValue {
 
   // bulk
   resetToSeed: () => void;
+  clearAll: () => void;
   replaceData: (data: AppData) => void;
 }
 
@@ -82,6 +86,7 @@ export interface NewPSVInput {
   locationId: string;
   datasheet: PSVDatasheet;
   status: PSVStatus;
+  servicedOnSite?: boolean;
   /** Effective date of the initial status (defaults to today). */
   statusDate?: string;
 }
@@ -95,6 +100,47 @@ export interface NewEventInput {
 }
 
 const PSVContext = createContext<PSVContextValue | null>(null);
+
+const EMPTY_DATA: AppData = { equipment: [], locations: [], psvs: [] };
+
+/**
+ * Enforces "only one installed PSV per location": when `keepId` is installed at
+ * `locationId`, any other installed valve there is moved to Out for Service and
+ * the change is logged. On-site serviced valves are left untouched.
+ */
+function enforceSingleInstalled(
+  psvs: PSV[],
+  locationId: string,
+  keepId: string,
+  now: string,
+): PSV[] {
+  return psvs.map((p) => {
+    if (
+      p.id !== keepId &&
+      p.locationId === locationId &&
+      p.status === 'installed' &&
+      !p.servicedOnSite
+    ) {
+      return {
+        ...p,
+        status: 'out_for_service' as PSVStatus,
+        events: [
+          ...p.events,
+          {
+            id: uid('evt'),
+            psvId: p.id,
+            type: 'status-change' as const,
+            status: 'out_for_service' as PSVStatus,
+            date: todayISO(),
+            description: 'Removed — another valve was installed at this location',
+            recordedAt: now,
+          },
+        ],
+      };
+    }
+    return p;
+  });
+}
 
 export function PSVProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(loadData);
@@ -193,6 +239,8 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     const id = uid('psv');
     const now = new Date().toISOString();
     const date = input.statusDate ?? todayISO();
+    // On-site serviced valves have no spare and are always treated as installed.
+    const status: PSVStatus = input.servicedOnSite ? 'installed' : input.status;
     const events: PSVEvent[] = [
       {
         id: uid('evt'),
@@ -206,9 +254,9 @@ export function PSVProvider({ children }: { children: ReactNode }) {
         id: uid('evt'),
         psvId: id,
         type: 'status-change',
-        status: input.status,
+        status,
         date,
-        description: `Status set to ${STATUS_LABELS[input.status]}`,
+        description: `Status set to ${STATUS_LABELS[status]}`,
         recordedAt: now,
       },
     ];
@@ -217,17 +265,27 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       serialNumber: input.serialNumber,
       tag: input.tag,
       locationId: input.locationId,
-      status: input.status,
+      status,
+      servicedOnSite: input.servicedOnSite || undefined,
       datasheet: input.datasheet,
       events,
       createdAt: now,
     };
-    setData((d) => ({ ...d, psvs: [...d.psvs, created] }));
+    setData((d) => {
+      let psvs = [...d.psvs, created];
+      if (status === 'installed') {
+        psvs = enforceSingleInstalled(psvs, created.locationId, id, now);
+      }
+      return { ...d, psvs };
+    });
     return created;
   }, []);
 
   const updatePSV = useCallback(
-    (id: string, patch: Partial<Pick<PSV, 'serialNumber' | 'tag' | 'locationId'>>) => {
+    (
+      id: string,
+      patch: Partial<Pick<PSV, 'serialNumber' | 'tag' | 'locationId' | 'servicedOnSite'>>,
+    ) => {
       setData((d) => ({
         ...d,
         psvs: d.psvs.map((p) => (p.id === id ? { ...p, ...patch } : p)),
@@ -270,9 +328,9 @@ export function PSVProvider({ children }: { children: ReactNode }) {
   const setStatus = useCallback(
     (id: string, status: PSVStatus, date: string, note?: string) => {
       const now = new Date().toISOString();
-      setData((d) => ({
-        ...d,
-        psvs: d.psvs.map((p) =>
+      setData((d) => {
+        const target = d.psvs.find((p) => p.id === id);
+        let psvs = d.psvs.map((p) =>
           p.id === id
             ? {
                 ...p,
@@ -282,7 +340,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
                   {
                     id: uid('evt'),
                     psvId: id,
-                    type: 'status-change',
+                    type: 'status-change' as const,
                     status,
                     date,
                     description: `Status set to ${STATUS_LABELS[status]}`,
@@ -292,27 +350,35 @@ export function PSVProvider({ children }: { children: ReactNode }) {
                 ],
               }
             : p,
-        ),
-      }));
+        );
+        if (status === 'installed' && target) {
+          psvs = enforceSingleInstalled(psvs, target.locationId, id, now);
+        }
+        return { ...d, psvs };
+      });
     },
     [],
   );
 
   const addHistoryEvent = useCallback((id: string, event: NewEventInput) => {
     const now = new Date().toISOString();
-    setData((d) => ({
-      ...d,
-      psvs: d.psvs.map((p) => {
+    setData((d) => {
+      let installedAtLoc: string | null = null;
+      const psvs = d.psvs.map((p) => {
         if (p.id !== id) return p;
+        const defaultDescription =
+          event.type === 'service'
+            ? 'Serviced on site'
+            : event.status
+              ? `Status set to ${STATUS_LABELS[event.status]}`
+              : 'History entry';
         const newEvent: PSVEvent = {
           id: uid('evt'),
           psvId: id,
           type: event.type,
           status: event.status,
           date: event.date,
-          description:
-            event.description ??
-            (event.status ? `Status set to ${STATUS_LABELS[event.status]}` : 'History entry'),
+          description: event.description ?? defaultDescription,
           note: event.note,
           recordedAt: now,
         };
@@ -326,9 +392,14 @@ export function PSVProvider({ children }: { children: ReactNode }) {
             .pop();
           if (!latestDate || event.date >= latestDate) status = event.status;
         }
+        if (status === 'installed') installedAtLoc = p.locationId;
         return { ...p, status, events: [...p.events, newEvent] };
-      }),
-    }));
+      });
+      return {
+        ...d,
+        psvs: installedAtLoc ? enforceSingleInstalled(psvs, installedAtLoc, id, now) : psvs,
+      };
+    });
   }, []);
 
   const recomputeStatus = (events: PSVEvent[], fallback: PSVStatus): PSVStatus => {
@@ -364,6 +435,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetToSeed = useCallback(() => setData(structuredClone(seedData)), []);
+  const clearAll = useCallback(() => setData(structuredClone(EMPTY_DATA)), []);
   const replaceData = useCallback((d: AppData) => setData(structuredClone(d)), []);
 
   const value = useMemo<PSVContextValue>(
@@ -390,6 +462,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       updateHistoryEvent,
       deleteHistoryEvent,
       resetToSeed,
+      clearAll,
       replaceData,
     }),
     [
@@ -415,6 +488,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       updateHistoryEvent,
       deleteHistoryEvent,
       resetToSeed,
+      clearAll,
       replaceData,
     ],
   );

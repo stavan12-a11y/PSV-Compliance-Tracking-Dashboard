@@ -14,7 +14,7 @@ interface EventFormModalProps {
   eventId?: string;
 }
 
-type EntryKind = 'status-change' | 'note';
+type EntryKind = 'status-change' | 'service' | 'note';
 
 export function EventFormModal({ open, onClose, psvId, eventId }: EventFormModalProps) {
   const { getPSV, addHistoryEvent, updateHistoryEvent } = usePSV();
@@ -31,7 +31,13 @@ export function EventFormModal({ open, onClose, psvId, eventId }: EventFormModal
   useEffect(() => {
     if (!open) return;
     if (existing) {
-      setKind(existing.type === 'status-change' ? 'status-change' : 'note');
+      setKind(
+        existing.type === 'status-change'
+          ? 'status-change'
+          : existing.type === 'service'
+            ? 'service'
+            : 'note',
+      );
       setStatus(existing.status ?? 'installed');
       setDate(existing.date);
       setDescription(existing.description);
@@ -49,24 +55,24 @@ export function EventFormModal({ open, onClose, psvId, eventId }: EventFormModal
     const isStatus = kind === 'status-change';
     const desc =
       description.trim() ||
-      (isStatus ? `Status set to ${STATUS_LABELS[status]}` : 'History note');
+      (isStatus
+        ? `Status set to ${STATUS_LABELS[status]}`
+        : kind === 'service'
+          ? 'Serviced on site'
+          : 'History note');
+
+    const payload = {
+      type: kind,
+      status: isStatus ? status : undefined,
+      date,
+      description: desc,
+      note: note.trim() || undefined,
+    } as const;
 
     if (editing && existing) {
-      updateHistoryEvent(psvId, existing.id, {
-        type: isStatus ? 'status-change' : 'note',
-        status: isStatus ? status : undefined,
-        date,
-        description: desc,
-        note: note.trim() || undefined,
-      });
+      updateHistoryEvent(psvId, existing.id, payload);
     } else {
-      addHistoryEvent(psvId, {
-        type: isStatus ? 'status-change' : 'note',
-        status: isStatus ? status : undefined,
-        date,
-        description: desc,
-        note: note.trim() || undefined,
-      });
+      addHistoryEvent(psvId, payload);
     }
     onClose();
   };
@@ -92,7 +98,8 @@ export function EventFormModal({ open, onClose, psvId, eventId }: EventFormModal
       <div className="space-y-4">
         <Field label="Entry Type">
           <select className="input" value={kind} onChange={(e) => setKind(e.target.value as EntryKind)}>
-            <option value="status-change">Status change (install / service / inventory)</option>
+            <option value="status-change">Status change (install / out for service / inventory)</option>
+            <option value="service">On-site service / recertification</option>
             <option value="note">Note</option>
           </select>
         </Field>

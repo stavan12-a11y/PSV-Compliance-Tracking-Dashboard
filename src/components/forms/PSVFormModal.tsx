@@ -44,6 +44,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
   const [locationId, setLocationId] = useState('');
   const [status, setStatus] = useState<PSVStatus>('inventory');
   const [statusDate, setStatusDate] = useState(todayISO());
+  const [servicedOnSite, setServicedOnSite] = useState(false);
   const [sheet, setSheet] = useState<PSVDatasheet>(EMPTY_DATASHEET);
 
   useEffect(() => {
@@ -53,6 +54,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
       setTag(existing.tag ?? '');
       setLocationId(existing.locationId);
       setStatus(existing.status);
+      setServicedOnSite(Boolean(existing.servicedOnSite));
       setSheet({ ...EMPTY_DATASHEET, ...existing.datasheet });
     } else {
       setSerialNumber('');
@@ -60,6 +62,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
       setLocationId(presetLocationId ?? data.locations[0]?.id ?? '');
       setStatus('inventory');
       setStatusDate(todayISO());
+      setServicedOnSite(false);
       setSheet(EMPTY_DATASHEET);
     }
   }, [open, existing, presetLocationId, data.locations]);
@@ -82,7 +85,12 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
     if (!canSave) return;
     const cleaned: PSVDatasheet = { ...sheet, setPressure: Number(sheet.setPressure) || 0 };
     if (editing && existing) {
-      updatePSV(existing.id, { serialNumber: serialNumber.trim(), tag: tag.trim(), locationId });
+      updatePSV(existing.id, {
+        serialNumber: serialNumber.trim(),
+        tag: tag.trim(),
+        locationId,
+        servicedOnSite,
+      });
       updateDatasheet(existing.id, cleaned);
     } else {
       addPSV({
@@ -91,6 +99,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
         locationId,
         datasheet: cleaned,
         status,
+        servicedOnSite,
         statusDate,
       });
     }
@@ -135,7 +144,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
               ))}
             </select>
           </Field>
-          {!editing && (
+          {!editing && !servicedOnSite && (
             <div className="grid grid-cols-2 gap-3">
               <Field label="Initial Status">
                 <select className="input" value={status} onChange={(e) => setStatus(e.target.value as PSVStatus)}>
@@ -146,12 +155,28 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
                   ))}
                 </select>
               </Field>
-              <Field label="Status Date">
+              <Field label={status === 'installed' ? 'Installation Date' : 'Status Date'}>
                 <input type="date" className="input" value={statusDate} onChange={(e) => setStatusDate(e.target.value)} />
               </Field>
             </div>
           )}
         </section>
+
+        <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-maroon-700 focus:ring-maroon-700"
+            checked={servicedOnSite}
+            onChange={(e) => setServicedOnSite(e.target.checked)}
+          />
+          <span className="text-sm">
+            <span className="font-semibold text-slate-800">Serviced on site (no spare)</span>
+            <span className="block text-xs text-slate-500">
+              This valve has no spare and is recertified in place. It stays installed and is tracked
+              by service date — the recert due date is measured from the last service.
+            </span>
+          </span>
+        </label>
 
         <section>
           <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-400">Datasheet</h3>

@@ -61,7 +61,18 @@ export function Dashboard() {
             </div>
           </div>
 
-          {filtered.length === 0 ? (
+          {data.equipment.length === 0 ? (
+            <div className="card p-10 text-center">
+              <p className="font-semibold text-slate-600">No equipment yet</p>
+              <p className="mt-1 text-sm text-slate-400">
+                Add your first piece of equipment to start tracking PSVs.
+              </p>
+              <button className="btn-primary mt-4 inline-flex" onClick={() => setShowAdd(true)}>
+                <Plus className="h-4 w-4" />
+                Add Equipment
+              </button>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="card p-10 text-center text-slate-400">
               No equipment matches your search.
             </div>
@@ -75,7 +86,6 @@ export function Dashboard() {
         </section>
 
         <section className="lg:col-span-1">
-          <h3 className="mb-4 text-lg font-bold text-slate-900">Urgency &amp; History</h3>
           <div className="h-[640px]">
             <UrgencyHistoryPanel />
           </div>
