@@ -8,10 +8,12 @@ import { BoilerCard } from "./components/BoilerCard";
 import { Sidebar } from "./components/Sidebar";
 import { BoilerDetail } from "./components/BoilerDetail";
 import { AddBoilerModal } from "./components/AddBoilerModal";
+import { ActivityLog } from "./components/ActivityLog";
 import { StatusDot } from "./components/ui";
 import {
   DownloadIcon,
   FlameIcon,
+  HistoryClockIcon,
   PlusIcon,
   RefreshIcon,
 } from "./components/icons";
@@ -25,9 +27,10 @@ const FILTERS: { key: BoilerStatus | "all"; label: string }[] = [
 ];
 
 function Dashboard() {
-  const { boilers, resetToDemo } = useFleet();
+  const { boilers, resetToDemo, activity } = useFleet();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
   const [filter, setFilter] = useState<BoilerStatus | "all">("all");
   const [query, setQuery] = useState("");
 
@@ -82,6 +85,20 @@ function Dashboard() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowActivity(true)}
+              className="relative inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              title="View the change history"
+            >
+              <HistoryClockIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">History</span>
+              {activity.length > 0 && (
+                <span className="rounded-full bg-orange-100 px-1.5 text-[10px] font-bold text-orange-700">
+                  {activity.length > 99 ? "99+" : activity.length}
+                </span>
+              )}
+            </button>
             <button
               type="button"
               onClick={exportFleet}
@@ -186,6 +203,7 @@ function Dashboard() {
         <BoilerDetail boiler={selected} onClose={() => setSelectedId(null)} />
       )}
       {adding && <AddBoilerModal onClose={() => setAdding(false)} />}
+      {showActivity && <ActivityLog onClose={() => setShowActivity(false)} />}
     </div>
   );
 }

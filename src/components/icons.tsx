@@ -125,6 +125,21 @@ export const MapPinIcon = (props: IconProps) => (
   </svg>
 );
 
+export const HistoryClockIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M3 3v5h5" />
+    <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
+    <path d="M12 7v5l3 2" />
+  </svg>
+);
+
+export const ArrowRightIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M5 12h14" />
+    <path d="m13 6 6 6-6 6" />
+  </svg>
+);
+
 export const PencilIcon = (props: IconProps) => (
   <svg {...base(props)}>
     <path d="M12 20h9" />

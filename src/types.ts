@@ -57,6 +57,20 @@ export interface Boiler {
   history: Inspection[];
 }
 
+export interface ActivityEntry {
+  id: string;
+  /** ISO timestamp the change was recorded. */
+  at: string;
+  boilerId: string | null;
+  boilerName: string;
+  /** Short, human-readable description of what happened. */
+  summary: string;
+  /** Optional before value for edits. */
+  from?: string;
+  /** Optional after value for edits. */
+  to?: string;
+}
+
 /**
  * Visual status derived from a boiler's inspection state.
  * - failed:  red   — failed its last inspection, needs repairs

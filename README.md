@@ -29,6 +29,10 @@ data to `localStorage`, so your fleet survives between sessions.
   boilers that currently need repairs.
 - **Summary cards** — total boilers, active inspections, failed boilers, and the
   average inspection duration across completed inspections.
+- **Change history** — every edit (specs, inspection date/result/notes, workflow
+  steps and their timestamps, and repair logs) is recorded with its before →
+  after values, viewable and searchable from the **History** button in the
+  header.
 - **CSV export** — per-boiler reports (specs, history, steps, timestamps, notes,
   repairs) and a one-click bulk export of the whole fleet.
 - **Reset** — restore the demo data set at any time.

@@ -1,7 +1,8 @@
-import type { Boiler } from "../types";
+import type { ActivityEntry, Boiler } from "../types";
 import { createDemoBoilers } from "./demo";
 
 const STORAGE_KEY = "boiler-inspection-management:v2";
+const ACTIVITY_KEY = "boiler-inspection-management:activity:v1";
 
 export function loadBoilers(): Boiler[] {
   try {
@@ -26,6 +27,25 @@ export function saveBoilers(boilers: Boiler[]): void {
 export function clearStorage(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+export function loadActivity(): ActivityEntry[] {
+  try {
+    const raw = localStorage.getItem(ACTIVITY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as ActivityEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveActivity(entries: ActivityEntry[]): void {
+  try {
+    localStorage.setItem(ACTIVITY_KEY, JSON.stringify(entries));
   } catch {
     // ignore
   }
