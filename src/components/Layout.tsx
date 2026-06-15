@@ -4,6 +4,7 @@ import { Database, Eraser, Gauge, LogOut, RotateCcw, ShieldCheck, Upload } from 
 import { usePSV } from '../store/PSVContext';
 import { useAuth } from '../auth/AuthContext';
 import { ImportModal } from './forms/ImportModal';
+import { SyncIndicator } from './SyncIndicator';
 
 export function Layout() {
   const { resetToSeed, clearAll } = usePSV();
@@ -30,6 +31,7 @@ export function Layout() {
           </Link>
 
           <div className="flex items-center gap-2">
+            <SyncIndicator />
             {!isHome && (
               <Link to="/" className="hidden items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-maroon-100 hover:bg-white/10 sm:inline-flex">
                 <Gauge className="h-4 w-4" />

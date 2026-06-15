@@ -26,6 +26,8 @@ import { useAuth } from '../auth/AuthContext';
 
 const STORAGE_KEY = 'psv-dashboard-data-v3';
 
+export type SyncStatus = 'local' | 'loading' | 'saving' | 'saved' | 'error';
+
 function loadData(): AppData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -43,6 +45,8 @@ function loadData(): AppData {
 
 interface PSVContextValue {
   data: AppData;
+  /** Cloud sync state ('local' when running without Supabase). */
+  syncStatus: SyncStatus;
 
   // selectors
   getEquipment: (id: string) => Equipment | undefined;
@@ -154,6 +158,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
   );
   // In cloud mode, true once the initial shared state has been loaded.
   const [synced, setSynced] = useState(!cloud);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(cloud ? 'loading' : 'local');
   const applyingRemote = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -172,6 +177,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     if (!cloud || !authed || !supabase) return;
     const sb = supabase;
     let active = true;
+    setSyncStatus('loading');
 
     (async () => {
       const { data: row, error } = await sb
@@ -194,6 +200,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
         setData(seed);
       }
       setSynced(true);
+      setSyncStatus(error ? 'error' : 'saved');
     })();
 
     const channel = sb
@@ -206,6 +213,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
           if (incoming) {
             applyingRemote.current = true;
             setData(incoming);
+            setSyncStatus('saved');
           }
         },
       )
@@ -226,14 +234,17 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       return;
     }
     const sb = supabase;
+    setSyncStatus('saving');
     if (saveTimer.current) clearTimeout(saveTimer.current);
     const snapshot = data;
     saveTimer.current = setTimeout(() => {
-      sb.from(STATE_TABLE).upsert({
-        id: STATE_ROW_ID,
-        data: snapshot,
-        updated_at: new Date().toISOString(),
-      });
+      sb.from(STATE_TABLE)
+        .upsert({
+          id: STATE_ROW_ID,
+          data: snapshot,
+          updated_at: new Date().toISOString(),
+        })
+        .then(({ error }) => setSyncStatus(error ? 'error' : 'saved'));
     }, 400);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -528,6 +539,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
   const value = useMemo<PSVContextValue>(
     () => ({
       data,
+      syncStatus,
       getEquipment,
       getLocation,
       getPSV,
@@ -554,6 +566,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     }),
     [
       data,
+      syncStatus,
       getEquipment,
       getLocation,
       getPSV,
