@@ -1,17 +1,23 @@
 import { useState } from 'react';
-import { AlertTriangle, Lock, LogIn, ShieldCheck } from 'lucide-react';
-import { USING_DEFAULT_CREDENTIALS, useAuth } from './AuthContext';
+import { AlertTriangle, Loader2, Lock, LogIn, ShieldCheck } from 'lucide-react';
+import { AUTH_MODE, USING_DEFAULT_CREDENTIALS, useAuth } from './AuthContext';
 
 export function LoginScreen() {
   const { login } = useAuth();
-  const [username, setUsername] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const cloud = AUTH_MODE === 'cloud';
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = login(username, password);
-    setError(!ok);
+    setBusy(true);
+    setError(null);
+    const res = await login(identifier, password);
+    setBusy(false);
+    if (!res.ok) setError(res.error ?? 'Sign in failed.');
   };
 
   return (
@@ -32,13 +38,14 @@ export function LoginScreen() {
           </h2>
 
           <label className="mb-3 block">
-            <span className="label">Username</span>
+            <span className="label">{cloud ? 'Email' : 'Username'}</span>
             <input
               className="input"
-              value={username}
+              type={cloud ? 'email' : 'text'}
+              value={identifier}
               onChange={(e) => {
-                setUsername(e.target.value);
-                setError(false);
+                setIdentifier(e.target.value);
+                setError(null);
               }}
               autoFocus
               autoComplete="username"
@@ -52,7 +59,7 @@ export function LoginScreen() {
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
-                setError(false);
+                setError(null);
               }}
               autoComplete="current-password"
             />
@@ -61,12 +68,12 @@ export function LoginScreen() {
           {error && (
             <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-red-600">
               <AlertTriangle className="h-4 w-4" />
-              Incorrect username or password.
+              {error}
             </p>
           )}
 
-          <button type="submit" className="btn-primary mt-5 w-full">
-            <LogIn className="h-4 w-4" />
+          <button type="submit" className="btn-primary mt-5 w-full" disabled={busy}>
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
             Sign in
           </button>
 

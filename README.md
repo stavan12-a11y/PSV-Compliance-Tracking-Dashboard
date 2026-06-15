@@ -71,24 +71,35 @@ The data hierarchy is **Site → Equipment → Location → PSV (serial number)*
 
 Both thresholds live in `src/utils/dates.ts`.
 
-## Login / access
+## Modes: shared cloud data vs. local
 
-The app is protected by a single shared **username + password** so outside
-visitors can't get in. Credentials are set with build-time environment variables:
+The app runs in one of two modes depending on whether Supabase is configured:
 
-| Variable | Purpose | Default |
-| --- | --- | --- |
-| `VITE_APP_USERNAME` | login username | `admin` |
-| `VITE_APP_PASSWORD` | login password | `tamu-psv-2026` |
+- **Cloud mode (recommended for a team):** set `VITE_SUPABASE_URL` and
+  `VITE_SUPABASE_ANON_KEY`. Everyone signs in with a shared Supabase account and
+  sees **one shared, live dataset** (edits sync to all users in real time). Sign-in
+  is real authentication and the database is locked to signed-in users.
+- **Local mode (default / development):** no Supabase. A lightweight static
+  username/password gate (`VITE_APP_USERNAME` / `VITE_APP_PASSWORD`, defaults
+  `admin` / `tamu-psv-2026`) with data stored per-browser in `localStorage`.
 
-If you don't set them, the defaults above are used and a reminder is shown on the
-login screen. **Set your own** in your hosting provider (see below) and redeploy.
+### Setting up shared cloud data (Supabase) — one time, ~5 minutes
 
-> Security note: because this is a frontend-only app, the credentials live in the
-> built JavaScript. This is a practical gate to keep casual/outside access out of
-> an internal tool — it is *not* server-grade security. For stronger free
-> protection, put the site behind **Cloudflare Access** (a real login page in
-> front of the site, free for small teams) or move to a backend login later.
+1. Create a free project at **[supabase.com](https://supabase.com)**.
+2. In the project, open **SQL Editor → New query**, paste the contents of
+   [`supabase/schema.sql`](supabase/schema.sql), and click **Run**. This creates the
+   shared table, security rules, and live sync.
+3. Open **Authentication → Users → Add user**. Create the **one shared account**
+   your team will use (email + password) and tick **Auto Confirm User** so it can
+   sign in immediately. Share these credentials with whoever should have access.
+4. Open **Project Settings → API** and copy the **Project URL** and the
+   **anon public** key.
+5. In your host (e.g. Vercel), add these environment variables and redeploy:
+   - `VITE_SUPABASE_URL` = the Project URL
+   - `VITE_SUPABASE_ANON_KEY` = the anon public key
+
+That's it — anyone who opens the site signs in with the shared account and works
+on the same live data. (Local-mode `VITE_APP_*` vars are ignored in cloud mode.)
 
 ## Going live (deploy a shareable URL) — step by step
 
@@ -111,12 +122,10 @@ The app is a static Vite build with SPA routing config already included
 To change the password later: Vercel → your project → **Settings → Environment
 Variables**, edit `VITE_APP_PASSWORD`, then **Deployments → … → Redeploy**.
 
-> Note on data: each browser stores its own data locally (`localStorage`). A
-> hosted URL makes the app reachable by anyone with the link + password, but it
-> does **not** yet share one common dataset between people. So you and your
-> manager would each maintain your own copy on your own devices. For a single
-> shared dataset everyone sees, the next step is a backend (e.g. Supabase) — ask
-> and it can be added.
+> For a single shared dataset that everyone sees live, also configure Supabase
+> (see “Setting up shared cloud data” above) and add the `VITE_SUPABASE_*`
+> environment variables in step 4. Without them, the site runs in local mode and
+> each browser keeps its own copy.
 
 ## Importing your data
 
