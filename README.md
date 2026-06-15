@@ -71,6 +71,37 @@ The data hierarchy is **Site → Equipment → Location → PSV (serial number)*
 
 Both thresholds live in `src/utils/dates.ts`.
 
+## Going live (deploying a shareable URL)
+
+The app is a static Vite build, so it deploys anywhere that serves static files.
+Config for single-page-app routing is already included (`vercel.json`,
+`netlify.toml`, `public/_redirects`).
+
+**Easiest — Vercel or Netlify (free tier):**
+
+1. Push this repo to GitHub (already done).
+2. Create an account at [vercel.com](https://vercel.com) or [netlify.com](https://netlify.com) and **“Import / Add new project”** from the GitHub repo.
+3. Framework auto-detects as **Vite**. Build command `npm run build`, output dir `dist`. Deploy.
+4. You get a URL like `psv-dashboard.vercel.app` that rebuilds automatically on every push.
+
+> Note on data: in this version each browser stores its own data locally
+> (`localStorage`). A hosted URL makes the app reachable by everyone, but it does
+> **not** yet share one common dataset between users or require sign-in. For a true
+> shared, multi-user, authenticated tool, the next step is a backend (e.g.
+> Supabase/Firebase) with login + roles — see the PR discussion.
+
+## Importing your data
+
+Use **Data → Import data…** in the header:
+
+1. **Download the Excel template** and fill one row per PSV (equipment and
+   locations are created automatically from the names/tags; status, install date,
+   and the “serviced on site” flag are supported).
+2. **Upload** the `.xlsx`/`.csv`. You'll see a summary, then choose **Replace all
+   data** or **Add to existing data**.
+3. **JSON backup**: export a complete, lossless backup of everything (including
+   full history) and restore it later or on another machine.
+
 ## Exporting reports to Excel
 
 Use the **Export Excel** button on the dashboard (whole site) or on an equipment

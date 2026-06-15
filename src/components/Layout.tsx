@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Database, Eraser, Gauge, RotateCcw, ShieldCheck } from 'lucide-react';
+import { Database, Eraser, Gauge, RotateCcw, ShieldCheck, Upload } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
+import { ImportModal } from './forms/ImportModal';
 
 export function Layout() {
   const { resetToSeed, clearAll } = usePSV();
   const location = useLocation();
   const isHome = location.pathname === '/';
   const [menuOpen, setMenuOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   return (
     <div className="min-h-screen">
@@ -45,6 +47,16 @@ export function Layout() {
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
                   <div className="absolute right-0 z-20 mt-2 w-60 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-slate-700 shadow-xl">
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setImportOpen(true);
+                      }}
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-slate-50"
+                    >
+                      <Upload className="h-4 w-4 text-slate-400" />
+                      Import data…
+                    </button>
                     <button
                       onClick={() => {
                         setMenuOpen(false);
@@ -88,6 +100,8 @@ export function Layout() {
       <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
         <Outlet />
       </main>
+
+      <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }
