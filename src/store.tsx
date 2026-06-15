@@ -41,10 +41,44 @@ interface FleetContextValue {
   ) => void;
   removeBoiler: (boilerId: string) => void;
   startInspection: (boilerId: string, input: StartInspectionInput) => void;
-  setStepNotes: (boilerId: string, stepKey: string, notes: string) => void;
+  /** Advance the active workflow; archives to history when the final step is done. */
   completeStep: (boilerId: string, stepKey: string, notes: string) => void;
-  addRepairLog: (boilerId: string, description: string) => void;
   triggerReInspection: (boilerId: string) => void;
+  /** Edit any inspection (active or archived) — date, notes, or pass/fail result. */
+  editInspection: (
+    boilerId: string,
+    inspectionId: string,
+    patch: Partial<Pick<Inspection, "date" | "notes" | "result">>
+  ) => void;
+  setStepNotes: (
+    boilerId: string,
+    inspectionId: string,
+    stepKey: string,
+    notes: string
+  ) => void;
+  setStepCompleted: (
+    boilerId: string,
+    inspectionId: string,
+    stepKey: string,
+    completed: boolean
+  ) => void;
+  addRepairLog: (
+    boilerId: string,
+    inspectionId: string,
+    description: string
+  ) => void;
+  editRepairLog: (
+    boilerId: string,
+    inspectionId: string,
+    repairId: string,
+    description: string
+  ) => void;
+  removeRepairLog: (
+    boilerId: string,
+    inspectionId: string,
+    repairId: string
+  ) => void;
+  deleteInspection: (boilerId: string, inspectionId: string) => void;
   resetToDemo: () => void;
 }
 
@@ -58,12 +92,22 @@ function mapBoiler(
   return boilers.map((b) => (b.id === boilerId ? updater(b) : b));
 }
 
-function mapActiveInspection(
-  boiler: Boiler,
+/** Apply an updater to whichever inspection (active or archived) matches the id. */
+function mapInspection(
+  boilers: Boiler[],
+  boilerId: string,
+  inspectionId: string,
   updater: (insp: Inspection) => Inspection
-): Boiler {
-  if (!boiler.activeInspection) return boiler;
-  return { ...boiler, activeInspection: updater(boiler.activeInspection) };
+): Boiler[] {
+  return mapBoiler(boilers, boilerId, (b) => {
+    if (b.activeInspection && b.activeInspection.id === inspectionId) {
+      return { ...b, activeInspection: updater(b.activeInspection) };
+    }
+    return {
+      ...b,
+      history: b.history.map((h) => (h.id === inspectionId ? updater(h) : h)),
+    };
+  });
 }
 
 export function FleetProvider({ children }: { children: ReactNode }) {
@@ -134,22 +178,6 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const setStepNotes = useCallback(
-    (boilerId: string, stepKey: string, notes: string) => {
-      setBoilers((prev) =>
-        mapBoiler(prev, boilerId, (b) =>
-          mapActiveInspection(b, (insp) => ({
-            ...insp,
-            steps: insp.steps.map((s) =>
-              s.key === stepKey ? { ...s, notes } : s
-            ),
-          }))
-        )
-      );
-    },
-    []
-  );
-
   const completeStep = useCallback(
     (boilerId: string, stepKey: string, notes: string) => {
       setBoilers((prev) =>
@@ -183,20 +211,6 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const addRepairLog = useCallback((boilerId: string, description: string) => {
-    setBoilers((prev) =>
-      mapBoiler(prev, boilerId, (b) =>
-        mapActiveInspection(b, (insp) => ({
-          ...insp,
-          repairs: [
-            ...insp.repairs,
-            { id: uid("rep"), loggedAt: nowIso(), description },
-          ],
-        }))
-      )
-    );
-  }, []);
-
   const triggerReInspection = useCallback((boilerId: string) => {
     setBoilers((prev) =>
       mapBoiler(prev, boilerId, (b) => {
@@ -217,6 +231,125 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const editInspection = useCallback(
+    (
+      boilerId: string,
+      inspectionId: string,
+      patch: Partial<Pick<Inspection, "date" | "notes" | "result">>
+    ) => {
+      setBoilers((prev) =>
+        mapInspection(prev, boilerId, inspectionId, (insp) => {
+          const next: Inspection = { ...insp, ...patch };
+          // Switching a corrected inspection to "pass" needs a workflow to fill.
+          if (patch.result === "pass" && next.steps.length === 0) {
+            next.steps = freshWorkflowSteps();
+          }
+          return next;
+        })
+      );
+    },
+    []
+  );
+
+  const setStepNotes = useCallback(
+    (boilerId: string, inspectionId: string, stepKey: string, notes: string) => {
+      setBoilers((prev) =>
+        mapInspection(prev, boilerId, inspectionId, (insp) => ({
+          ...insp,
+          steps: insp.steps.map((s) =>
+            s.key === stepKey ? { ...s, notes } : s
+          ),
+        }))
+      );
+    },
+    []
+  );
+
+  const setStepCompleted = useCallback(
+    (
+      boilerId: string,
+      inspectionId: string,
+      stepKey: string,
+      completed: boolean
+    ) => {
+      setBoilers((prev) =>
+        mapInspection(prev, boilerId, inspectionId, (insp) => ({
+          ...insp,
+          steps: insp.steps.map((s) =>
+            s.key === stepKey
+              ? {
+                  ...s,
+                  completed,
+                  completedAt: completed ? s.completedAt ?? nowIso() : null,
+                }
+              : s
+          ),
+        }))
+      );
+    },
+    []
+  );
+
+  const addRepairLog = useCallback(
+    (boilerId: string, inspectionId: string, description: string) => {
+      setBoilers((prev) =>
+        mapInspection(prev, boilerId, inspectionId, (insp) => ({
+          ...insp,
+          repairs: [
+            ...insp.repairs,
+            { id: uid("rep"), loggedAt: nowIso(), description },
+          ],
+        }))
+      );
+    },
+    []
+  );
+
+  const editRepairLog = useCallback(
+    (
+      boilerId: string,
+      inspectionId: string,
+      repairId: string,
+      description: string
+    ) => {
+      setBoilers((prev) =>
+        mapInspection(prev, boilerId, inspectionId, (insp) => ({
+          ...insp,
+          repairs: insp.repairs.map((r) =>
+            r.id === repairId ? { ...r, description } : r
+          ),
+        }))
+      );
+    },
+    []
+  );
+
+  const removeRepairLog = useCallback(
+    (boilerId: string, inspectionId: string, repairId: string) => {
+      setBoilers((prev) =>
+        mapInspection(prev, boilerId, inspectionId, (insp) => ({
+          ...insp,
+          repairs: insp.repairs.filter((r) => r.id !== repairId),
+        }))
+      );
+    },
+    []
+  );
+
+  const deleteInspection = useCallback(
+    (boilerId: string, inspectionId: string) => {
+      setBoilers((prev) =>
+        mapBoiler(prev, boilerId, (b) => ({
+          ...b,
+          activeInspection:
+            b.activeInspection?.id === inspectionId ? null : b.activeInspection,
+          history: b.history.filter((h) => h.id !== inspectionId),
+        }))
+      );
+    },
+    []
+  );
+
   const resetToDemo = useCallback(() => {
     setBoilers(createDemoBoilers());
   }, []);
@@ -228,10 +361,15 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       updateBoilerField,
       removeBoiler,
       startInspection,
-      setStepNotes,
       completeStep,
-      addRepairLog,
       triggerReInspection,
+      editInspection,
+      setStepNotes,
+      setStepCompleted,
+      addRepairLog,
+      editRepairLog,
+      removeRepairLog,
+      deleteInspection,
       resetToDemo,
     }),
     [
@@ -240,10 +378,15 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       updateBoilerField,
       removeBoiler,
       startInspection,
-      setStepNotes,
       completeStep,
-      addRepairLog,
       triggerReInspection,
+      editInspection,
+      setStepNotes,
+      setStepCompleted,
+      addRepairLog,
+      editRepairLog,
+      removeRepairLog,
+      deleteInspection,
       resetToDemo,
     ]
   );

@@ -1,20 +1,14 @@
 import { useState } from "react";
 import type { Boiler } from "../types";
 import { useFleet } from "../store";
-import {
-  formatDate,
-  formatDateTime,
-  formatDuration,
-} from "../lib/helpers";
+import { formatDate, formatDuration } from "../lib/helpers";
 import { getMostRecentHistory, inspectionDurationMs } from "../lib/derive";
 import {
-  AlertIcon,
-  CheckIcon,
-  ClockIcon,
-  PlusIcon,
-  RefreshIcon,
-  WrenchIcon,
-} from "./icons";
+  ActiveRepairFlow,
+  EditableStepList,
+  InspectionMeta,
+} from "./InspectionEditing";
+import { CheckIcon, PlusIcon, RefreshIcon } from "./icons";
 
 function LastInspectionSummary({ boiler }: { boiler: Boiler }) {
   const last = getMostRecentHistory(boiler);
@@ -33,10 +27,7 @@ function LastInspectionSummary({ boiler }: { boiler: Boiler }) {
           {durationMs !== null && last.completedAt && (
             <>
               {" "}
-              in{" "}
-              <strong>
-                {formatDuration(last.startedAt, last.completedAt)}
-              </strong>
+              in <strong>{formatDuration(last.startedAt, last.completedAt)}</strong>
             </>
           )}{" "}
           and archived to history. Start a new round below when it's due again.
@@ -146,190 +137,6 @@ function StartInspectionForm({ boiler }: { boiler: Boiler }) {
   );
 }
 
-function WorkflowSteps({ boiler }: { boiler: Boiler }) {
-  const { completeStep } = useFleet();
-  const inspection = boiler.activeInspection!;
-  const steps = inspection.steps;
-  const nextIndex = steps.findIndex((s) => !s.completed);
-  const [stepNote, setStepNote] = useState("");
-  const lastStepKey = steps[steps.length - 1]?.key;
-
-  return (
-    <div>
-      <ol className="relative space-y-1">
-        {steps.map((step, idx) => {
-          const isCurrent = idx === nextIndex;
-          const isDone = step.completed;
-          const isLast = idx === steps.length - 1;
-          return (
-            <li key={step.key} className="relative flex gap-3 pb-2">
-              {!isLast && (
-                <span
-                  className={`absolute left-[15px] top-8 h-[calc(100%-1rem)] w-0.5 ${
-                    isDone ? "bg-emerald-300" : "bg-slate-200"
-                  }`}
-                />
-              )}
-              <div
-                className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold ${
-                  isDone
-                    ? "border-emerald-400 bg-emerald-400 text-white"
-                    : isCurrent
-                    ? "border-orange-400 bg-orange-50 text-orange-600"
-                    : "border-slate-200 bg-white text-slate-400"
-                }`}
-              >
-                {isDone ? <CheckIcon className="h-4 w-4" /> : idx + 1}
-              </div>
-
-              <div className="flex-1 pt-0.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span
-                    className={`text-sm font-semibold ${
-                      isDone
-                        ? "text-slate-800"
-                        : isCurrent
-                        ? "text-orange-700"
-                        : "text-slate-400"
-                    }`}
-                  >
-                    {step.label}
-                  </span>
-                  {isDone && (
-                    <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                      <ClockIcon className="h-3 w-3" />
-                      {formatDateTime(step.completedAt)}
-                    </span>
-                  )}
-                </div>
-
-                {isDone && step.notes && (
-                  <p className="mt-1 rounded-md bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600">
-                    {step.notes}
-                  </p>
-                )}
-
-                {isCurrent && (
-                  <div className="mt-2 rounded-lg border border-orange-200 bg-orange-50/50 p-3">
-                    <textarea
-                      value={stepNote}
-                      rows={2}
-                      onChange={(e) => setStepNote(e.target.value)}
-                      placeholder={`Notes for ${step.label.toLowerCase()} (optional)…`}
-                      className="w-full resize-none rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        completeStep(boiler.id, step.key, stepNote.trim());
-                        setStepNote("");
-                      }}
-                      className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-600"
-                    >
-                      <CheckIcon className="h-3.5 w-3.5" />
-                      {step.key === lastStepKey
-                        ? "Complete & archive inspection"
-                        : `Complete ${step.label}`}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-
-      <p className="mt-2 px-1 text-[11px] text-slate-400">
-        Completing the final step archives this inspection to History
-        automatically.
-      </p>
-    </div>
-  );
-}
-
-function RepairFlow({ boiler }: { boiler: Boiler }) {
-  const { addRepairLog, triggerReInspection } = useFleet();
-  const inspection = boiler.activeInspection!;
-  const [repair, setRepair] = useState("");
-
-  return (
-    <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-rose-800">
-        <AlertIcon className="h-4 w-4" />
-        Inspection failed — repairs required
-      </div>
-      {inspection.notes && (
-        <p className="mt-1.5 rounded-md bg-white/70 px-2.5 py-1.5 text-xs text-rose-700">
-          {inspection.notes}
-        </p>
-      )}
-
-      <div className="mt-3">
-        <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-rose-400">
-          <WrenchIcon className="h-3.5 w-3.5" /> Repair log
-        </span>
-        {inspection.repairs.length > 0 ? (
-          <ul className="space-y-1.5">
-            {inspection.repairs.map((rep) => (
-              <li
-                key={rep.id}
-                className="rounded-lg border border-rose-100 bg-white px-3 py-2 text-xs text-slate-700"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                    <ClockIcon className="h-3 w-3" />
-                    {formatDateTime(rep.loggedAt)}
-                  </span>
-                </div>
-                <p className="mt-0.5">{rep.description}</p>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-xs italic text-slate-400">No repairs logged yet.</p>
-        )}
-      </div>
-
-      <div className="mt-3 rounded-lg border border-rose-200 bg-white p-3">
-        <textarea
-          value={repair}
-          rows={2}
-          onChange={(e) => setRepair(e.target.value)}
-          placeholder="Describe the repair carried out…"
-          className="w-full resize-none rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
-        />
-        <button
-          type="button"
-          disabled={!repair.trim()}
-          onClick={() => {
-            addRepairLog(boiler.id, repair.trim());
-            setRepair("");
-          }}
-          className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <PlusIcon className="h-3.5 w-3.5" />
-          Log repair
-        </button>
-      </div>
-
-      <button
-        type="button"
-        disabled={inspection.repairs.length === 0}
-        onClick={() => triggerReInspection(boiler.id)}
-        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
-        title={
-          inspection.repairs.length === 0
-            ? "Log at least one repair before re-inspecting"
-            : undefined
-        }
-      >
-        <RefreshIcon className="h-4 w-4" />
-        Trigger re-inspection
-      </button>
-    </div>
-  );
-}
-
 export function WorkflowPanel({ boiler }: { boiler: Boiler }) {
   const active = boiler.activeInspection;
 
@@ -341,6 +148,26 @@ export function WorkflowPanel({ boiler }: { boiler: Boiler }) {
       </div>
     );
   }
-  if (active.result === "fail") return <RepairFlow boiler={boiler} />;
-  return <WorkflowSteps boiler={boiler} />;
+
+  if (active.result === "fail") {
+    return (
+      <div className="space-y-3">
+        <InspectionMeta boilerId={boiler.id} inspection={active} />
+        <ActiveRepairFlow boilerId={boiler.id} inspection={active} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <InspectionMeta boilerId={boiler.id} inspection={active} />
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <EditableStepList boilerId={boiler.id} inspection={active} mode="active" />
+        <p className="mt-2 px-1 text-[11px] text-slate-400">
+          Tap a step circle to mark it done or undo it. Completing the final step
+          archives this inspection to History automatically.
+        </p>
+      </div>
+    </div>
+  );
 }

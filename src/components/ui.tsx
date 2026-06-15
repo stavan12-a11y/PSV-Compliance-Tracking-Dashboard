@@ -57,6 +57,81 @@ export function Warning({
   );
 }
 
+/** Lightweight click-to-edit text used for inline notes (no field label chrome). */
+export function InlineText({
+  value,
+  onCommit,
+  placeholder = "Add a note…",
+  multiline = true,
+  className = "",
+}: {
+  value: string;
+  onCommit: (value: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  className?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const ref = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    if (!editing) setDraft(value);
+  }, [value, editing]);
+
+  useEffect(() => {
+    if (editing && ref.current) ref.current.focus();
+  }, [editing]);
+
+  function commit() {
+    if (draft.trim() !== value.trim()) onCommit(draft.trim());
+    setEditing(false);
+  }
+
+  if (editing) {
+    const shared = {
+      ref: ref as never,
+      value: draft,
+      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+        setDraft(e.target.value),
+      onBlur: commit,
+      className:
+        "w-full resize-none rounded-md border border-orange-300 bg-white px-2.5 py-1.5 text-xs text-slate-700 shadow-sm outline-none ring-2 ring-orange-100",
+    };
+    return multiline ? (
+      <textarea
+        {...shared}
+        rows={2}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setEditing(false);
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) commit();
+        }}
+      />
+    ) : (
+      <input
+        {...shared}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setEditing(false);
+          if (e.key === "Enter") commit();
+        }}
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      className={`group/inline flex w-full items-start gap-1.5 rounded-md px-2.5 py-1.5 text-left text-xs transition hover:bg-slate-100 ${className}`}
+    >
+      <span className={value ? "text-slate-600" : "italic text-slate-400"}>
+        {value || placeholder}
+      </span>
+      <PencilIcon className="ml-auto mt-0.5 h-3 w-3 shrink-0 text-slate-300 opacity-0 transition group-hover/inline:opacity-100" />
+    </button>
+  );
+}
+
 interface EditableFieldProps {
   label: string;
   value: string;

@@ -15,7 +15,6 @@ import {
   AlertIcon,
   ArrowLeftIcon,
   ClockIcon,
-  CloseIcon,
   DownloadIcon,
   GaugeIcon,
   LayersIcon,
@@ -55,51 +54,40 @@ export function BoilerDetail({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-sm">
-      <button
-        type="button"
-        aria-label="Close"
-        className="flex-1"
-        onClick={onClose}
-      />
-      <div className="flex h-full w-full max-w-2xl animate-fade-in flex-col bg-slate-50 shadow-2xl">
-        {/* Header */}
-        <div className="border-b border-slate-200 bg-white px-6 py-4">
+    <div className="fixed inset-0 z-50 flex flex-col bg-slate-50">
+      {/* Full-width header */}
+      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
+        <div className="mx-auto w-full max-w-5xl px-4 py-4 sm:px-6">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:hidden"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
               >
-                <ArrowLeftIcon className="h-5 w-5" />
+                <ArrowLeftIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">Back to fleet</span>
               </button>
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">
+              <div className="min-w-0">
+                <h2 className="truncate text-xl font-bold text-slate-900">
                   {boiler.name}
                 </h2>
-                <div className="mt-1">
+                <div className="mt-1 flex items-center gap-2">
                   <StatusBadge status={status} />
+                  <span className="hidden text-xs text-slate-400 sm:inline">
+                    {boiler.type} · {boiler.location}
+                  </span>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={exportBoiler}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
-              >
-                <DownloadIcon className="h-3.5 w-3.5" />
-                Export CSV
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              >
-                <CloseIcon className="h-5 w-5" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={exportBoiler}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+            >
+              <DownloadIcon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Export CSV</span>
+            </button>
           </div>
 
           {(schedule.isOverdue || schedule.isDueSoon) && (
@@ -142,11 +130,13 @@ export function BoilerDetail({
             ))}
           </div>
         </div>
+      </header>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
           {tab === "overview" ? (
-            <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-2">
               <section className="rounded-2xl border border-slate-200 bg-white p-4">
                 <h3 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-slate-400">
                   Technical specifications
@@ -214,7 +204,7 @@ export function BoilerDetail({
                     }}
                   />
                 </div>
-                <div className="mt-2 flex items-center gap-1.5 px-3 text-xs text-slate-500">
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 px-3 text-xs text-slate-500">
                   <ClockIcon className="h-3.5 w-3.5 text-slate-400" />
                   Last inspected:{" "}
                   <span className="font-medium text-slate-700">
@@ -226,39 +216,39 @@ export function BoilerDetail({
                     {formatDate(schedule.nextDueDate.toISOString())}
                   </span>
                 </div>
+
+                <div className="mt-4 border-t border-slate-100 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Remove "${boiler.name}" and all its inspection data? This cannot be undone.`
+                        )
+                      ) {
+                        removeBoiler(boiler.id);
+                        onClose();
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                    Remove boiler
+                  </button>
+                </div>
               </section>
 
               <section>
                 <h3 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-slate-400">
-                  {boiler.activeInspection
-                    ? "Active inspection"
-                    : "Inspection"}
+                  {boiler.activeInspection ? "Active inspection" : "Inspection"}
                 </h3>
                 <WorkflowPanel boiler={boiler} />
               </section>
-
-              <section className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        `Remove "${boiler.name}" and all its inspection data? This cannot be undone.`
-                      )
-                    ) {
-                      removeBoiler(boiler.id);
-                      onClose();
-                    }
-                  }}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-                >
-                  <TrashIcon className="h-3.5 w-3.5" />
-                  Remove boiler
-                </button>
-              </section>
             </div>
           ) : (
-            <HistoryTab boiler={boiler} />
+            <div className="max-w-3xl">
+              <HistoryTab boiler={boiler} />
+            </div>
           )}
         </div>
       </div>
