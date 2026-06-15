@@ -1,1 +1,53 @@
-# PSV-Dashboard
+# Boiler Inspection Management System
+
+A tool for maintenance teams to keep track of industrial boilers and their
+regular safety inspections. The whole app runs in the browser and persists all
+data to `localStorage`, so your fleet survives between sessions.
+
+## Features
+
+- **Fleet grid** — every boiler is a card showing name, type, capacity,
+  location, and a colour-coded status dot:
+  - 🔴 **Red** — failed its last inspection, needs repairs
+  - 🟠 **Amber** — an inspection is underway
+  - 🟢 **Green** — passed and everything is complete
+  - ⚪ **Gray** — no inspection started yet
+  Cards also surface **overdue** and **due-soon** warnings.
+- **Detail view** with two tabs:
+  - **Overview** — all technical specs, editable in place, plus the active
+    inspection workflow right below them.
+  - **History** — every archived inspection, expandable to show the full
+    timeline, per-step notes, timestamps, and repair logs.
+- **Inspection workflow** — record date, notes, and pass/fail. A pass kicks off
+  a five-step workflow (Inspection → Cleaning → Testing → Certification →
+  Completion), each step timestamped on completion. Finishing all five marks the
+  inspection complete; starting a fresh round archives it to history. A fail
+  opens a repair flow where you log repairs and trigger a re-inspection.
+- **Right sidebar** — an inspection schedule (overdue / due soon) and a list of
+  boilers that currently need repairs.
+- **Summary cards** — total boilers, active inspections, failed boilers, and the
+  average inspection duration across completed inspections.
+- **CSV export** — per-boiler reports (specs, history, steps, timestamps, notes,
+  repairs) and a one-click bulk export of the whole fleet.
+- **Reset** — restore the demo data set at any time.
+
+## Tech stack
+
+- React 18 + TypeScript
+- Vite
+- Tailwind CSS
+
+## Getting started
+
+```bash
+npm install
+npm run dev      # start the dev server
+npm run build    # type-check and build for production
+npm run preview  # preview the production build
+```
+
+## Data & persistence
+
+All state lives in the browser under the `boiler-inspection-management:v1`
+`localStorage` key. Use the **Reset** button in the header to wipe it and reload
+the bundled demo fleet.
