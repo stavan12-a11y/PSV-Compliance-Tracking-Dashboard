@@ -43,7 +43,6 @@ interface FleetContextValue {
   startInspection: (boilerId: string, input: StartInspectionInput) => void;
   setStepNotes: (boilerId: string, stepKey: string, notes: string) => void;
   completeStep: (boilerId: string, stepKey: string, notes: string) => void;
-  startFreshRound: (boilerId: string) => void;
   addRepairLog: (boilerId: string, description: string) => void;
   triggerReInspection: (boilerId: string) => void;
   resetToDemo: () => void;
@@ -154,39 +153,35 @@ export function FleetProvider({ children }: { children: ReactNode }) {
   const completeStep = useCallback(
     (boilerId: string, stepKey: string, notes: string) => {
       setBoilers((prev) =>
-        mapBoiler(prev, boilerId, (b) =>
-          mapActiveInspection(b, (insp) => {
-            const steps = insp.steps.map((s) =>
-              s.key === stepKey
-                ? { ...s, completed: true, completedAt: nowIso(), notes }
-                : s
-            );
-            const allDone = steps.every((s) => s.completed);
-            return {
+        mapBoiler(prev, boilerId, (b) => {
+          if (!b.activeInspection) return b;
+          const insp = b.activeInspection;
+          const steps = insp.steps.map((s) =>
+            s.key === stepKey
+              ? { ...s, completed: true, completedAt: nowIso(), notes }
+              : s
+          );
+          const allDone = steps.every((s) => s.completed);
+          if (allDone) {
+            // Final step done: mark complete and archive straight to history.
+            const completed: Inspection = {
               ...insp,
               steps,
-              status: allDone ? "completed" : "in-progress",
-              completedAt: allDone ? nowIso() : insp.completedAt,
+              status: "completed",
+              completedAt: nowIso(),
             };
-          })
-        )
+            return {
+              ...b,
+              activeInspection: null,
+              history: [completed, ...b.history],
+            };
+          }
+          return { ...b, activeInspection: { ...insp, steps } };
+        })
       );
     },
     []
   );
-
-  const startFreshRound = useCallback((boilerId: string) => {
-    setBoilers((prev) =>
-      mapBoiler(prev, boilerId, (b) => {
-        if (!b.activeInspection) return b;
-        return {
-          ...b,
-          history: [b.activeInspection, ...b.history],
-          activeInspection: null,
-        };
-      })
-    );
-  }, []);
 
   const addRepairLog = useCallback((boilerId: string, description: string) => {
     setBoilers((prev) =>
@@ -235,7 +230,6 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       startInspection,
       setStepNotes,
       completeStep,
-      startFreshRound,
       addRepairLog,
       triggerReInspection,
       resetToDemo,
@@ -248,7 +242,6 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       startInspection,
       setStepNotes,
       completeStep,
-      startFreshRound,
       addRepairLog,
       triggerReInspection,
       resetToDemo,

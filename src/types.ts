@@ -1,9 +1,9 @@
 export const WORKFLOW_STEPS = [
-  { key: "inspection", label: "Inspection" },
-  { key: "cleaning", label: "Cleaning" },
-  { key: "testing", label: "Testing" },
-  { key: "certification", label: "Certification" },
-  { key: "completion", label: "Completion" },
+  { key: "inspection", label: "Inspection Done" },
+  { key: "invoice", label: "Invoice Received" },
+  { key: "po", label: "PO Issued" },
+  { key: "certificate_received", label: "Certificate Received" },
+  { key: "certificate_installed", label: "Certificate Installed" },
 ] as const;
 
 export type WorkflowStepKey = (typeof WORKFLOW_STEPS)[number]["key"];

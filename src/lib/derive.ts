@@ -6,12 +6,26 @@ import {
   WARNING_WINDOW_DAYS,
 } from "./helpers";
 
+/** Most recent inspection found in a boiler's history, by inspection date. */
+export function getMostRecentHistory(boiler: Boiler): Inspection | null {
+  if (boiler.history.length === 0) return null;
+  return [...boiler.history].sort(
+    (a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime()
+  )[0];
+}
+
 export function getBoilerStatus(boiler: Boiler): BoilerStatus {
   const active = boiler.activeInspection;
-  if (!active) return "none";
-  if (active.result === "fail") return "failed";
-  if (active.status === "completed") return "passed";
-  return "active";
+  if (active) {
+    if (active.result === "fail") return "failed";
+    // Legacy: a completed inspection left on the active slot still reads green.
+    if (active.status === "completed") return "passed";
+    return "active";
+  }
+  // No active inspection: derive from the most recent archived round.
+  const last = getMostRecentHistory(boiler);
+  if (!last) return "none";
+  return last.result === "pass" ? "passed" : "none";
 }
 
 /** The date of the most recent inspection (active or archived), if any. */

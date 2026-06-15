@@ -7,9 +7,10 @@ data to `localStorage`, so your fleet survives between sessions.
 ## Features
 
 - **Fleet grid** — every boiler is a card showing name, type, capacity,
-  location, and a colour-coded status dot:
+  location, a colour-coded status accent, and a five-segment **stage stepper**
+  that highlights exactly which workflow stage the boiler is at:
   - 🔴 **Red** — failed its last inspection, needs repairs
-  - 🟠 **Amber** — an inspection is underway
+  - 🟠 **Amber** — an inspection is underway (current stage pulses)
   - 🟢 **Green** — passed and everything is complete
   - ⚪ **Gray** — no inspection started yet
   Cards also surface **overdue** and **due-soon** warnings.
@@ -19,10 +20,11 @@ data to `localStorage`, so your fleet survives between sessions.
   - **History** — every archived inspection, expandable to show the full
     timeline, per-step notes, timestamps, and repair logs.
 - **Inspection workflow** — record date, notes, and pass/fail. A pass kicks off
-  a five-step workflow (Inspection → Cleaning → Testing → Certification →
-  Completion), each step timestamped on completion. Finishing all five marks the
-  inspection complete; starting a fresh round archives it to history. A fail
-  opens a repair flow where you log repairs and trigger a re-inspection.
+  a five-step workflow (Inspection Done → Invoice Received → PO Issued →
+  Certificate Received → Certificate Installed), each step timestamped on
+  completion. Completing the final step automatically archives the inspection to
+  history. A fail opens a repair flow where you log repairs and trigger a
+  re-inspection.
 - **Right sidebar** — an inspection schedule (overdue / due soon) and a list of
   boilers that currently need repairs.
 - **Summary cards** — total boilers, active inspections, failed boilers, and the
@@ -48,6 +50,6 @@ npm run preview  # preview the production build
 
 ## Data & persistence
 
-All state lives in the browser under the `boiler-inspection-management:v1`
+All state lives in the browser under the `boiler-inspection-management:v2`
 `localStorage` key. Use the **Reset** button in the header to wipe it and reload
 the bundled demo fleet.

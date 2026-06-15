@@ -13,7 +13,10 @@ function dateOnly(daysAgo: number): string {
   return new Date(Date.now() - daysAgo * DAY).toISOString().slice(0, 10);
 }
 
-function completedSteps(startDaysAgo: number, notes: Partial<Record<string, string>> = {}): Inspection["steps"] {
+function completedSteps(
+  startDaysAgo: number,
+  notes: Partial<Record<string, string>> = {}
+): Inspection["steps"] {
   return WORKFLOW_STEPS.map((s, i) => ({
     key: s.key,
     label: s.label,
@@ -39,7 +42,7 @@ function partialSteps(
 
 export function createDemoBoilers(): Boiler[] {
   return [
-    // GREEN — passed & complete, with prior history
+    // GREEN — passed & complete (archived), with prior history
     {
       id: "blr_riverside_a1",
       name: "Riverside A1",
@@ -50,24 +53,27 @@ export function createDemoBoilers(): Boiler[] {
       installDate: "2016-04-12",
       location: "Riverside Plant — Hall A",
       inspectionIntervalDays: 365,
-      activeInspection: {
-        id: "insp_riverside_current",
-        date: dateOnly(12),
-        startedAt: iso(12, 8),
-        completedAt: iso(8, 16),
-        notes: "Annual statutory inspection. All readings within tolerance.",
-        result: "pass",
-        steps: completedSteps(12, {
-          inspection: "Visual and ultrasonic shell inspection passed.",
-          cleaning: "Fireside and waterside cleaned, descaled.",
-          testing: "Hydrostatic test held at 27 bar for 30 min.",
-          certification: "Certificate #RA1-2026-04 issued by inspector M. Doyle.",
-          completion: "Returned to service. Logs updated.",
-        }),
-        repairs: [],
-        status: "completed",
-      },
+      activeInspection: null,
       history: [
+        {
+          id: "insp_riverside_current",
+          date: dateOnly(12),
+          startedAt: iso(12, 8),
+          completedAt: iso(8, 16),
+          notes: "Annual statutory inspection. All readings within tolerance.",
+          result: "pass",
+          steps: completedSteps(12, {
+            inspection: "Visual and ultrasonic shell inspection passed.",
+            invoice: "Inspector invoice #INV-4821 received and approved.",
+            po: "PO #PO-2026-114 raised for certification body.",
+            certificate_received:
+              "Certificate #RA1-2026-04 received from M. Doyle.",
+            certificate_installed:
+              "Certificate filed and posted on the boiler house board.",
+          }),
+          repairs: [],
+          status: "completed",
+        },
         {
           id: "insp_riverside_prev",
           date: dateOnly(380),
@@ -102,7 +108,7 @@ export function createDemoBoilers(): Boiler[] {
         result: "pass",
         steps: partialSteps(2, 3, {
           inspection: "Shell, tubes and mountings inspected — no defects.",
-          cleaning: "Soot blowing and waterside flush completed.",
+          invoice: "Inspection invoice received, awaiting PO.",
         }),
         repairs: [],
         status: "in-progress",
@@ -174,7 +180,7 @@ export function createDemoBoilers(): Boiler[] {
       history: [],
     },
 
-    // GRAY — no inspection, DUE SOON (installed within interval, due in ~3 weeks)
+    // GRAY — no inspection, DUE SOON
     {
       id: "blr_lab_unit_3",
       name: "Lab Unit 3",
@@ -189,7 +195,7 @@ export function createDemoBoilers(): Boiler[] {
       history: [],
     },
 
-    // GREEN — completed, due soon for next round
+    // GREEN — completed (archived), due soon for next round
     {
       id: "blr_central_steam_1",
       name: "Central Steam 1",
@@ -200,20 +206,22 @@ export function createDemoBoilers(): Boiler[] {
       installDate: "2014-07-30",
       location: "Central Energy Centre — Hall 1",
       inspectionIntervalDays: 365,
-      activeInspection: {
-        id: "insp_central_current",
-        date: dateOnly(345),
-        startedAt: iso(345, 8),
-        completedAt: iso(341, 17),
-        notes: "Annual inspection — boiler in excellent condition.",
-        result: "pass",
-        steps: completedSteps(345, {
-          certification: "Certificate #CS1-2025 issued.",
-        }),
-        repairs: [],
-        status: "completed",
-      },
+      activeInspection: null,
       history: [
+        {
+          id: "insp_central_current",
+          date: dateOnly(345),
+          startedAt: iso(345, 8),
+          completedAt: iso(341, 17),
+          notes: "Annual inspection — boiler in excellent condition.",
+          result: "pass",
+          steps: completedSteps(345, {
+            certificate_received: "Certificate #CS1-2025 received.",
+            certificate_installed: "Certificate installed and logged.",
+          }),
+          repairs: [],
+          status: "completed",
+        },
         {
           id: "insp_central_h1",
           date: dateOnly(715),

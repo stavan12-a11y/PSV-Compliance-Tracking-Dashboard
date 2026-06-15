@@ -1,8 +1,12 @@
 import { useState } from "react";
 import type { Boiler } from "../types";
 import { useFleet } from "../store";
-import { formatDateTime, formatDuration } from "../lib/helpers";
-import { inspectionDurationMs } from "../lib/derive";
+import {
+  formatDate,
+  formatDateTime,
+  formatDuration,
+} from "../lib/helpers";
+import { getMostRecentHistory, inspectionDurationMs } from "../lib/derive";
 import {
   AlertIcon,
   CheckIcon,
@@ -11,6 +15,49 @@ import {
   RefreshIcon,
   WrenchIcon,
 } from "./icons";
+
+function LastInspectionSummary({ boiler }: { boiler: Boiler }) {
+  const last = getMostRecentHistory(boiler);
+  if (!last) return null;
+
+  if (last.result === "pass") {
+    const durationMs = inspectionDurationMs(last);
+    return (
+      <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-emerald-800">
+          <CheckIcon className="h-4 w-4" />
+          Last inspection passed &amp; complete
+        </div>
+        <p className="mt-1 text-xs text-emerald-700">
+          Completed {formatDate(last.date)}
+          {durationMs !== null && last.completedAt && (
+            <>
+              {" "}
+              in{" "}
+              <strong>
+                {formatDuration(last.startedAt, last.completedAt)}
+              </strong>
+            </>
+          )}{" "}
+          and archived to history. Start a new round below when it's due again.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+      <div className="flex items-center gap-2 text-sm font-semibold text-amber-800">
+        <RefreshIcon className="h-4 w-4" />
+        Re-inspection required
+      </div>
+      <p className="mt-1 text-xs text-amber-700">
+        The last round failed on {formatDate(last.date)} and was sent for
+        re-inspection after repairs. Start the new inspection below.
+      </p>
+    </div>
+  );
+}
 
 function StartInspectionForm({ boiler }: { boiler: Boiler }) {
   const { startInspection } = useFleet();
@@ -100,13 +147,12 @@ function StartInspectionForm({ boiler }: { boiler: Boiler }) {
 }
 
 function WorkflowSteps({ boiler }: { boiler: Boiler }) {
-  const { completeStep, startFreshRound } = useFleet();
+  const { completeStep } = useFleet();
   const inspection = boiler.activeInspection!;
   const steps = inspection.steps;
   const nextIndex = steps.findIndex((s) => !s.completed);
   const [stepNote, setStepNote] = useState("");
-  const allDone = inspection.status === "completed";
-  const durationMs = inspectionDurationMs(inspection);
+  const lastStepKey = steps[steps.length - 1]?.key;
 
   return (
     <div>
@@ -181,7 +227,9 @@ function WorkflowSteps({ boiler }: { boiler: Boiler }) {
                       className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-600"
                     >
                       <CheckIcon className="h-3.5 w-3.5" />
-                      Complete {step.label}
+                      {step.key === lastStepKey
+                        ? "Complete & archive inspection"
+                        : `Complete ${step.label}`}
                     </button>
                   </div>
                 )}
@@ -191,38 +239,10 @@ function WorkflowSteps({ boiler }: { boiler: Boiler }) {
         })}
       </ol>
 
-      {allDone && (
-        <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-emerald-800">
-            <CheckIcon className="h-4 w-4" />
-            Inspection complete
-          </div>
-          <p className="mt-1 text-xs text-emerald-700">
-            All five workflow steps finished
-            {durationMs !== null && (
-              <>
-                {" "}
-                in{" "}
-                <strong>
-                  {formatDuration(
-                    inspection.startedAt,
-                    inspection.completedAt as string
-                  )}
-                </strong>
-              </>
-            )}
-            . Start a fresh round to archive this one to history.
-          </p>
-          <button
-            type="button"
-            onClick={() => startFreshRound(boiler.id)}
-            className="mt-3 inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-900"
-          >
-            <RefreshIcon className="h-4 w-4" />
-            Start fresh round
-          </button>
-        </div>
-      )}
+      <p className="mt-2 px-1 text-[11px] text-slate-400">
+        Completing the final step archives this inspection to History
+        automatically.
+      </p>
     </div>
   );
 }
@@ -313,7 +333,14 @@ function RepairFlow({ boiler }: { boiler: Boiler }) {
 export function WorkflowPanel({ boiler }: { boiler: Boiler }) {
   const active = boiler.activeInspection;
 
-  if (!active) return <StartInspectionForm boiler={boiler} />;
+  if (!active) {
+    return (
+      <div>
+        <LastInspectionSummary boiler={boiler} />
+        <StartInspectionForm boiler={boiler} />
+      </div>
+    );
+  }
   if (active.result === "fail") return <RepairFlow boiler={boiler} />;
   return <WorkflowSteps boiler={boiler} />;
 }

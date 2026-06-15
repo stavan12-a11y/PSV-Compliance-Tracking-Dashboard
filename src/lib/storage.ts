@@ -1,7 +1,7 @@
 import type { Boiler } from "../types";
 import { createDemoBoilers } from "./demo";
 
-const STORAGE_KEY = "boiler-inspection-management:v1";
+const STORAGE_KEY = "boiler-inspection-management:v2";
 
 export function loadBoilers(): Boiler[] {
   try {
