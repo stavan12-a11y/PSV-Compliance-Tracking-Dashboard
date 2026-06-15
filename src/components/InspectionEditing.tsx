@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Inspection } from "../types";
 import { useFleet } from "../store";
-import { formatDateTime } from "../lib/helpers";
+import { isoToLocalInput, localInputToIso } from "../lib/helpers";
 import { InlineText } from "./ui";
 import {
   CheckIcon,
@@ -86,6 +86,40 @@ export function InspectionMeta({
   );
 }
 
+/** Inline, click-to-reveal editor for a completed step's timestamp. */
+function StepDateField({
+  boilerId,
+  inspectionId,
+  stepKey,
+  completedAt,
+}: {
+  boilerId: string;
+  inspectionId: string;
+  stepKey: string;
+  completedAt: string | null;
+}) {
+  const { setStepDate } = useFleet();
+  return (
+    <span className="flex items-center gap-1 text-[11px] text-slate-400">
+      <ClockIcon className="h-3 w-3" />
+      <input
+        type="datetime-local"
+        value={isoToLocalInput(completedAt)}
+        onChange={(e) =>
+          setStepDate(
+            boilerId,
+            inspectionId,
+            stepKey,
+            localInputToIso(e.target.value)
+          )
+        }
+        title="Edit the date and time this step was completed"
+        className="rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[11px] text-slate-500 outline-none transition hover:border-slate-200 hover:bg-white focus:border-orange-300 focus:bg-white focus:text-slate-700 focus:ring-2 focus:ring-orange-100"
+      />
+    </span>
+  );
+}
+
 /** Workflow step list. In "active" mode the next pending step can be advanced. */
 export function EditableStepList({
   boilerId,
@@ -150,10 +184,12 @@ export function EditableStepList({
                   {step.label}
                 </span>
                 {isDone && (
-                  <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                    <ClockIcon className="h-3 w-3" />
-                    {formatDateTime(step.completedAt)}
-                  </span>
+                  <StepDateField
+                    boilerId={boilerId}
+                    inspectionId={inspection.id}
+                    stepKey={step.key}
+                    completedAt={step.completedAt}
+                  />
                 )}
               </div>
 
@@ -210,7 +246,8 @@ export function RepairList({
   boilerId: string;
   inspection: Inspection;
 }) {
-  const { addRepairLog, editRepairLog, removeRepairLog } = useFleet();
+  const { addRepairLog, editRepairLog, removeRepairLog, setRepairDate } =
+    useFleet();
   const [repair, setRepair] = useState("");
 
   return (
@@ -229,7 +266,20 @@ export function RepairList({
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1 text-[11px] text-slate-400">
                   <ClockIcon className="h-3 w-3" />
-                  {formatDateTime(rep.loggedAt)}
+                  <input
+                    type="datetime-local"
+                    value={isoToLocalInput(rep.loggedAt)}
+                    onChange={(e) =>
+                      setRepairDate(
+                        boilerId,
+                        inspection.id,
+                        rep.id,
+                        localInputToIso(e.target.value)
+                      )
+                    }
+                    title="Edit the date and time this repair was logged"
+                    className="rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[11px] text-slate-500 outline-none transition hover:border-slate-200 hover:bg-white focus:border-orange-300 focus:bg-white focus:text-slate-700 focus:ring-2 focus:ring-orange-100"
+                  />
                 </span>
                 <button
                   type="button"

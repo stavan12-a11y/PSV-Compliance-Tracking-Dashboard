@@ -62,6 +62,13 @@ interface FleetContextValue {
     stepKey: string,
     completed: boolean
   ) => void;
+  /** Edit the timestamp captured for a completed step (ISO string). */
+  setStepDate: (
+    boilerId: string,
+    inspectionId: string,
+    stepKey: string,
+    completedAt: string
+  ) => void;
   addRepairLog: (
     boilerId: string,
     inspectionId: string,
@@ -72,6 +79,12 @@ interface FleetContextValue {
     inspectionId: string,
     repairId: string,
     description: string
+  ) => void;
+  setRepairDate: (
+    boilerId: string,
+    inspectionId: string,
+    repairId: string,
+    loggedAt: string
   ) => void;
   removeRepairLog: (
     boilerId: string,
@@ -290,6 +303,25 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const setStepDate = useCallback(
+    (
+      boilerId: string,
+      inspectionId: string,
+      stepKey: string,
+      completedAt: string
+    ) => {
+      setBoilers((prev) =>
+        mapInspection(prev, boilerId, inspectionId, (insp) => ({
+          ...insp,
+          steps: insp.steps.map((s) =>
+            s.key === stepKey ? { ...s, completedAt } : s
+          ),
+        }))
+      );
+    },
+    []
+  );
+
   const addRepairLog = useCallback(
     (boilerId: string, inspectionId: string, description: string) => {
       setBoilers((prev) =>
@@ -317,6 +349,25 @@ export function FleetProvider({ children }: { children: ReactNode }) {
           ...insp,
           repairs: insp.repairs.map((r) =>
             r.id === repairId ? { ...r, description } : r
+          ),
+        }))
+      );
+    },
+    []
+  );
+
+  const setRepairDate = useCallback(
+    (
+      boilerId: string,
+      inspectionId: string,
+      repairId: string,
+      loggedAt: string
+    ) => {
+      setBoilers((prev) =>
+        mapInspection(prev, boilerId, inspectionId, (insp) => ({
+          ...insp,
+          repairs: insp.repairs.map((r) =>
+            r.id === repairId ? { ...r, loggedAt } : r
           ),
         }))
       );
@@ -366,8 +417,10 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       editInspection,
       setStepNotes,
       setStepCompleted,
+      setStepDate,
       addRepairLog,
       editRepairLog,
+      setRepairDate,
       removeRepairLog,
       deleteInspection,
       resetToDemo,
@@ -383,8 +436,10 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       editInspection,
       setStepNotes,
       setStepCompleted,
+      setStepDate,
       addRepairLog,
       editRepairLog,
+      setRepairDate,
       removeRepairLog,
       deleteInspection,
       resetToDemo,

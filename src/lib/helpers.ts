@@ -72,6 +72,23 @@ export function formatDateTime(value: string | null | undefined): string {
   });
 }
 
+/** Convert an ISO timestamp to a value usable by an <input type="datetime-local">. */
+export function isoToLocalInput(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours()
+  )}:${pad(d.getMinutes())}`;
+}
+
+/** Convert a datetime-local input value back to an ISO timestamp. */
+export function localInputToIso(value: string): string {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+}
+
 /** Human-friendly duration between two ISO timestamps. */
 export function formatDuration(startIso: string, endIso: string): string {
   const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
