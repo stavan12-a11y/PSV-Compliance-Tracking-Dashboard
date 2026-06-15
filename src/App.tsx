@@ -4,8 +4,13 @@ import { Dashboard } from './pages/Dashboard';
 import { EquipmentPage } from './pages/EquipmentPage';
 import { LocationPage } from './pages/LocationPage';
 import { PSVDetailPage } from './pages/PSVDetailPage';
+import { LoginScreen } from './auth/LoginScreen';
+import { useAuth } from './auth/AuthContext';
 
 export default function App() {
+  const { authed } = useAuth();
+  if (!authed) return <LoginScreen />;
+
   return (
     <Routes>
       <Route element={<Layout />}>

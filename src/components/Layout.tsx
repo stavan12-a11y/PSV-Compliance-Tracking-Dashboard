@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Database, Eraser, Gauge, RotateCcw, ShieldCheck, Upload } from 'lucide-react';
+import { Database, Eraser, Gauge, LogOut, RotateCcw, ShieldCheck, Upload } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
+import { useAuth } from '../auth/AuthContext';
 import { ImportModal } from './forms/ImportModal';
 
 export function Layout() {
   const { resetToSeed, clearAll } = usePSV();
+  const { logout } = useAuth();
   const location = useLocation();
   const isHome = location.pathname === '/';
   const [menuOpen, setMenuOpen] = useState(false);
@@ -93,6 +95,17 @@ export function Layout() {
                 </>
               )}
             </div>
+
+            <button
+              onClick={() => {
+                if (confirm('Sign out of the dashboard?')) logout();
+              }}
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-maroon-100 hover:bg-white/10"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Sign out</span>
+            </button>
           </div>
         </div>
       </header>

@@ -71,24 +71,52 @@ The data hierarchy is **Site → Equipment → Location → PSV (serial number)*
 
 Both thresholds live in `src/utils/dates.ts`.
 
-## Going live (deploying a shareable URL)
+## Login / access
 
-The app is a static Vite build, so it deploys anywhere that serves static files.
-Config for single-page-app routing is already included (`vercel.json`,
-`netlify.toml`, `public/_redirects`).
+The app is protected by a single shared **username + password** so outside
+visitors can't get in. Credentials are set with build-time environment variables:
 
-**Easiest — Vercel or Netlify (free tier):**
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `VITE_APP_USERNAME` | login username | `admin` |
+| `VITE_APP_PASSWORD` | login password | `tamu-psv-2026` |
 
-1. Push this repo to GitHub (already done).
-2. Create an account at [vercel.com](https://vercel.com) or [netlify.com](https://netlify.com) and **“Import / Add new project”** from the GitHub repo.
-3. Framework auto-detects as **Vite**. Build command `npm run build`, output dir `dist`. Deploy.
-4. You get a URL like `psv-dashboard.vercel.app` that rebuilds automatically on every push.
+If you don't set them, the defaults above are used and a reminder is shown on the
+login screen. **Set your own** in your hosting provider (see below) and redeploy.
 
-> Note on data: in this version each browser stores its own data locally
-> (`localStorage`). A hosted URL makes the app reachable by everyone, but it does
-> **not** yet share one common dataset between users or require sign-in. For a true
-> shared, multi-user, authenticated tool, the next step is a backend (e.g.
-> Supabase/Firebase) with login + roles — see the PR discussion.
+> Security note: because this is a frontend-only app, the credentials live in the
+> built JavaScript. This is a practical gate to keep casual/outside access out of
+> an internal tool — it is *not* server-grade security. For stronger free
+> protection, put the site behind **Cloudflare Access** (a real login page in
+> front of the site, free for small teams) or move to a backend login later.
+
+## Going live (deploy a shareable URL) — step by step
+
+The app is a static Vite build with SPA routing config already included
+(`vercel.json`, `netlify.toml`, `public/_redirects`). The easiest free host is
+**Vercel**:
+
+1. Go to **[vercel.com](https://vercel.com)** and click **Sign Up** → **Continue with GitHub**.
+2. Click **Add New… → Project**. Find the **PSV-Dashboard** repo and click **Import**.
+   (If asked, give Vercel permission to access the repo.)
+3. On the configure screen, Vercel auto-detects **Vite** — leave Build Command
+   (`npm run build`) and Output Directory (`dist`) as-is.
+4. Expand **Environment Variables** and add two:
+   - `VITE_APP_USERNAME` = the login id you want
+   - `VITE_APP_PASSWORD` = the password you want
+5. Click **Deploy**. After ~1 minute you'll get a URL like
+   `psv-dashboard.vercel.app`. Open it, sign in with your credentials, and share
+   the link + credentials with your manager.
+
+To change the password later: Vercel → your project → **Settings → Environment
+Variables**, edit `VITE_APP_PASSWORD`, then **Deployments → … → Redeploy**.
+
+> Note on data: each browser stores its own data locally (`localStorage`). A
+> hosted URL makes the app reachable by anyone with the link + password, but it
+> does **not** yet share one common dataset between people. So you and your
+> manager would each maintain your own copy on your own devices. For a single
+> shared dataset everyone sees, the next step is a backend (e.g. Supabase) — ask
+> and it can be added.
 
 ## Importing your data
 
