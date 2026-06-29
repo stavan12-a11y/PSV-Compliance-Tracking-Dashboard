@@ -98,24 +98,22 @@ export function ActivityLog({ onClose }: { onClose: () => void }) {
   }, [filtered]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-50">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
-        <div className="mx-auto w-full max-w-3xl px-4 py-4 sm:px-6">
-          <div className="flex items-center justify-between gap-3">
+    <div className="fixed inset-0 z-50 flex flex-col bg-slate-100">
+      <header className="sticky top-0 z-10 shadow-md">
+        <div className="bg-maroon-900 text-white">
+          <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold text-maroon-100 transition hover:bg-white/10"
               >
                 <ArrowLeftIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">Back to fleet</span>
               </button>
               <div className="flex items-center gap-2">
-                <HistoryClockIcon className="h-5 w-5 text-slate-500" />
-                <h2 className="text-xl font-bold text-slate-900">
-                  Change history
-                </h2>
+                <HistoryClockIcon className="h-5 w-5 text-maroon-200" />
+                <h2 className="text-lg font-bold sm:text-xl">Change history</h2>
               </div>
             </div>
             {activity.length > 0 && (
@@ -126,19 +124,23 @@ export function ActivityLog({ onClose }: { onClose: () => void }) {
                     clearActivity();
                   }
                 }}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-1.5 text-sm font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/20"
               >
                 <TrashIcon className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Clear log</span>
               </button>
             )}
           </div>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search changes by boiler, field, or value…"
-            className="mt-3 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-          />
+        </div>
+        <div className="border-b border-slate-200 bg-white">
+          <div className="mx-auto w-full max-w-3xl px-4 py-3 sm:px-6">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search changes by boiler, field, or value…"
+              className="input"
+            />
+          </div>
         </div>
       </header>
 

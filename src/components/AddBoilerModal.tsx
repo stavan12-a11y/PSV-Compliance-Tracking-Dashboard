@@ -40,7 +40,7 @@ function Field({
 }
 
 const inputCls =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100";
+  "input";
 
 export function AddBoilerModal({ onClose }: { onClose: () => void }) {
   const { addBoiler } = useFleet();
@@ -176,7 +176,7 @@ export function AddBoilerModal({ onClose }: { onClose: () => void }) {
           <button
             type="submit"
             disabled={!form.name.trim()}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-primary"
           >
             <PlusIcon className="h-4 w-4" />
             Add boiler

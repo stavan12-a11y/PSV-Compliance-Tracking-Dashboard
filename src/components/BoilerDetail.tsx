@@ -54,80 +54,82 @@ export function BoilerDetail({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-50">
+    <div className="fixed inset-0 z-50 flex flex-col bg-slate-100">
       {/* Full-width header */}
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
-        <div className="mx-auto w-full max-w-5xl px-4 py-4 sm:px-6">
-          <div className="flex items-start justify-between gap-3">
+      <header className="sticky top-0 z-10 shadow-md">
+        {/* Maroon top bar */}
+        <div className="bg-maroon-900 text-white">
+          <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
             <div className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold text-maroon-100 transition hover:bg-white/10"
               >
                 <ArrowLeftIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">Back to fleet</span>
               </button>
               <div className="min-w-0">
-                <h2 className="truncate text-xl font-bold text-slate-900">
+                <h2 className="truncate text-lg font-bold sm:text-xl">
                   {boiler.name}
                 </h2>
-                <div className="mt-1 flex items-center gap-2">
-                  <StatusBadge status={status} />
-                  <span className="hidden text-xs text-slate-400 sm:inline">
-                    {boiler.type} · {boiler.location}
-                  </span>
-                </div>
+                <p className="truncate text-[11px] text-maroon-200">
+                  {boiler.type} · {boiler.location}
+                </p>
               </div>
             </div>
             <button
               type="button"
               onClick={exportBoiler}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-1.5 text-sm font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/20"
             >
               <DownloadIcon className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Export CSV</span>
             </button>
           </div>
+        </div>
 
-          {(schedule.isOverdue || schedule.isDueSoon) && (
-            <div className="mt-3 flex flex-wrap gap-2">
+        {/* White sub-bar: status + tabs */}
+        <div className="border-b border-slate-200 bg-white">
+          <div className="mx-auto w-full max-w-5xl px-4 py-3 sm:px-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status={status} />
               {schedule.isOverdue && (
                 <Warning tone="danger">
                   <AlertIcon className="h-3 w-3" />
-                  Inspection overdue by {schedule.daysOverdue} days
+                  Overdue by {schedule.daysOverdue} days
                 </Warning>
               )}
               {schedule.isDueSoon && (
                 <Warning tone="warn">
                   <ClockIcon className="h-3 w-3" />
-                  Inspection due in {schedule.daysUntilDue} days
+                  Due in {schedule.daysUntilDue} days
                 </Warning>
               )}
             </div>
-          )}
 
-          {/* Tabs */}
-          <div className="mt-4 flex gap-1">
-            {(["overview", "history"] as Tab[]).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTab(t)}
-                className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold capitalize transition ${
-                  tab === t
-                    ? "bg-orange-100 text-orange-700"
-                    : "text-slate-500 hover:bg-slate-100"
-                }`}
-              >
-                {t}
-                {t === "history" && boiler.history.length > 0 && (
-                  <span className="ml-1.5 rounded-full bg-slate-200 px-1.5 text-[10px] text-slate-600">
-                    {boiler.history.length}
-                  </span>
-                )}
-              </button>
-            ))}
+            {/* Tabs */}
+            <div className="mt-3 flex gap-1">
+              {(["overview", "history"] as Tab[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTab(t)}
+                  className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold capitalize transition ${
+                    tab === t
+                      ? "bg-maroon-100 text-maroon-800"
+                      : "text-slate-500 hover:bg-slate-100"
+                  }`}
+                >
+                  {t}
+                  {t === "history" && boiler.history.length > 0 && (
+                    <span className="ml-1.5 rounded-full bg-slate-200 px-1.5 text-[10px] text-slate-600">
+                      {boiler.history.length}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </header>
@@ -137,7 +139,7 @@ export function BoilerDetail({
         <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
           {tab === "overview" ? (
             <div className="grid gap-6 lg:grid-cols-2">
-              <section className="rounded-2xl border border-slate-200 bg-white p-4">
+              <section className="card p-4">
                 <h3 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-slate-400">
                   Technical specifications
                 </h3>

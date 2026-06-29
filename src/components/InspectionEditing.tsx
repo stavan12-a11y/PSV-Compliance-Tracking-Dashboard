@@ -35,7 +35,7 @@ export function InspectionMeta({
             onChange={(e) =>
               editInspection(boilerId, inspection.id, { date: e.target.value })
             }
-            className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+            className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-maroon-700 focus:ring-1 focus:ring-maroon-700"
           />
         </label>
         <div>
@@ -114,7 +114,7 @@ function StepDateField({
           )
         }
         title="Edit the date and time this step was completed"
-        className="rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[11px] text-slate-500 outline-none transition hover:border-slate-200 hover:bg-white focus:border-orange-300 focus:bg-white focus:text-slate-700 focus:ring-2 focus:ring-orange-100"
+        className="rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[11px] text-slate-500 outline-none transition hover:border-slate-200 hover:bg-white focus:border-maroon-700 focus:bg-white focus:text-slate-700 focus:ring-1 focus:ring-maroon-700"
       />
     </span>
   );
@@ -163,7 +163,7 @@ export function EditableStepList({
                 isDone
                   ? "border-emerald-400 bg-emerald-400 text-white hover:bg-emerald-500"
                   : isCurrent
-                  ? "border-orange-400 bg-orange-50 text-orange-600"
+                  ? "border-maroon-700 bg-maroon-50 text-maroon-700"
                   : "border-slate-200 bg-white text-slate-400 hover:border-slate-300"
               }`}
             >
@@ -177,7 +177,7 @@ export function EditableStepList({
                     isDone
                       ? "text-slate-800"
                       : isCurrent
-                      ? "text-orange-700"
+                      ? "text-maroon-800"
                       : "text-slate-400"
                   }`}
                 >
@@ -207,13 +207,13 @@ export function EditableStepList({
               )}
 
               {isCurrent && (
-                <div className="mt-2 rounded-lg border border-orange-200 bg-orange-50/50 p-3">
+                <div className="mt-2 rounded-lg border border-maroon-200 bg-maroon-50/50 p-3">
                   <textarea
                     value={stepNote}
                     rows={2}
                     onChange={(e) => setStepNote(e.target.value)}
                     placeholder={`Notes for ${step.label.toLowerCase()} (optional)…`}
-                    className="w-full resize-none rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                    className="w-full resize-none rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-maroon-700 focus:ring-1 focus:ring-maroon-700"
                   />
                   <button
                     type="button"
@@ -278,7 +278,7 @@ export function RepairList({
                       )
                     }
                     title="Edit the date and time this repair was logged"
-                    className="rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[11px] text-slate-500 outline-none transition hover:border-slate-200 hover:bg-white focus:border-orange-300 focus:bg-white focus:text-slate-700 focus:ring-2 focus:ring-orange-100"
+                    className="rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[11px] text-slate-500 outline-none transition hover:border-slate-200 hover:bg-white focus:border-maroon-700 focus:bg-white focus:text-slate-700 focus:ring-1 focus:ring-maroon-700"
                   />
                 </span>
                 <button
@@ -350,7 +350,7 @@ export function ActiveRepairFlow({
         type="button"
         disabled={inspection.repairs.length === 0}
         onClick={() => triggerReInspection(boilerId)}
-        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+        className="btn-primary mt-3"
         title={
           inspection.repairs.length === 0
             ? "Log at least one repair before re-inspecting"

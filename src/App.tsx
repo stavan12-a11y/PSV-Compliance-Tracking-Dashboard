@@ -66,35 +66,35 @@ function Dashboard() {
   }
 
   return (
-    <div className="min-h-full">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
+      <header className="sticky top-0 z-30 border-b border-maroon-800 bg-maroon-900 text-white shadow-md">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-sm">
-              <FlameIcon className="h-5 w-5" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
+              <FlameIcon className="h-6 w-6" />
             </div>
-            <div>
-              <h1 className="text-base font-bold leading-tight text-slate-900 sm:text-lg">
+            <div className="leading-tight">
+              <h1 className="text-base font-bold sm:text-lg">
                 Boiler Inspection Management
               </h1>
-              <p className="hidden text-xs text-slate-500 sm:block">
-                Track your fleet and its safety inspections
+              <p className="text-[11px] text-maroon-200 sm:text-xs">
+                Fleet safety inspections &amp; compliance tracking
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setShowActivity(true)}
-              className="relative inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-maroon-100 transition hover:bg-white/10"
               title="View the change history"
             >
               <HistoryClockIcon className="h-4 w-4" />
               <span className="hidden sm:inline">History</span>
               {activity.length > 0 && (
-                <span className="rounded-full bg-orange-100 px-1.5 text-[10px] font-bold text-orange-700">
+                <span className="rounded-full bg-white/20 px-1.5 text-[10px] font-bold text-white">
                   {activity.length > 99 ? "99+" : activity.length}
                 </span>
               )}
@@ -102,7 +102,7 @@ function Dashboard() {
             <button
               type="button"
               onClick={exportFleet}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-maroon-100 transition hover:bg-white/10"
               title="Export the whole fleet to CSV"
             >
               <DownloadIcon className="h-4 w-4" />
@@ -111,7 +111,7 @@ function Dashboard() {
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-maroon-100 transition hover:bg-white/10"
               title="Reset to demo data"
             >
               <RefreshIcon className="h-4 w-4" />
@@ -121,12 +121,33 @@ function Dashboard() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6">
+      <main className="mx-auto max-w-[1600px] space-y-6 px-4 py-6 sm:px-6">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">
+            Fleet Compliance Overview
+          </h2>
+          <p className="text-sm text-slate-500">
+            Inspection status and safety compliance across all monitored boilers.
+          </p>
+        </div>
+
         <SummaryCards boilers={boilers} />
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
           {/* Fleet */}
           <div>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-lg font-bold text-slate-900">Boiler fleet</h3>
+              <button
+                type="button"
+                onClick={() => setAdding(true)}
+                className="btn-primary whitespace-nowrap"
+              >
+                <PlusIcon className="h-4 w-4" />
+                Add boiler
+              </button>
+            </div>
+
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-1.5">
                 {FILTERS.map((f) => (
@@ -136,40 +157,28 @@ function Dashboard() {
                     onClick={() => setFilter(f.key)}
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                       filter === f.key
-                        ? "bg-slate-800 text-white"
+                        ? "bg-maroon-900 text-white"
                         : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
                     }`}
                   >
-                    {f.key !== "all" && (
-                      <StatusDot status={f.key} size="sm" />
-                    )}
+                    {f.key !== "all" && <StatusDot status={f.key} size="sm" />}
                     {f.label}
                   </button>
                 ))}
               </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search boilers…"
-                  className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none transition focus:w-52 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                />
-                <button
-                  type="button"
-                  onClick={() => setAdding(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-orange-600"
-                >
-                  <PlusIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Add boiler</span>
-                </button>
-              </div>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search boilers…"
+                className="input w-44 sm:w-52"
+              />
             </div>
 
             {visible.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+              <div className="card p-10 text-center">
                 <FlameIcon className="mx-auto h-8 w-8 text-slate-300" />
-                <p className="mt-2 text-sm font-medium text-slate-500">
+                <p className="mt-2 text-sm font-semibold text-slate-600">
                   No boilers match your filters
                 </p>
                 <p className="text-xs text-slate-400">

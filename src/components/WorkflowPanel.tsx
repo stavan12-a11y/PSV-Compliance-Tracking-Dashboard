@@ -74,7 +74,7 @@ function StartInspectionForm({ boiler }: { boiler: Boiler }) {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-maroon-700 focus:ring-1 focus:ring-maroon-700"
           />
         </label>
         <div className="block">
@@ -121,14 +121,14 @@ function StartInspectionForm({ boiler }: { boiler: Boiler }) {
               ? "Observations, readings, anything worth recording…"
               : "Describe the defects / reasons for failure…"
           }
-          className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+          className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-maroon-700 focus:ring-1 focus:ring-maroon-700"
         />
       </label>
 
       <button
         type="button"
         onClick={() => startInspection(boiler.id, { date, notes, result })}
-        className="mt-4 inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600"
+        className="btn-primary mt-4"
       >
         <PlusIcon className="h-4 w-4" />
         Begin inspection

@@ -1,4 +1,4 @@
-import type { Boiler } from "../types";
+import type { Boiler, BoilerStatus } from "../types";
 import { WORKFLOW_STEPS } from "../types";
 import {
   getBoilerStatus,
@@ -10,13 +10,22 @@ import { formatDate } from "../lib/helpers";
 import { Warning } from "./ui";
 import {
   AlertIcon,
+  ArrowRightIcon,
   CheckIcon,
   ClockIcon,
   DownloadIcon,
   GaugeIcon,
+  LayersIcon,
   MapPinIcon,
   WrenchIcon,
 } from "./icons";
+
+const BANNER: Record<BoilerStatus, string> = {
+  failed: "bg-red-600",
+  active: "bg-amber-500",
+  passed: "bg-emerald-600",
+  none: "bg-slate-500",
+};
 
 type SegState = "done" | "current" | "pending";
 
@@ -116,92 +125,93 @@ export function BoilerCard({
 
   return (
     <div
-      className="group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md"
-      onClick={onOpen}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpen();
-        }
-      }}
+      className={`card group flex flex-col overflow-hidden transition-all hover:shadow-card-hover ${
+        status === "passed" ? "ring-2 ring-emerald-500/50" : ""
+      } ${status === "failed" ? "ring-2 ring-red-500/40" : ""}`}
     >
-      {/* Status accent strip */}
-      <span className={`block h-1.5 w-full ${meta.dot}`} />
+      {/* Status banner */}
+      <div
+        className={`flex items-center justify-between px-4 py-2 text-xs font-bold uppercase tracking-wide text-white ${BANNER[status]}`}
+      >
+        <span>{meta.label}</span>
+        {status === "active" && (
+          <span className="rounded bg-white/20 px-1.5 py-0.5">In progress</span>
+        )}
+        {status === "passed" && (
+          <span className="rounded bg-white/20 px-1.5 py-0.5">Certified</span>
+        )}
+      </div>
 
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex items-start justify-between gap-3">
+      <button
+        onClick={onOpen}
+        className="flex-1 px-4 py-3 text-left"
+        aria-label={`Open ${boiler.name}`}
+      >
+        <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="truncate text-base font-semibold text-slate-900">
-              {boiler.name}
-            </h3>
-            <p className="truncate text-xs text-slate-500">
-              {boiler.type} · {boiler.manufacturer}
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              Boiler
             </p>
+            <h4 className="truncate text-lg font-bold text-slate-900">
+              {boiler.name}
+            </h4>
           </div>
-          <div className="flex items-center gap-1">
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-semibold ${meta.badgeBg} ${meta.text}`}
-            >
-              <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
-              <span className="hidden sm:inline">{meta.label}</span>
-            </span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onExport();
-              }}
-              className="rounded-lg p-1.5 text-slate-400 opacity-0 transition hover:bg-slate-100 hover:text-slate-700 group-hover:opacity-100"
-              title="Export this boiler to CSV"
-            >
-              <DownloadIcon className="h-4 w-4" />
-            </button>
-          </div>
+          <ArrowRightIcon className="mt-1 h-4 w-4 shrink-0 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-maroon-700" />
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-          <div className="flex items-center gap-1.5 text-slate-600">
-            <GaugeIcon className="h-3.5 w-3.5 text-slate-400" />
-            <span className="truncate">{boiler.capacity}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-slate-600">
-            <span className="text-slate-400">⌀</span>
-            <span className="truncate">{boiler.pressureRating}</span>
-          </div>
-          <div className="col-span-2 flex items-center gap-1.5 text-slate-600">
+        <div className="mt-2 space-y-1.5 text-sm text-slate-600">
+          <p className="flex items-center gap-1.5">
+            <LayersIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+            <span className="truncate">
+              {boiler.type} · {boiler.manufacturer}
+            </span>
+          </p>
+          <p className="flex items-center gap-1.5">
+            <GaugeIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+            <span className="truncate">
+              {boiler.capacity} · {boiler.pressureRating}
+            </span>
+          </p>
+          <p className="flex items-center gap-1.5">
             <MapPinIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
             <span className="truncate">{boiler.location}</span>
-          </div>
+          </p>
         </div>
 
         {/* Stage progress */}
-        <div className="mt-4 border-t border-slate-100 pt-3">
+        <div className="mt-3 border-t border-slate-100 pt-3">
           <StageStepper boiler={boiler} />
         </div>
+      </button>
 
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1 text-[11px] text-slate-400">
-            <ClockIcon className="h-3 w-3" />
-            {lastInspected
-              ? `Last: ${formatDate(lastInspected)}`
-              : "Never inspected"}
-          </span>
-          <div className="flex flex-wrap justify-end gap-1.5">
-            {schedule.isOverdue && (
-              <Warning tone="danger">
-                <AlertIcon className="h-3 w-3" />
-                Overdue {schedule.daysOverdue}d
-              </Warning>
-            )}
-            {schedule.isDueSoon && (
-              <Warning tone="warn">
-                <ClockIcon className="h-3 w-3" />
-                Due {schedule.daysUntilDue}d
-              </Warning>
-            )}
-          </div>
+      <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-4 py-2.5">
+        <span className="flex items-center gap-1 text-[11px] text-slate-400">
+          <ClockIcon className="h-3 w-3" />
+          {lastInspected
+            ? `Last: ${formatDate(lastInspected)}`
+            : "Never inspected"}
+        </span>
+        <div className="flex items-center gap-1.5">
+          {schedule.isOverdue && (
+            <Warning tone="danger">
+              <AlertIcon className="h-3 w-3" />
+              Overdue {schedule.daysOverdue}d
+            </Warning>
+          )}
+          {schedule.isDueSoon && (
+            <Warning tone="warn">
+              <ClockIcon className="h-3 w-3" />
+              Due {schedule.daysUntilDue}d
+            </Warning>
+          )}
+          <button
+            type="button"
+            onClick={onExport}
+            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-maroon-700"
+            title="Export this boiler to CSV"
+          >
+            <DownloadIcon className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>
