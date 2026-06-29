@@ -10,6 +10,7 @@ import {
 } from "react";
 import type {
   ActivityEntry,
+  AppState,
   Boiler,
   Inspection,
   InspectionResult,
@@ -22,6 +23,15 @@ import {
   saveActivity,
   saveBoilers,
 } from "./lib/storage";
+import {
+  isSupabaseConfigured,
+  STATE_ROW_ID,
+  STATE_TABLE,
+  supabase,
+} from "./lib/supabase";
+import { useAuth } from "./auth/AuthContext";
+
+export type SyncStatus = "local" | "loading" | "saving" | "saved" | "error";
 import {
   formatDate,
   formatDateTime,
@@ -131,6 +141,8 @@ interface FleetContextValue {
   /** Chronological audit trail of every change (most recent first). */
   activity: ActivityEntry[];
   clearActivity: () => void;
+  /** Cloud sync state ('local' when running without Supabase). */
+  syncStatus: SyncStatus;
 }
 
 const FleetContext = createContext<FleetContextValue | null>(null);
@@ -162,11 +174,22 @@ function mapInspection(
 }
 
 export function FleetProvider({ children }: { children: ReactNode }) {
-  const [boilers, setBoilers] = useState<Boiler[]>(() => loadBoilers());
+  const { authed } = useAuth();
+  const cloud = isSupabaseConfigured;
+
+  const [boilers, setBoilers] = useState<Boiler[]>(() =>
+    cloud ? [] : loadBoilers()
+  );
   const [activity, setActivity] = useState<ActivityEntry[]>(() =>
-    loadActivity()
+    cloud ? [] : loadActivity()
+  );
+  const [synced, setSynced] = useState(!cloud);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(
+    cloud ? "loading" : "local"
   );
   const firstRun = useRef(true);
+  const applyingRemote = useRef(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep a live ref of boilers so actions can read the "before" value of edits
   // without depending on a stale closure.
@@ -175,7 +198,9 @@ export function FleetProvider({ children }: { children: ReactNode }) {
     boilersRef.current = boilers;
   }, [boilers]);
 
+  // --- Local mode: persist to localStorage ---------------------------------
   useEffect(() => {
+    if (cloud) return;
     if (firstRun.current) {
       firstRun.current = false;
       // Persist initial (possibly demo) state so refreshes are stable.
@@ -183,11 +208,103 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       return;
     }
     saveBoilers(boilers);
-  }, [boilers]);
+  }, [boilers, cloud]);
 
   useEffect(() => {
+    if (cloud) return;
     saveActivity(activity);
-  }, [activity]);
+  }, [activity, cloud]);
+
+  // --- Cloud mode: load shared state + subscribe to live changes -----------
+  useEffect(() => {
+    if (!cloud || !authed || !supabase) return;
+    const sb = supabase;
+    let active = true;
+    setSyncStatus("loading");
+
+    (async () => {
+      const { data: row, error } = await sb
+        .from(STATE_TABLE)
+        .select("data")
+        .eq("id", STATE_ROW_ID)
+        .maybeSingle();
+      if (!active) return;
+
+      if (!error && row?.data) {
+        const state = row.data as Partial<AppState>;
+        applyingRemote.current = true;
+        setBoilers(Array.isArray(state.boilers) ? state.boilers : []);
+        setActivity(Array.isArray(state.activity) ? state.activity : []);
+      } else if (!error) {
+        // First run: seed the shared table with the demo fleet.
+        const seed: AppState = { boilers: createDemoBoilers(), activity: [] };
+        await sb
+          .from(STATE_TABLE)
+          .upsert({ id: STATE_ROW_ID, data: seed, updated_at: new Date().toISOString() });
+        applyingRemote.current = true;
+        setBoilers(seed.boilers);
+        setActivity(seed.activity);
+      }
+      setSynced(true);
+      setSyncStatus(error ? "error" : "saved");
+    })();
+
+    const channel = sb
+      .channel("boiler_app_state_sync")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: STATE_TABLE,
+          filter: `id=eq.${STATE_ROW_ID}`,
+        },
+        (payload) => {
+          const incoming = (payload.new as { data?: Partial<AppState> } | null)
+            ?.data;
+          if (incoming) {
+            applyingRemote.current = true;
+            setBoilers(Array.isArray(incoming.boilers) ? incoming.boilers : []);
+            setActivity(
+              Array.isArray(incoming.activity) ? incoming.activity : []
+            );
+            setSyncStatus("saved");
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      sb.removeChannel(channel);
+    };
+  }, [cloud, authed]);
+
+  // --- Cloud mode: save local edits back to the shared state (debounced) ---
+  useEffect(() => {
+    if (!cloud || !authed || !synced || !supabase) return;
+    if (applyingRemote.current) {
+      // This change came from a remote update — don't echo it back.
+      applyingRemote.current = false;
+      return;
+    }
+    const sb = supabase;
+    setSyncStatus("saving");
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    const snapshot: AppState = { boilers, activity };
+    saveTimer.current = setTimeout(() => {
+      sb.from(STATE_TABLE)
+        .upsert({
+          id: STATE_ROW_ID,
+          data: snapshot,
+          updated_at: new Date().toISOString(),
+        })
+        .then(({ error }) => setSyncStatus(error ? "error" : "saved"));
+    }, 400);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [boilers, activity, cloud, authed, synced]);
 
   const pushLog = useCallback(
     (entry: Omit<ActivityEntry, "id" | "at">) => {
@@ -694,6 +811,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       resetToDemo,
       activity,
       clearActivity,
+      syncStatus,
     }),
     [
       boilers,
@@ -715,6 +833,7 @@ export function FleetProvider({ children }: { children: ReactNode }) {
       resetToDemo,
       activity,
       clearActivity,
+      syncStatus,
     ]
   );
 

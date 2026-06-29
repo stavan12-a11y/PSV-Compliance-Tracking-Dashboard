@@ -125,6 +125,41 @@ export const MapPinIcon = (props: IconProps) => (
   </svg>
 );
 
+export const LockIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <rect x="3" y="11" width="18" height="11" rx="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+export const LogInIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+    <path d="M10 17l5-5-5-5" />
+    <path d="M15 12H3" />
+  </svg>
+);
+
+export const LogOutIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <path d="M16 17l5-5-5-5" />
+    <path d="M21 12H9" />
+  </svg>
+);
+
+export const LoaderIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+  </svg>
+);
+
+export const CloudIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M17.5 19a4.5 4.5 0 0 0 .5-8.97A6 6 0 0 0 6.3 9.4 4 4 0 0 0 7 17h10.5Z" />
+  </svg>
+);
+
 export const HistoryClockIcon = (props: IconProps) => (
   <svg {...base(props)}>
     <path d="M3 3v5h5" />

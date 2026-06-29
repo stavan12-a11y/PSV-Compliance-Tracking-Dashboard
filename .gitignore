@@ -3,6 +3,9 @@ dist
 dist-ssr
 *.tsbuildinfo
 *.local
+.env
+.env.*
+!.env.example
 .DS_Store
 .vscode/*
 !.vscode/extensions.json

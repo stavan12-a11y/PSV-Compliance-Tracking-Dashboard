@@ -42,6 +42,7 @@ data to `localStorage`, so your fleet survives between sessions.
 - React 18 + TypeScript
 - Vite
 - Tailwind CSS
+- Supabase (optional) — authentication + shared real-time data
 
 ## Getting started
 
@@ -52,8 +53,37 @@ npm run build    # type-check and build for production
 npm run preview  # preview the production build
 ```
 
-## Data & persistence
+## Login & cloud sync (Supabase)
 
-All state lives in the browser under the `boiler-inspection-management:v2`
-`localStorage` key. Use the **Reset** button in the header to wipe it and reload
-the bundled demo fleet.
+The app supports two modes, selected automatically from environment variables:
+
+### Cloud mode (shared, live data for a team)
+
+Set both `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (see `.env.example`).
+In this mode:
+
+- The login page authenticates against **Supabase Auth** (email + password).
+- All boilers, inspections, and the change history live in one shared row and
+  **sync in real time** — everyone who signs in sees the same, always-current
+  data, and edits broadcast live to other open sessions.
+- A "Synced / Saving…" indicator appears in the header.
+
+One-time setup:
+
+1. Create a Supabase project.
+2. In the SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql) (creates
+   the `app_state` table, row-level security, and realtime).
+3. In **Authentication → Users → Add user**, create the email/password each
+   teammate will use (tick "Auto Confirm User").
+4. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Project Settings → API)
+   in your hosting provider, then redeploy. The demo fleet seeds the shared
+   table on first run.
+
+### Local mode (default, no backend)
+
+Without Supabase env vars the app runs entirely in the browser:
+
+- A single static login gates the app — defaults `admin` / `boiler-2026`
+  (override with `VITE_APP_USERNAME` / `VITE_APP_PASSWORD`).
+- Data persists per-browser to `localStorage`. Use the **Reset** button in the
+  header to reload the bundled demo fleet.

@@ -9,11 +9,16 @@ import { Sidebar } from "./components/Sidebar";
 import { BoilerDetail } from "./components/BoilerDetail";
 import { AddBoilerModal } from "./components/AddBoilerModal";
 import { ActivityLog } from "./components/ActivityLog";
+import { SyncIndicator } from "./components/SyncIndicator";
 import { StatusDot } from "./components/ui";
+import { AuthProvider, useAuth } from "./auth/AuthContext";
+import { LoginScreen } from "./auth/LoginScreen";
 import {
   DownloadIcon,
   FlameIcon,
   HistoryClockIcon,
+  LoaderIcon,
+  LogOutIcon,
   PlusIcon,
   RefreshIcon,
 } from "./components/icons";
@@ -28,6 +33,7 @@ const FILTERS: { key: BoilerStatus | "all"; label: string }[] = [
 
 function Dashboard() {
   const { boilers, resetToDemo, activity } = useFleet();
+  const { logout } = useAuth();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
@@ -85,6 +91,7 @@ function Dashboard() {
           </div>
 
           <div className="flex items-center gap-1">
+            <SyncIndicator />
             <button
               type="button"
               onClick={() => setShowActivity(true)}
@@ -116,6 +123,17 @@ function Dashboard() {
             >
               <RefreshIcon className="h-4 w-4" />
               <span className="hidden sm:inline">Reset</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm("Sign out of the dashboard?")) logout();
+              }}
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-maroon-100 transition hover:bg-white/10"
+              title="Sign out"
+            >
+              <LogOutIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Sign out</span>
             </button>
           </div>
         </div>
@@ -217,10 +235,29 @@ function Dashboard() {
   );
 }
 
-export default function App() {
+function AuthedApp() {
+  const { authed, ready } = useAuth();
+
+  if (!ready) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-400">
+        <LoaderIcon className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+  if (!authed) return <LoginScreen />;
+
   return (
     <FleetProvider>
       <Dashboard />
     </FleetProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AuthedApp />
+    </AuthProvider>
   );
 }

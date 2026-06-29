@@ -57,6 +57,12 @@ export interface Boiler {
   history: Inspection[];
 }
 
+/** The full shared application state (persisted locally or to Supabase). */
+export interface AppState {
+  boilers: Boiler[];
+  activity: ActivityEntry[];
+}
+
 export interface ActivityEntry {
   id: string;
   /** ISO timestamp the change was recorded. */
