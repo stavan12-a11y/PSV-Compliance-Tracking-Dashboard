@@ -82,8 +82,6 @@ interface PSVContextValue {
   deleteHistoryEvent: (id: string, eventId: string) => void;
 
   // bulk
-  resetToSeed: () => void;
-  clearAll: () => void;
   replaceData: (data: AppData) => void;
 }
 
@@ -532,8 +530,6 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const resetToSeed = useCallback(() => setData(structuredClone(seedData)), []);
-  const clearAll = useCallback(() => setData(structuredClone(EMPTY_DATA)), []);
   const replaceData = useCallback((d: AppData) => setData(structuredClone(d)), []);
 
   const value = useMemo<PSVContextValue>(
@@ -560,8 +556,6 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       addHistoryEvent,
       updateHistoryEvent,
       deleteHistoryEvent,
-      resetToSeed,
-      clearAll,
       replaceData,
     }),
     [
@@ -587,8 +581,6 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       addHistoryEvent,
       updateHistoryEvent,
       deleteHistoryEvent,
-      resetToSeed,
-      clearAll,
       replaceData,
     ],
   );
