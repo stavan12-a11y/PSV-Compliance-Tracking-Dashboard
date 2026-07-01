@@ -6,7 +6,6 @@ import {
   downloadImportTemplate,
   exportBackupJSON,
   parseExcelFile,
-  parseJsonBackup,
   type ImportResult,
 } from '../../utils/excelImport';
 import type { AppData } from '../../types';
@@ -14,7 +13,6 @@ import type { AppData } from '../../types';
 export function ImportModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data, replaceData } = usePSV();
   const fileRef = useRef<HTMLInputElement>(null);
-  const jsonRef = useRef<HTMLInputElement>(null);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,47 +50,15 @@ export function ImportModal({ open, onClose }: { open: boolean; onClose: () => v
     }
   };
 
-  const applyImport = (mode: 'replace' | 'append') => {
+  const applyImport = () => {
     if (!result) return;
-    if (mode === 'replace') {
-      if (
-        data.psvs.length > 0 &&
-        !confirm('Replace ALL existing data with this import? This cannot be undone.')
-      ) {
-        return;
-      }
-      replaceData(result.data);
-    } else {
-      const merged: AppData = {
-        equipment: [...data.equipment, ...result.data.equipment],
-        locations: [...data.locations, ...result.data.locations],
-        psvs: [...data.psvs, ...result.data.psvs],
-      };
-      replaceData(merged);
-    }
+    const merged: AppData = {
+      equipment: [...data.equipment, ...result.data.equipment],
+      locations: [...data.locations, ...result.data.locations],
+      psvs: [...data.psvs, ...result.data.psvs],
+    };
+    replaceData(merged);
     handleClose();
-  };
-
-  const onJsonSelected = async (file: File) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const text = await file.text();
-      const parsed = parseJsonBackup(text);
-      if (
-        data.psvs.length > 0 &&
-        !confirm('Restore this backup and replace ALL existing data? This cannot be undone.')
-      ) {
-        return;
-      }
-      replaceData(parsed);
-      handleClose();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not read that backup file.');
-    } finally {
-      setBusy(false);
-      if (jsonRef.current) jsonRef.current.value = '';
-    }
   };
 
   return (
@@ -100,8 +66,8 @@ export function ImportModal({ open, onClose }: { open: boolean; onClose: () => v
       open={open}
       onClose={handleClose}
       size="md"
-      title="Import data"
-      description="Upload your PSV register from Excel/CSV, or restore a JSON backup."
+      title="Import & export data"
+      description="Upload additional PSV rows from Excel/CSV, or export a JSON backup."
       footer={
         <button className="btn-secondary" onClick={handleClose}>
           Close
@@ -179,10 +145,7 @@ export function ImportModal({ open, onClose }: { open: boolean; onClose: () => v
                 </div>
               )}
               <div className="flex flex-wrap gap-2">
-                <button className="btn-primary" onClick={() => applyImport('replace')}>
-                  Replace all data
-                </button>
-                <button className="btn-secondary" onClick={() => applyImport('append')}>
+                <button className="btn-primary" onClick={applyImport}>
                   Add to existing data
                 </button>
               </div>
@@ -195,28 +158,12 @@ export function ImportModal({ open, onClose }: { open: boolean; onClose: () => v
             JSON backup
           </h3>
           <p className="mb-3 text-sm text-slate-500">
-            Save a complete, lossless backup of everything (including full history), or restore one.
+            Save a complete, lossless backup of everything (including full history).
           </p>
-          <input
-            ref={jsonRef}
-            type="file"
-            accept=".json,application/json"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onJsonSelected(f);
-            }}
-          />
-          <div className="flex flex-wrap gap-2">
-            <button className="btn-secondary" onClick={() => exportBackupJSON(data)}>
-              <Download className="h-4 w-4" />
-              Export backup (JSON)
-            </button>
-            <button className="btn-secondary" onClick={() => jsonRef.current?.click()}>
-              <FileUp className="h-4 w-4" />
-              Restore from backup
-            </button>
-          </div>
+          <button className="btn-secondary" onClick={() => exportBackupJSON(data)}>
+            <Download className="h-4 w-4" />
+            Export backup (JSON)
+          </button>
         </section>
       </div>
     </Modal>
