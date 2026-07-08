@@ -93,10 +93,6 @@ export interface AppData {
   equipment: Equipment[];
   locations: Location[];
   psvs: PSV[];
-  /** Daily site-wide compliance snapshots for trend tracking. */
-  complianceHistory?: ComplianceSnapshot[];
-  /** Bumped when the snapshot formula changes; triggers a one-time rebuild. */
-  complianceHistoryVersion?: number;
 }
 
 // --- Derived / computed helper types --------------------------------------
@@ -122,15 +118,4 @@ export interface KPISummary {
   overdue: number;
   compliant: number;
   complianceRate: number;
-}
-
-/** A single day's site-wide compliance metrics (stored for trend charts). */
-export interface ComplianceSnapshot {
-  date: string;
-  complianceRate: number;
-  installed: number;
-  compliant: number;
-  overdue: number;
-  dueSoon: number;
-  total: number;
 }

@@ -10,7 +10,6 @@ import {
 } from './compliance';
 import { buildActivityFeed } from './activity';
 import { formatDate, formatDateTime, todayISO } from './dates';
-import { getSnapshotsForRange } from './complianceHistory';
 
 interface ExportScope {
   /** Optional single equipment to scope the report to. */
@@ -156,41 +155,6 @@ export async function exportToExcel(data: AppData, scope: ExportScope = {}) {
     ? scope.equipment.tag || scope.equipment.name.replace(/\s+/g, '-')
     : 'All-Equipment';
   const filename = `PSV-Report_${scopeName}_${todayISO()}.xlsx`;
-  XLSX.writeFile(wb, filename);
-}
-
-/**
- * Downloads a single-sheet workbook of daily compliance % for a date range.
- * Compliant % = compliant installed valves ÷ total installed (overdue included in installed).
- */
-export async function exportComplianceTrendToExcel(
-  data: AppData,
-  startDate: string,
-  endDate: string,
-) {
-  const XLSX = await import('xlsx');
-  const snapshots = getSnapshotsForRange(data.psvs, data.complianceHistory, startDate, endDate);
-
-  const rows = snapshots.map((row) => ({
-    Date: formatDate(row.date),
-    Installed: row.installed,
-    Compliant: row.compliant,
-    Overdue: row.overdue,
-    'Due Soon': row.dueSoon,
-    'Compliant / Installed': row.installed ? `${row.compliant} / ${row.installed}` : '—',
-    'Compliant %': row.complianceRate,
-  }));
-
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(
-    rows.length
-      ? rows
-      : [{ Note: 'No data for the selected date range.' }],
-  );
-  autoWidth(ws, rows);
-  XLSX.utils.book_append_sheet(wb, ws, 'Compliance Trend');
-
-  const filename = `PSV-Compliance-Trend_${startDate}_to_${endDate}.xlsx`;
   XLSX.writeFile(wb, filename);
 }
 
