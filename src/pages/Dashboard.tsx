@@ -8,6 +8,7 @@ import { KPIGrid } from '../components/KPIGrid';
 import { KPIFilterModal } from '../components/KPIFilterModal';
 import { EquipmentCard } from '../components/EquipmentCard';
 import { UrgencyHistoryPanel } from '../components/UrgencyHistoryPanel';
+import { ComplianceTrendPanel } from '../components/ComplianceTrendPanel';
 import { EquipmentFormModal } from '../components/forms/EquipmentFormModal';
 
 export function Dashboard() {
@@ -39,6 +40,8 @@ export function Dashboard() {
       </div>
 
       <KPIGrid summary={summary} onFilterSelect={setKpiFilter} />
+
+      <ComplianceTrendPanel history={data.complianceHistory} />
 
       <KPIFilterModal
         open={kpiFilter !== null}

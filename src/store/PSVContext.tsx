@@ -21,6 +21,7 @@ import { seedData } from '../data/mockData';
 import { uid } from '../utils/id';
 import { todayISO } from '../utils/dates';
 import { STATUS_LABELS } from '../utils/compliance';
+import { ensureComplianceHistory } from '../utils/complianceHistory';
 import { isSupabaseConfigured, STATE_ROW_ID, STATE_TABLE, supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 
@@ -159,6 +160,22 @@ export function PSVProvider({ children }: { children: ReactNode }) {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(cloud ? 'loading' : 'local');
   const applyingRemote = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const historyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // --- Compliance history: record daily snapshots for trend tracking ----------
+  useEffect(() => {
+    if (cloud && !synced) return;
+    if (historyTimer.current) clearTimeout(historyTimer.current);
+    historyTimer.current = setTimeout(() => {
+      setData((prev) => {
+        const next = ensureComplianceHistory(prev);
+        return next === prev ? prev : next;
+      });
+    }, 150);
+    return () => {
+      if (historyTimer.current) clearTimeout(historyTimer.current);
+    };
+  }, [cloud, synced, data.psvs, data.locations, data.equipment]);
 
   // --- Local mode: persist to localStorage ---------------------------------
   useEffect(() => {
@@ -530,7 +547,10 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const replaceData = useCallback((d: AppData) => setData(structuredClone(d)), []);
+  const replaceData = useCallback(
+    (d: AppData) => setData(ensureComplianceHistory(structuredClone(d))),
+    [],
+  );
 
   const value = useMemo<PSVContextValue>(
     () => ({

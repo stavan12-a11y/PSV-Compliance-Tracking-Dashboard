@@ -30,6 +30,13 @@ export function addYears(iso: string, years: number): string {
   return toISODate(d);
 }
 
+/** Adds a whole number of days to a YYYY-MM-DD date string. */
+export function addDays(iso: string, days: number): string {
+  const d = parseISODate(iso);
+  d.setDate(d.getDate() + days);
+  return toISODate(d);
+}
+
 /** Whole-day difference between two ISO dates (b - a). */
 export function daysBetween(a: string, b: string): number {
   const ms = parseISODate(b).getTime() - parseISODate(a).getTime();

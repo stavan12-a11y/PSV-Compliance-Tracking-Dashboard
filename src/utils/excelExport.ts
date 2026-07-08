@@ -151,6 +151,25 @@ export async function exportToExcel(data: AppData, scope: ExportScope = {}) {
   autoWidth(wsHistory, historyRows);
   XLSX.utils.book_append_sheet(wb, wsHistory, 'History Log');
 
+  // --- Sheet 5: Compliance Trend (daily %) ----------------------------------
+  const trendRows = (data.complianceHistory ?? [])
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((row) => ({
+      Date: formatDate(row.date),
+      'Compliant %': row.complianceRate,
+      'Total PSVs': row.total,
+      Installed: row.installed,
+      Compliant: row.compliant,
+      'Due Soon': row.dueSoon,
+      Overdue: row.overdue,
+    }));
+  const wsTrend = XLSX.utils.json_to_sheet(
+    trendRows.length ? trendRows : [{ Note: 'No compliance history recorded yet.' }],
+  );
+  autoWidth(wsTrend, trendRows);
+  XLSX.utils.book_append_sheet(wb, wsTrend, 'Compliance Trend');
+
   const scopeName = scope.equipment
     ? scope.equipment.tag || scope.equipment.name.replace(/\s+/g, '-')
     : 'All-Equipment';
