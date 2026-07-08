@@ -58,11 +58,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isSupabaseConfigured || !supabase) return;
     let active = true;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      setAuthed(Boolean(data.session));
-      setReady(true);
-    });
+    const finish = () => {
+      if (active) setReady(true);
+    };
+
+    // Never leave the app on a blank spinner if Supabase is slow or unreachable.
+    const timeout = setTimeout(finish, 8000);
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!active) return;
+        setAuthed(Boolean(data.session));
+      })
+      .catch(() => {
+        // Session check failed — show login instead of hanging.
+      })
+      .finally(finish);
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setAuthed(Boolean(session));
@@ -70,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       active = false;
+      clearTimeout(timeout);
       sub.subscription.unsubscribe();
     };
   }, []);
