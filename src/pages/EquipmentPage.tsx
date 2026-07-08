@@ -8,7 +8,7 @@ import { exportToExcel } from '../utils/excelExport';
 import { equipmentIcon } from '../utils/equipmentIcon';
 import { formatDate, relativeDays } from '../utils/dates';
 import { KPIGrid } from '../components/KPIGrid';
-import { KPIFilteredPSVList } from '../components/KPIFilteredPSVList';
+import { KPIFilterModal } from '../components/KPIFilterModal';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { UrgencyHistoryPanel } from '../components/UrgencyHistoryPanel';
 import { ComplianceBadge } from '../components/Badges';
@@ -95,15 +95,14 @@ export function EquipmentPage() {
         </div>
       </div>
 
-      <KPIGrid summary={summary} activeFilter={kpiFilter} onFilterChange={setKpiFilter} />
+      <KPIGrid summary={summary} onFilterSelect={setKpiFilter} />
 
-      {kpiFilter && (
-        <KPIFilteredPSVList
-          psvs={equipmentPsvs}
-          filter={kpiFilter}
-          onClear={() => setKpiFilter(null)}
-        />
-      )}
+      <KPIFilterModal
+        open={kpiFilter !== null}
+        filter={kpiFilter ?? 'total'}
+        psvs={equipmentPsvs}
+        onClose={() => setKpiFilter(null)}
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <section className="lg:col-span-2">

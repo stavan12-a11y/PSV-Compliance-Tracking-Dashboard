@@ -5,7 +5,7 @@ import { summarize } from '../utils/compliance';
 import type { KPIFilterKey } from '../utils/kpiFilter';
 import { exportToExcel } from '../utils/excelExport';
 import { KPIGrid } from '../components/KPIGrid';
-import { KPIFilteredPSVList } from '../components/KPIFilteredPSVList';
+import { KPIFilterModal } from '../components/KPIFilterModal';
 import { EquipmentCard } from '../components/EquipmentCard';
 import { UrgencyHistoryPanel } from '../components/UrgencyHistoryPanel';
 import { EquipmentFormModal } from '../components/forms/EquipmentFormModal';
@@ -38,11 +38,14 @@ export function Dashboard() {
         </button>
       </div>
 
-      <KPIGrid summary={summary} activeFilter={kpiFilter} onFilterChange={setKpiFilter} />
+      <KPIGrid summary={summary} onFilterSelect={setKpiFilter} />
 
-      {kpiFilter && (
-        <KPIFilteredPSVList psvs={data.psvs} filter={kpiFilter} onClear={() => setKpiFilter(null)} />
-      )}
+      <KPIFilterModal
+        open={kpiFilter !== null}
+        filter={kpiFilter ?? 'total'}
+        psvs={data.psvs}
+        onClose={() => setKpiFilter(null)}
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <section className="lg:col-span-2">

@@ -10,32 +10,20 @@ interface KPICardProps {
   accent: string;
   iconBg: string;
   hint?: string;
-  filterKey: KPIFilterKey;
-  active?: boolean;
-  onSelect?: (filter: KPIFilterKey) => void;
+  onSelect?: () => void;
 }
 
-function KPICard({
-  label,
-  value,
-  icon: Icon,
-  accent,
-  iconBg,
-  hint,
-  filterKey,
-  active,
-  onSelect,
-}: KPICardProps) {
+function KPICard({ label, value, icon: Icon, accent, iconBg, hint, onSelect }: KPICardProps) {
   const clickable = Boolean(onSelect);
 
   return (
     <button
       type="button"
-      onClick={() => onSelect?.(filterKey)}
+      onClick={onSelect}
       disabled={!clickable}
       className={`card flex w-full items-center gap-4 p-4 text-left transition-all ${
         clickable ? 'cursor-pointer hover:shadow-card-hover' : ''
-      } ${active ? 'ring-2 ring-maroon-700/60' : ''}`}
+      }`}
     >
       <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
         <Icon className={`h-5 w-5 ${accent}`} />
@@ -51,15 +39,11 @@ function KPICard({
 
 interface KPIGridProps {
   summary: KPISummary;
-  activeFilter?: KPIFilterKey | null;
-  onFilterChange?: (filter: KPIFilterKey | null) => void;
+  onFilterSelect?: (filter: KPIFilterKey) => void;
 }
 
-export function KPIGrid({ summary, activeFilter, onFilterChange }: KPIGridProps) {
-  const handleSelect = (filter: KPIFilterKey) => {
-    if (!onFilterChange) return;
-    onFilterChange(activeFilter === filter ? null : filter);
-  };
+export function KPIGrid({ summary, onFilterSelect }: KPIGridProps) {
+  const select = (filter: KPIFilterKey) => onFilterSelect?.(filter);
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
@@ -69,39 +53,7 @@ export function KPIGrid({ summary, activeFilter, onFilterChange }: KPIGridProps)
         icon={Gauge}
         accent="text-slate-700"
         iconBg="bg-slate-100"
-        filterKey="total"
-        active={activeFilter === 'total'}
-        onSelect={onFilterChange ? handleSelect : undefined}
-      />
-      <KPICard
-        label="Installed"
-        value={summary.installed}
-        icon={CheckCircle2}
-        accent="text-emerald-600"
-        iconBg="bg-emerald-50"
-        filterKey="installed"
-        active={activeFilter === 'installed'}
-        onSelect={onFilterChange ? handleSelect : undefined}
-      />
-      <KPICard
-        label="Out for Service"
-        value={summary.outForService}
-        icon={Wrench}
-        accent="text-amber-600"
-        iconBg="bg-amber-50"
-        filterKey="out_for_service"
-        active={activeFilter === 'out_for_service'}
-        onSelect={onFilterChange ? handleSelect : undefined}
-      />
-      <KPICard
-        label="Overdue"
-        value={summary.overdue}
-        icon={AlertTriangle}
-        accent="text-red-600"
-        iconBg="bg-red-50"
-        filterKey="overdue"
-        active={activeFilter === 'overdue'}
-        onSelect={onFilterChange ? handleSelect : undefined}
+        onSelect={onFilterSelect ? () => select('total') : undefined}
       />
       <KPICard
         label="Compliant %"
@@ -110,9 +62,31 @@ export function KPIGrid({ summary, activeFilter, onFilterChange }: KPIGridProps)
         accent="text-emerald-600"
         iconBg="bg-emerald-50"
         hint={`${summary.compliant} of ${summary.installed} installed`}
-        filterKey="compliant"
-        active={activeFilter === 'compliant'}
-        onSelect={onFilterChange ? handleSelect : undefined}
+        onSelect={onFilterSelect ? () => select('compliant') : undefined}
+      />
+      <KPICard
+        label="Installed"
+        value={summary.installed}
+        icon={CheckCircle2}
+        accent="text-emerald-600"
+        iconBg="bg-emerald-50"
+        onSelect={onFilterSelect ? () => select('installed') : undefined}
+      />
+      <KPICard
+        label="Out for Service"
+        value={summary.outForService}
+        icon={Wrench}
+        accent="text-amber-600"
+        iconBg="bg-amber-50"
+        onSelect={onFilterSelect ? () => select('out_for_service') : undefined}
+      />
+      <KPICard
+        label="Overdue"
+        value={summary.overdue}
+        icon={AlertTriangle}
+        accent="text-red-600"
+        iconBg="bg-red-50"
+        onSelect={onFilterSelect ? () => select('overdue') : undefined}
       />
     </div>
   );
