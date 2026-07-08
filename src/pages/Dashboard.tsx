@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
-import { FileSpreadsheet, Plus } from 'lucide-react';
+import { FileSpreadsheet, LineChart, Plus } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 import { summarize } from '../utils/compliance';
+import { earliestComplianceDate } from '../utils/complianceHistory';
 import type { KPIFilterKey } from '../utils/kpiFilter';
-import { exportToExcel } from '../utils/excelExport';
+import { exportComplianceTrendToExcel, exportToExcel } from '../utils/excelExport';
+import { addDays, todayISO } from '../utils/dates';
 import { KPIGrid } from '../components/KPIGrid';
 import { KPIFilterModal } from '../components/KPIFilterModal';
 import { EquipmentCard } from '../components/EquipmentCard';
@@ -15,8 +17,12 @@ export function Dashboard() {
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [kpiFilter, setKpiFilter] = useState<KPIFilterKey | null>(null);
+  const [trendStart, setTrendStart] = useState(() => addDays(todayISO(), -30));
+  const [trendEnd, setTrendEnd] = useState(todayISO);
 
   const summary = useMemo(() => summarize(data.psvs), [data.psvs]);
+  const minTrendDate = useMemo(() => earliestComplianceDate(data.psvs), [data.psvs]);
+  const trendRangeValid = trendStart <= trendEnd;
 
   return (
     <div className="space-y-6">
@@ -27,15 +33,50 @@ export function Dashboard() {
             Pressure Safety Valve tracking across all monitored equipment.
           </p>
         </div>
-        <button
-          className="btn-secondary"
-          onClick={() => exportToExcel(data)}
-          disabled={data.psvs.length === 0}
-          title="Export the full PSV register and compliance report to Excel"
-        >
-          <FileSpreadsheet className="h-4 w-4" />
-          Export Excel
-        </button>
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+            <label className="text-xs font-semibold text-slate-500">
+              <span className="mb-1 block">Compliance trend from</span>
+              <input
+                type="date"
+                className="input py-1.5 text-sm"
+                value={trendStart}
+                min={minTrendDate}
+                max={trendEnd}
+                onChange={(e) => setTrendStart(e.target.value)}
+              />
+            </label>
+            <label className="text-xs font-semibold text-slate-500">
+              <span className="mb-1 block">to</span>
+              <input
+                type="date"
+                className="input py-1.5 text-sm"
+                value={trendEnd}
+                min={trendStart}
+                max={todayISO()}
+                onChange={(e) => setTrendEnd(e.target.value)}
+              />
+            </label>
+            <button
+              className="btn-secondary whitespace-nowrap"
+              onClick={() => exportComplianceTrendToExcel(data, trendStart, trendEnd)}
+              disabled={data.psvs.length === 0 || !trendRangeValid}
+              title="Download daily compliant % (compliant ÷ installed) for the selected dates"
+            >
+              <LineChart className="h-4 w-4" />
+              Compliance Trend
+            </button>
+          </div>
+          <button
+            className="btn-secondary"
+            onClick={() => exportToExcel(data)}
+            disabled={data.psvs.length === 0}
+            title="Export the full PSV register and compliance report to Excel"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Export Excel
+          </button>
+        </div>
       </div>
 
       <KPIGrid summary={summary} onFilterSelect={setKpiFilter} />

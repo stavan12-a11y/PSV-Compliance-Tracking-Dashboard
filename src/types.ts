@@ -95,6 +95,8 @@ export interface AppData {
   psvs: PSV[];
   /** Daily site-wide compliance snapshots for trend tracking. */
   complianceHistory?: ComplianceSnapshot[];
+  /** Bumped when the snapshot formula changes; triggers a one-time rebuild. */
+  complianceHistoryVersion?: number;
 }
 
 // --- Derived / computed helper types --------------------------------------
