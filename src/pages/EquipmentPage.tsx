@@ -3,10 +3,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronRight, FileSpreadsheet, MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 import { getCompliance, summarize } from '../utils/compliance';
+import type { KPIFilterKey } from '../utils/kpiFilter';
 import { exportToExcel } from '../utils/excelExport';
 import { equipmentIcon } from '../utils/equipmentIcon';
 import { formatDate, relativeDays } from '../utils/dates';
 import { KPIGrid } from '../components/KPIGrid';
+import { KPIFilteredPSVList } from '../components/KPIFilteredPSVList';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { UrgencyHistoryPanel } from '../components/UrgencyHistoryPanel';
 import { ComplianceBadge } from '../components/Badges';
@@ -30,9 +32,11 @@ export function EquipmentPage() {
   const [editEquipment, setEditEquipment] = useState(false);
   const [showAddLocation, setShowAddLocation] = useState(false);
   const [editLocationId, setEditLocationId] = useState<string | null>(null);
+  const [kpiFilter, setKpiFilter] = useState<KPIFilterKey | null>(null);
 
   const locations = locationsForEquipment(equipmentId);
-  const summary = useMemo(() => summarize(psvsForEquipment(equipmentId)), [psvsForEquipment, equipmentId]);
+  const equipmentPsvs = useMemo(() => psvsForEquipment(equipmentId), [psvsForEquipment, equipmentId]);
+  const summary = useMemo(() => summarize(equipmentPsvs), [equipmentPsvs]);
 
   if (!equipment) {
     return (
@@ -91,7 +95,15 @@ export function EquipmentPage() {
         </div>
       </div>
 
-      <KPIGrid summary={summary} />
+      <KPIGrid summary={summary} activeFilter={kpiFilter} onFilterChange={setKpiFilter} />
+
+      {kpiFilter && (
+        <KPIFilteredPSVList
+          psvs={equipmentPsvs}
+          filter={kpiFilter}
+          onClear={() => setKpiFilter(null)}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <section className="lg:col-span-2">

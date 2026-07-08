@@ -42,20 +42,13 @@ export interface PSVEvent {
 export interface PSVDatasheet {
   make: string;
   model: string;
-  type: string;
   setPressure: number;
   pressureUnit: string;
   capacity: string;
   inletSize: string;
   outletSize: string;
-  orifice: string;
-  bodyMaterial: string;
-  springMaterial?: string;
-  connectionType?: string;
-  coldDifferentialTestPressure?: string;
   serviceMedium?: string;
   nationalBoardNumber?: string;
-  manufactureYear?: string;
 }
 
 /** An individual Pressure Safety Valve identified by its serial number. */

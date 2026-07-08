@@ -18,20 +18,13 @@ interface PSVFormModalProps {
 const EMPTY_DATASHEET: PSVDatasheet = {
   make: '',
   model: '',
-  type: 'Conventional Spring',
   setPressure: 0,
   pressureUnit: 'PSIG',
   capacity: '',
   inletSize: '',
   outletSize: '',
-  orifice: '',
-  bodyMaterial: '',
-  springMaterial: '',
-  connectionType: '',
-  coldDifferentialTestPressure: '',
   serviceMedium: '',
   nationalBoardNumber: '',
-  manufactureYear: '',
 };
 
 export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVFormModalProps) {
@@ -187,9 +180,6 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
             <Field label="Model Number">
               <input className="input" value={sheet.model} onChange={(e) => set('model', e.target.value)} placeholder="e.g. 1900-30JM" />
             </Field>
-            <Field label="Type">
-              <input className="input" value={sheet.type} onChange={(e) => set('type', e.target.value)} placeholder="e.g. Conventional Spring" />
-            </Field>
             <Field label="Set Pressure">
               <input type="number" className="input" value={sheet.setPressure} onChange={(e) => set('setPressure', Number(e.target.value))} />
             </Field>
@@ -205,29 +195,11 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
             <Field label="Outlet Size">
               <input className="input" value={sheet.outletSize} onChange={(e) => set('outletSize', e.target.value)} placeholder='e.g. 3"' />
             </Field>
-            <Field label="Orifice">
-              <input className="input" value={sheet.orifice} onChange={(e) => set('orifice', e.target.value)} placeholder="e.g. J" />
-            </Field>
-            <Field label="Body Material">
-              <input className="input" value={sheet.bodyMaterial} onChange={(e) => set('bodyMaterial', e.target.value)} placeholder="e.g. Carbon Steel" />
-            </Field>
-            <Field label="Spring Material">
-              <input className="input" value={sheet.springMaterial ?? ''} onChange={(e) => set('springMaterial', e.target.value)} />
-            </Field>
-            <Field label="Connection Type">
-              <input className="input" value={sheet.connectionType ?? ''} onChange={(e) => set('connectionType', e.target.value)} placeholder="Flanged / Threaded" />
-            </Field>
-            <Field label="Cold Diff. Test Pressure (CDTP)">
-              <input className="input" value={sheet.coldDifferentialTestPressure ?? ''} onChange={(e) => set('coldDifferentialTestPressure', e.target.value)} />
-            </Field>
             <Field label="Service Medium">
               <input className="input" value={sheet.serviceMedium ?? ''} onChange={(e) => set('serviceMedium', e.target.value)} placeholder="Steam / Air / Water" />
             </Field>
             <Field label="National Board No.">
               <input className="input" value={sheet.nationalBoardNumber ?? ''} onChange={(e) => set('nationalBoardNumber', e.target.value)} />
-            </Field>
-            <Field label="Manufacture Year">
-              <input className="input" value={sheet.manufactureYear ?? ''} onChange={(e) => set('manufactureYear', e.target.value)} />
             </Field>
           </div>
         </section>

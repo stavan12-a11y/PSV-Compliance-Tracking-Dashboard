@@ -28,14 +28,11 @@ export const TEMPLATE_HEADERS = [
   'Serviced On Site',
   'Make',
   'Model',
-  'Type',
   'Set Pressure',
   'Pressure Unit',
   'Capacity',
   'Inlet Size',
   'Outlet Size',
-  'Orifice',
-  'Body Material',
   'National Board No.',
   'Install Date',
   'Service Date',
@@ -165,17 +162,13 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
     const datasheet: PSVDatasheet = {
       make: String(pick(raw, normMap, 'Make', 'Manufacturer') ?? '').trim(),
       model: String(pick(raw, normMap, 'Model', 'Model Number') ?? '').trim(),
-      type: String(pick(raw, normMap, 'Type', 'Valve Type') ?? '').trim() || 'Conventional Spring',
       setPressure: Number(pick(raw, normMap, 'Set Pressure', 'Set Point')) || 0,
       pressureUnit: String(pick(raw, normMap, 'Pressure Unit', 'Unit') ?? 'PSIG').trim() || 'PSIG',
       capacity: String(pick(raw, normMap, 'Capacity') ?? '').trim(),
       inletSize: String(pick(raw, normMap, 'Inlet Size', 'Inlet') ?? '').trim(),
       outletSize: String(pick(raw, normMap, 'Outlet Size', 'Outlet') ?? '').trim(),
-      orifice: String(pick(raw, normMap, 'Orifice') ?? '').trim(),
-      bodyMaterial: String(pick(raw, normMap, 'Body Material', 'Material') ?? '').trim(),
       nationalBoardNumber: String(pick(raw, normMap, 'National Board No.', 'National Board', 'NB No') ?? '').trim(),
       serviceMedium: String(pick(raw, normMap, 'Service Medium', 'Medium') ?? '').trim(),
-      manufactureYear: String(pick(raw, normMap, 'Manufacture Year', 'Year') ?? '').trim(),
     };
 
     const psvId = uid('psv');

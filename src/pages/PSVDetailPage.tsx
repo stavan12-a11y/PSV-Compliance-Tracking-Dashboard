@@ -229,19 +229,12 @@ function DatasheetGrid({ sheet }: { sheet: PSVDatasheet }) {
   const rows: Array<[string, string | number | undefined]> = [
     ['Make / Manufacturer', sheet.make],
     ['Model Number', sheet.model],
-    ['Type', sheet.type],
     ['Set Pressure', `${sheet.setPressure} ${sheet.pressureUnit}`],
     ['Capacity', sheet.capacity],
     ['Inlet Size', sheet.inletSize],
     ['Outlet Size', sheet.outletSize],
-    ['Orifice', sheet.orifice],
-    ['Body Material', sheet.bodyMaterial],
-    ['Spring Material', sheet.springMaterial],
-    ['Connection Type', sheet.connectionType],
-    ['Cold Diff. Test Pressure', sheet.coldDifferentialTestPressure],
     ['Service Medium', sheet.serviceMedium],
     ['National Board No.', sheet.nationalBoardNumber],
-    ['Manufacture Year', sheet.manufactureYear],
   ];
   return (
     <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">

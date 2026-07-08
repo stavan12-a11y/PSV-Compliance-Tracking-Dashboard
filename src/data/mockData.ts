@@ -36,20 +36,13 @@ interface TimelineEntry {
 const DEFAULT_DATASHEET: PSVDatasheet = {
   make: 'Consolidated',
   model: '1900-30',
-  type: 'Conventional Spring',
   setPressure: 150,
   pressureUnit: 'PSIG',
   capacity: '12,500 lb/hr',
   inletSize: '2"',
   outletSize: '3"',
-  orifice: 'J',
-  bodyMaterial: 'Carbon Steel (WCB)',
-  springMaterial: 'Tungsten Alloy Steel',
-  connectionType: 'Flanged (RF)',
-  coldDifferentialTestPressure: '150 PSIG',
   serviceMedium: 'Saturated Steam',
   nationalBoardNumber: 'NB-22184',
-  manufactureYear: '2019',
 };
 
 function ds(partial: Partial<PSVDatasheet>): PSVDatasheet {
@@ -183,13 +176,13 @@ const psvs: PSV[] = [
   // --- Boiler #1 / Steam Drum (OVERDUE installed) --------------------------
   buildValve({
     id: 'psv-1001', sn: 'CV-1001', tag: 'BLR-001-PSV-A', locationId: 'loc-blr1-drum',
-    datasheet: ds({ make: 'Consolidated', model: '1900-30JM', setPressure: 650, capacity: '185,000 lb/hr', orifice: 'M', inletSize: '4"', outletSize: '6"', serviceMedium: 'Saturated Steam', manufactureYear: '2018', nationalBoardNumber: 'NB-19842' }),
+    datasheet: ds({ make: 'Consolidated', model: '1900-30JM', setPressure: 650, capacity: '185,000 lb/hr', inletSize: '4"', outletSize: '6"', serviceMedium: 'Saturated Steam', nationalBoardNumber: 'NB-19842' }),
     createdAt: '2018-05-01',
     timeline: [{ date: '2023-01-15', status: 'installed' }],
   }),
   buildValve({
     id: 'psv-1002', sn: 'CV-1002', tag: 'BLR-001-PSV-A', locationId: 'loc-blr1-drum',
-    datasheet: ds({ make: 'Consolidated', model: '1900-30JM', setPressure: 650, capacity: '185,000 lb/hr', orifice: 'M', inletSize: '4"', outletSize: '6"', serviceMedium: 'Saturated Steam', manufactureYear: '2018', nationalBoardNumber: 'NB-19843' }),
+    datasheet: ds({ make: 'Consolidated', model: '1900-30JM', setPressure: 650, capacity: '185,000 lb/hr', inletSize: '4"', outletSize: '6"', serviceMedium: 'Saturated Steam', nationalBoardNumber: 'NB-19843' }),
     createdAt: '2018-05-01',
     timeline: [{ date: '2023-01-15', status: 'inventory', note: 'Shelf spare' }],
   }),
@@ -197,13 +190,13 @@ const psvs: PSV[] = [
   // --- Boiler #1 / Superheater (DUE SOON) ----------------------------------
   buildValve({
     id: 'psv-1010', sn: 'CV-1010', tag: 'BLR-001-PSV-B', locationId: 'loc-blr1-sh',
-    datasheet: ds({ make: 'Crosby', model: 'HCI-2', setPressure: 600, capacity: '120,000 lb/hr', orifice: 'L', inletSize: '3"', outletSize: '4"', serviceMedium: 'Superheated Steam', manufactureYear: '2020', nationalBoardNumber: 'NB-20551' }),
+    datasheet: ds({ make: 'Crosby', model: 'HCI-2', setPressure: 600, capacity: '120,000 lb/hr', inletSize: '3"', outletSize: '4"', serviceMedium: 'Superheated Steam', nationalBoardNumber: 'NB-20551' }),
     createdAt: '2020-03-10',
     timeline: [{ date: '2023-07-20', status: 'installed' }],
   }),
   buildValve({
     id: 'psv-1011', sn: 'CV-1011', tag: 'BLR-001-PSV-B', locationId: 'loc-blr1-sh',
-    datasheet: ds({ make: 'Crosby', model: 'HCI-2', setPressure: 600, capacity: '120,000 lb/hr', orifice: 'L', inletSize: '3"', outletSize: '4"', serviceMedium: 'Superheated Steam', manufactureYear: '2020', nationalBoardNumber: 'NB-20552' }),
+    datasheet: ds({ make: 'Crosby', model: 'HCI-2', setPressure: 600, capacity: '120,000 lb/hr', inletSize: '3"', outletSize: '4"', serviceMedium: 'Superheated Steam', nationalBoardNumber: 'NB-20552' }),
     createdAt: '2020-03-10',
     timeline: [{ date: '2023-06-25', status: 'out_for_service', note: 'At vendor for recertification' }],
   }),
@@ -211,13 +204,13 @@ const psvs: PSV[] = [
   // --- Boiler #2 / Steam Drum (OVERDUE) ------------------------------------
   buildValve({
     id: 'psv-2001', sn: 'CV-2001', tag: 'BLR-002-PSV-A', locationId: 'loc-blr2-drum',
-    datasheet: ds({ make: 'Consolidated', model: '1900-30JM', setPressure: 650, capacity: '185,000 lb/hr', orifice: 'M', inletSize: '4"', outletSize: '6"', serviceMedium: 'Saturated Steam', manufactureYear: '2018' }),
+    datasheet: ds({ make: 'Consolidated', model: '1900-30JM', setPressure: 650, capacity: '185,000 lb/hr', inletSize: '4"', outletSize: '6"', serviceMedium: 'Saturated Steam' }),
     createdAt: '2018-05-01',
     timeline: [{ date: '2022-12-10', status: 'installed' }],
   }),
   buildValve({
     id: 'psv-2002', sn: 'CV-2002', tag: 'BLR-002-PSV-A', locationId: 'loc-blr2-drum',
-    datasheet: ds({ make: 'Consolidated', model: '1900-30JM', setPressure: 650, capacity: '185,000 lb/hr', orifice: 'M', inletSize: '4"', outletSize: '6"', serviceMedium: 'Saturated Steam', manufactureYear: '2018' }),
+    datasheet: ds({ make: 'Consolidated', model: '1900-30JM', setPressure: 650, capacity: '185,000 lb/hr', inletSize: '4"', outletSize: '6"', serviceMedium: 'Saturated Steam' }),
     createdAt: '2018-05-01',
     timeline: [{ date: '2022-12-10', status: 'inventory', note: 'Shelf spare' }],
   }),
@@ -225,13 +218,13 @@ const psvs: PSV[] = [
   // --- Boiler #2 / Economizer (COMPLIANT) ----------------------------------
   buildValve({
     id: 'psv-2010', sn: 'CV-2010', tag: 'BLR-002-PSV-C', locationId: 'loc-blr2-econ',
-    datasheet: ds({ make: 'Kunkle', model: '6010', setPressure: 700, capacity: '95,000 lb/hr', orifice: 'K', inletSize: '2.5"', outletSize: '4"', serviceMedium: 'Feedwater', manufactureYear: '2021' }),
+    datasheet: ds({ make: 'Kunkle', model: '6010', setPressure: 700, capacity: '95,000 lb/hr', inletSize: '2.5"', outletSize: '4"', serviceMedium: 'Feedwater' }),
     createdAt: '2021-08-01',
     timeline: [{ date: '2024-09-10', status: 'installed' }],
   }),
   buildValve({
     id: 'psv-2011', sn: 'CV-2011', tag: 'BLR-002-PSV-C', locationId: 'loc-blr2-econ',
-    datasheet: ds({ make: 'Kunkle', model: '6010', setPressure: 700, capacity: '95,000 lb/hr', orifice: 'K', inletSize: '2.5"', outletSize: '4"', serviceMedium: 'Feedwater', manufactureYear: '2021' }),
+    datasheet: ds({ make: 'Kunkle', model: '6010', setPressure: 700, capacity: '95,000 lb/hr', inletSize: '2.5"', outletSize: '4"', serviceMedium: 'Feedwater' }),
     createdAt: '2021-08-01',
     timeline: [{ date: '2024-09-10', status: 'inventory', note: 'Shelf spare' }],
   }),
@@ -240,7 +233,7 @@ const psvs: PSV[] = [
   buildValve({
     id: 'psv-3001', sn: 'HW-3001', tag: 'HWB-101-PSV-A', locationId: 'loc-hwb1-outlet',
     servicedOnSite: true,
-    datasheet: ds({ make: 'Kunkle', model: '537', type: 'Conventional Spring', setPressure: 125, capacity: '6,200 lb/hr', orifice: 'G', inletSize: '1.5"', outletSize: '2"', serviceMedium: 'Hot Water', bodyMaterial: 'Bronze', manufactureYear: '2017' }),
+    datasheet: ds({ make: 'Kunkle', model: '537', setPressure: 125, capacity: '6,200 lb/hr', inletSize: '1.5"', outletSize: '2"', serviceMedium: 'Hot Water' }),
     createdAt: '2017-04-01',
     timeline: [
       { date: '2017-04-15', status: 'installed' },
@@ -251,7 +244,7 @@ const psvs: PSV[] = [
   buildValve({
     id: 'psv-3002', sn: 'HW-3002', tag: 'HWB-101-PSV-B', locationId: 'loc-hwb1-exp',
     servicedOnSite: true,
-    datasheet: ds({ make: 'Watts', model: '174A', type: 'Conventional Spring', setPressure: 75, capacity: 'N/A', inletSize: '0.75"', outletSize: '1"', serviceMedium: 'Hot Water', bodyMaterial: 'Bronze', manufactureYear: '2019' }),
+    datasheet: ds({ make: 'Watts', model: '174A', setPressure: 75, capacity: 'N/A', inletSize: '0.75"', outletSize: '1"', serviceMedium: 'Hot Water' }),
     createdAt: '2019-03-01',
     timeline: [
       { date: '2019-03-20', status: 'installed' },
@@ -262,13 +255,13 @@ const psvs: PSV[] = [
   // --- HRSG #1 / HP Drum (COMPLIANT) ---------------------------------------
   buildValve({
     id: 'psv-4001', sn: 'SV-4001', tag: 'HRSG-201-PSV-A', locationId: 'loc-hrsg1-hp',
-    datasheet: ds({ make: 'Dresser', model: '1900', setPressure: 1250, capacity: '210,000 lb/hr', orifice: 'P', inletSize: '6"', outletSize: '8"', serviceMedium: 'Saturated Steam', manufactureYear: '2022' }),
+    datasheet: ds({ make: 'Dresser', model: '1900', setPressure: 1250, capacity: '210,000 lb/hr', inletSize: '6"', outletSize: '8"', serviceMedium: 'Saturated Steam' }),
     createdAt: '2022-02-01',
     timeline: [{ date: '2025-03-15', status: 'installed' }],
   }),
   buildValve({
     id: 'psv-4002', sn: 'SV-4002', tag: 'HRSG-201-PSV-A', locationId: 'loc-hrsg1-hp',
-    datasheet: ds({ make: 'Dresser', model: '1900', setPressure: 1250, capacity: '210,000 lb/hr', orifice: 'P', inletSize: '6"', outletSize: '8"', serviceMedium: 'Saturated Steam', manufactureYear: '2022' }),
+    datasheet: ds({ make: 'Dresser', model: '1900', setPressure: 1250, capacity: '210,000 lb/hr', inletSize: '6"', outletSize: '8"', serviceMedium: 'Saturated Steam' }),
     createdAt: '2022-02-01',
     timeline: [{ date: '2025-03-15', status: 'inventory', note: 'Shelf spare' }],
   }),
@@ -276,13 +269,13 @@ const psvs: PSV[] = [
   // --- HRSG #1 / LP Drum (DUE SOON) ----------------------------------------
   buildValve({
     id: 'psv-4010', sn: 'SV-4010', tag: 'HRSG-201-PSV-B', locationId: 'loc-hrsg1-lp',
-    datasheet: ds({ make: 'Dresser', model: '1900', setPressure: 250, capacity: '90,000 lb/hr', orifice: 'L', inletSize: '3"', outletSize: '4"', serviceMedium: 'Saturated Steam', manufactureYear: '2020' }),
+    datasheet: ds({ make: 'Dresser', model: '1900', setPressure: 250, capacity: '90,000 lb/hr', inletSize: '3"', outletSize: '4"', serviceMedium: 'Saturated Steam' }),
     createdAt: '2020-09-01',
     timeline: [{ date: '2023-08-15', status: 'installed' }],
   }),
   buildValve({
     id: 'psv-4011', sn: 'SV-4011', tag: 'HRSG-201-PSV-B', locationId: 'loc-hrsg1-lp',
-    datasheet: ds({ make: 'Dresser', model: '1900', setPressure: 250, capacity: '90,000 lb/hr', orifice: 'L', inletSize: '3"', outletSize: '4"', serviceMedium: 'Saturated Steam', manufactureYear: '2020' }),
+    datasheet: ds({ make: 'Dresser', model: '1900', setPressure: 250, capacity: '90,000 lb/hr', inletSize: '3"', outletSize: '4"', serviceMedium: 'Saturated Steam' }),
     createdAt: '2020-09-01',
     timeline: [{ date: '2023-08-01', status: 'inventory', note: 'Shelf spare' }],
   }),

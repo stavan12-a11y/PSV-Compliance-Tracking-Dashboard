@@ -1,6 +1,7 @@
-import { AlertTriangle, CheckCircle2, Clock, Gauge, Package, Wrench } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Gauge, Percent, Wrench } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { KPISummary } from '../types';
+import type { KPIFilterKey } from '../utils/kpiFilter';
 
 interface KPICardProps {
   label: string;
@@ -9,11 +10,33 @@ interface KPICardProps {
   accent: string;
   iconBg: string;
   hint?: string;
+  filterKey: KPIFilterKey;
+  active?: boolean;
+  onSelect?: (filter: KPIFilterKey) => void;
 }
 
-function KPICard({ label, value, icon: Icon, accent, iconBg, hint }: KPICardProps) {
+function KPICard({
+  label,
+  value,
+  icon: Icon,
+  accent,
+  iconBg,
+  hint,
+  filterKey,
+  active,
+  onSelect,
+}: KPICardProps) {
+  const clickable = Boolean(onSelect);
+
   return (
-    <div className="card flex items-center gap-4 p-4">
+    <button
+      type="button"
+      onClick={() => onSelect?.(filterKey)}
+      disabled={!clickable}
+      className={`card flex w-full items-center gap-4 p-4 text-left transition-all ${
+        clickable ? 'cursor-pointer hover:shadow-card-hover' : ''
+      } ${active ? 'ring-2 ring-maroon-700/60' : ''}`}
+    >
       <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
         <Icon className={`h-5 w-5 ${accent}`} />
       </div>
@@ -22,19 +45,33 @@ function KPICard({ label, value, icon: Icon, accent, iconBg, hint }: KPICardProp
         <p className="mt-1 truncate text-xs font-medium text-slate-500">{label}</p>
         {hint && <p className="text-[11px] text-slate-400">{hint}</p>}
       </div>
-    </div>
+    </button>
   );
 }
 
-export function KPIGrid({ summary }: { summary: KPISummary }) {
+interface KPIGridProps {
+  summary: KPISummary;
+  activeFilter?: KPIFilterKey | null;
+  onFilterChange?: (filter: KPIFilterKey | null) => void;
+}
+
+export function KPIGrid({ summary, activeFilter, onFilterChange }: KPIGridProps) {
+  const handleSelect = (filter: KPIFilterKey) => {
+    if (!onFilterChange) return;
+    onFilterChange(activeFilter === filter ? null : filter);
+  };
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
       <KPICard
         label="Total PSVs"
         value={summary.total}
         icon={Gauge}
         accent="text-slate-700"
         iconBg="bg-slate-100"
+        filterKey="total"
+        active={activeFilter === 'total'}
+        onSelect={onFilterChange ? handleSelect : undefined}
       />
       <KPICard
         label="Installed"
@@ -42,13 +79,9 @@ export function KPIGrid({ summary }: { summary: KPISummary }) {
         icon={CheckCircle2}
         accent="text-emerald-600"
         iconBg="bg-emerald-50"
-      />
-      <KPICard
-        label="In Inventory"
-        value={summary.inventory}
-        icon={Package}
-        accent="text-sky-600"
-        iconBg="bg-sky-50"
+        filterKey="installed"
+        active={activeFilter === 'installed'}
+        onSelect={onFilterChange ? handleSelect : undefined}
       />
       <KPICard
         label="Out for Service"
@@ -56,13 +89,9 @@ export function KPIGrid({ summary }: { summary: KPISummary }) {
         icon={Wrench}
         accent="text-amber-600"
         iconBg="bg-amber-50"
-      />
-      <KPICard
-        label="Due Soon (≤90d)"
-        value={summary.dueSoon}
-        icon={Clock}
-        accent="text-amber-600"
-        iconBg="bg-amber-50"
+        filterKey="out_for_service"
+        active={activeFilter === 'out_for_service'}
+        onSelect={onFilterChange ? handleSelect : undefined}
       />
       <KPICard
         label="Overdue"
@@ -70,6 +99,20 @@ export function KPIGrid({ summary }: { summary: KPISummary }) {
         icon={AlertTriangle}
         accent="text-red-600"
         iconBg="bg-red-50"
+        filterKey="overdue"
+        active={activeFilter === 'overdue'}
+        onSelect={onFilterChange ? handleSelect : undefined}
+      />
+      <KPICard
+        label="Compliant %"
+        value={`${summary.complianceRate}%`}
+        icon={Percent}
+        accent="text-emerald-600"
+        iconBg="bg-emerald-50"
+        hint={`${summary.compliant} of ${summary.installed} installed`}
+        filterKey="compliant"
+        active={activeFilter === 'compliant'}
+        onSelect={onFilterChange ? handleSelect : undefined}
       />
     </div>
   );

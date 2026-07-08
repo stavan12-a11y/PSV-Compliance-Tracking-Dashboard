@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react';
 import { FileSpreadsheet, Plus } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 import { summarize } from '../utils/compliance';
+import type { KPIFilterKey } from '../utils/kpiFilter';
 import { exportToExcel } from '../utils/excelExport';
 import { KPIGrid } from '../components/KPIGrid';
+import { KPIFilteredPSVList } from '../components/KPIFilteredPSVList';
 import { EquipmentCard } from '../components/EquipmentCard';
 import { UrgencyHistoryPanel } from '../components/UrgencyHistoryPanel';
 import { EquipmentFormModal } from '../components/forms/EquipmentFormModal';
@@ -12,6 +14,7 @@ export function Dashboard() {
   const { data } = usePSV();
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [kpiFilter, setKpiFilter] = useState<KPIFilterKey | null>(null);
 
   const summary = useMemo(() => summarize(data.psvs), [data.psvs]);
 
@@ -35,7 +38,11 @@ export function Dashboard() {
         </button>
       </div>
 
-      <KPIGrid summary={summary} />
+      <KPIGrid summary={summary} activeFilter={kpiFilter} onFilterChange={setKpiFilter} />
+
+      {kpiFilter && (
+        <KPIFilteredPSVList psvs={data.psvs} filter={kpiFilter} onClear={() => setKpiFilter(null)} />
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <section className="lg:col-span-2">
