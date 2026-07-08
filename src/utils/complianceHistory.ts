@@ -148,13 +148,3 @@ export function ensureComplianceHistory(data: AppData): AppData {
   if (nextHistory === data.complianceHistory) return data;
   return { ...data, complianceHistory: nextHistory };
 }
-
-/** Returns the most recent N days of history for charts (oldest first). */
-export function recentComplianceHistory(
-  history: ComplianceSnapshot[] | undefined,
-  days = 30,
-): ComplianceSnapshot[] {
-  if (!history?.length) return [];
-  const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date));
-  return sorted.slice(Math.max(0, sorted.length - days));
-}
