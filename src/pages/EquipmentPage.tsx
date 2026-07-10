@@ -186,7 +186,6 @@ function LocationRow({
 }) {
   const installed = psvs.find((p) => p.status === 'installed');
   const compliance = installed ? getCompliance(installed) : null;
-  const spares = psvs.filter((p) => p.status !== 'installed');
   const inventoryId = locationInventoryId(psvs);
 
   return (
@@ -245,18 +244,6 @@ function LocationRow({
               </>
             ) : (
               <span className="font-medium text-amber-600">No valve currently installed</span>
-            )}
-          </div>
-
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-            <span>{psvs.length} PSV(s):</span>
-            {psvs.map((p) => (
-              <span key={p.id} className="inline-flex items-center gap-1">
-                <span className="font-medium text-slate-600">{p.serialNumber}</span>
-              </span>
-            ))}
-            {spares.length > 0 && (
-              <span className="text-slate-300">· {spares.length} spare(s)</span>
             )}
           </div>
         </div>
