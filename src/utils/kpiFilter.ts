@@ -1,5 +1,5 @@
 import type { PSV } from '../types';
-import { getCompliance } from './compliance';
+import { getCompliance, isCompliantForRate } from './compliance';
 
 export type KPIFilterKey = 'total' | 'installed' | 'out_for_service' | 'overdue' | 'compliant';
 
@@ -22,6 +22,6 @@ export function filterPSVsByKPI(psvs: PSV[], filter: KPIFilterKey): PSV[] {
     case 'overdue':
       return psvs.filter((p) => getCompliance(p).state === 'overdue');
     case 'compliant':
-      return psvs.filter((p) => getCompliance(p).state === 'compliant');
+      return psvs.filter((p) => isCompliantForRate(getCompliance(p).state));
   }
 }

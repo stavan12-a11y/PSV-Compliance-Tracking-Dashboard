@@ -44,6 +44,8 @@ interface KPIGridProps {
 
 export function KPIGrid({ summary, onFilterSelect }: KPIGridProps) {
   const select = (filter: KPIFilterKey) => onFilterSelect?.(filter);
+  const passing = summary.compliant + summary.dueSoon;
+  const monitored = passing + summary.overdue;
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
@@ -61,7 +63,7 @@ export function KPIGrid({ summary, onFilterSelect }: KPIGridProps) {
         icon={Percent}
         accent="text-emerald-600"
         iconBg="bg-emerald-50"
-        hint={`${summary.compliant} of ${summary.installed} installed`}
+        hint={`${passing} of ${monitored} monitored`}
         onSelect={onFilterSelect ? () => select('compliant') : undefined}
       />
       <KPICard

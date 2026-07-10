@@ -91,6 +91,7 @@ export async function exportToExcel(data: AppData, scope: ExportScope = {}) {
       'Out for Service': s.outForService,
       'Due Soon': s.dueSoon,
       Overdue: s.overdue,
+      'Compliant %': s.complianceRate,
     };
   });
   const totals = summarize(psvs);
@@ -104,6 +105,7 @@ export async function exportToExcel(data: AppData, scope: ExportScope = {}) {
     'Out for Service': totals.outForService,
     'Due Soon': totals.dueSoon,
     Overdue: totals.overdue,
+    'Compliant %': totals.complianceRate,
   });
   const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
   autoWidth(wsSummary, summaryRows);

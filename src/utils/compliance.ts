@@ -75,6 +75,26 @@ export function getCompliance(psv: PSV): ComplianceInfo {
   return { state, dueDate, daysRemaining, lastInstallDate: installDate };
 }
 
+/** Due-soon valves count as compliant for the compliance-rate KPI. */
+export function isCompliantForRate(state: ComplianceState): boolean {
+  return state === 'compliant' || state === 'due_soon';
+}
+
+/**
+ * Compliance % = (compliant + due soon) / (compliant + due soon + overdue).
+ * Only installed / on-site valves with an active due date are in scope.
+ * Inventory and out-for-service valves are excluded from this rate.
+ */
+export function computeComplianceRate(counts: {
+  compliant: number;
+  dueSoon: number;
+  overdue: number;
+}): number {
+  const passing = counts.compliant + counts.dueSoon;
+  const monitored = passing + counts.overdue;
+  return monitored === 0 ? 100 : Math.round((passing / monitored) * 100);
+}
+
 /** Aggregates a set of PSVs into KPI counts. */
 export function summarize(psvs: PSV[]): KPISummary {
   const summary: KPISummary = {
@@ -99,11 +119,7 @@ export function summarize(psvs: PSV[]): KPISummary {
     else if (c.state === 'compliant') summary.compliant += 1;
   }
 
-  const activeMonitored = summary.installed;
-  summary.complianceRate =
-    activeMonitored === 0
-      ? 100
-      : Math.round((summary.compliant / activeMonitored) * 100);
+  summary.complianceRate = computeComplianceRate(summary);
 
   return summary;
 }
