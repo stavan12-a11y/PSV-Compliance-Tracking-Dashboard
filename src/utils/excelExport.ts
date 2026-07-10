@@ -9,6 +9,7 @@ import {
   summarize,
 } from './compliance';
 import { buildActivityFeed } from './activity';
+import { sortEventsNewestFirst, statusChangeEvents } from './events';
 import { formatDate, formatDateTime, todayISO } from './dates';
 
 interface ExportScope {
@@ -216,12 +217,7 @@ export async function exportPSVToExcel(data: AppData, psv: PSV) {
   XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
 
   // --- Sheet 2: History -----------------------------------------------------
-  const historyRows = [...psv.events]
-    .sort((a, b) => {
-      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-      return a.recordedAt < b.recordedAt ? 1 : -1;
-    })
-    .map((e) => ({
+  const historyRows = sortEventsNewestFirst(statusChangeEvents(psv.events)).map((e) => ({
       'Event Date': formatDate(e.date),
       Type: EVENT_TYPE_LABELS[e.type] ?? e.type,
       Status: e.status ? STATUS_LABELS[e.status] : '',

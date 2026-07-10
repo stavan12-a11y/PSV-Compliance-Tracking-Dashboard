@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 import { getCompliance, lastServiceDate } from '../utils/compliance';
+import { sortEventsNewestFirst, statusChangeEvents } from '../utils/events';
 import { exportPSVToExcel } from '../utils/excelExport';
 import { formatDate, formatDateTime, relativeDays, RECERT_INTERVAL_YEARS } from '../utils/dates';
 import { Breadcrumbs } from '../components/Breadcrumbs';
@@ -39,10 +40,7 @@ export function PSVDetailPage() {
 
   const sortedEvents = useMemo(() => {
     if (!psv) return [];
-    return [...psv.events].sort((a, b) => {
-      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-      return a.recordedAt < b.recordedAt ? 1 : -1;
-    });
+    return sortEventsNewestFirst(statusChangeEvents(psv.events));
   }, [psv]);
 
   const sortedRepairs = useMemo(() => {
@@ -233,11 +231,12 @@ export function PSVDetailPage() {
       </div>
 
       <PSVFormModal open={editPSV} psvId={psv.id} onClose={() => setEditPSV(false)} />
-      <EventFormModal open={addEvent} psvId={psv.id} onClose={() => setAddEvent(false)} />
+      <EventFormModal open={addEvent} psvId={psv.id} statusChangesOnly onClose={() => setAddEvent(false)} />
       <EventFormModal
         open={editEventId !== null}
         psvId={psv.id}
         eventId={editEventId ?? undefined}
+        statusChangesOnly
         onClose={() => setEditEventId(null)}
       />
       <RepairFormModal open={addRepair} psvId={psv.id} onClose={() => setAddRepair(false)} />
@@ -325,11 +324,7 @@ function HistoryItem({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const dot = event.status
-    ? DOT_COLORS[event.status]
-    : event.type === 'service'
-      ? 'bg-maroon-700'
-      : 'bg-slate-400';
+  const dot = event.status ? DOT_COLORS[event.status] : 'bg-slate-400';
   return (
     <li className="group relative flex gap-3 rounded-lg py-2 pl-1 pr-1 hover:bg-slate-50">
       <span className={`relative z-10 mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full ring-4 ring-white ${dot}`} />

@@ -12,11 +12,13 @@ interface EventFormModalProps {
   psvId: string;
   /** Provide to edit an existing history entry. */
   eventId?: string;
+  /** When true, only status-change entries can be added or edited. */
+  statusChangesOnly?: boolean;
 }
 
 type EntryKind = 'status-change' | 'service' | 'note';
 
-export function EventFormModal({ open, onClose, psvId, eventId }: EventFormModalProps) {
+export function EventFormModal({ open, onClose, psvId, eventId, statusChangesOnly }: EventFormModalProps) {
   const { getPSV, addHistoryEvent, updateHistoryEvent } = usePSV();
   const psv = getPSV(psvId);
   const existing = eventId ? psv?.events.find((e) => e.id === eventId) : undefined;
@@ -52,17 +54,18 @@ export function EventFormModal({ open, onClose, psvId, eventId }: EventFormModal
   }, [open, existing]);
 
   const handleSave = () => {
-    const isStatus = kind === 'status-change';
+    const entryKind = statusChangesOnly ? 'status-change' : kind;
+    const isStatus = entryKind === 'status-change';
     const desc =
       description.trim() ||
       (isStatus
         ? `Status set to ${STATUS_LABELS[status]}`
-        : kind === 'service'
+        : entryKind === 'service'
           ? 'Serviced on site'
           : 'History note');
 
     const payload = {
-      type: kind,
+      type: entryKind,
       status: isStatus ? status : undefined,
       date,
       description: desc,
@@ -82,8 +85,12 @@ export function EventFormModal({ open, onClose, psvId, eventId }: EventFormModal
       open={open}
       onClose={onClose}
       size="sm"
-      title={editing ? 'Edit history entry' : 'Add history entry'}
-      description="Correct a mistake or log an install / service / inventory event."
+      title={editing ? 'Edit status change' : 'Add status change'}
+      description={
+        statusChangesOnly
+          ? 'Log an install, out-for-service, or inventory transition.'
+          : 'Correct a mistake or log an install / service / inventory event.'
+      }
       footer={
         <>
           <button className="btn-secondary" onClick={onClose}>
@@ -96,14 +103,16 @@ export function EventFormModal({ open, onClose, psvId, eventId }: EventFormModal
       }
     >
       <div className="space-y-4">
-        <Field label="Entry Type">
-          <select className="input" value={kind} onChange={(e) => setKind(e.target.value as EntryKind)}>
-            <option value="status-change">Status change (install / out for service / inventory)</option>
-            <option value="service">On-site service / recertification</option>
-            <option value="note">Note</option>
-          </select>
-        </Field>
-        {kind === 'status-change' && (
+        {!statusChangesOnly && (
+          <Field label="Entry Type">
+            <select className="input" value={kind} onChange={(e) => setKind(e.target.value as EntryKind)}>
+              <option value="status-change">Status change (install / out for service / inventory)</option>
+              <option value="service">On-site service / recertification</option>
+              <option value="note">Note</option>
+            </select>
+          </Field>
+        )}
+        {(statusChangesOnly || kind === 'status-change') && (
           <Field label="Status" hint="Install dates drive the 3-year recertification due date.">
             <select className="input" value={status} onChange={(e) => setStatus(e.target.value as PSVStatus)}>
               {(Object.keys(STATUS_LABELS) as PSVStatus[]).map((s) => (

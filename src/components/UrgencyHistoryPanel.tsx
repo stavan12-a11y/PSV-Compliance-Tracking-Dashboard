@@ -14,6 +14,7 @@ import type { LucideIcon } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 import { getCompliance } from '../utils/compliance';
 import { buildActivityFeed } from '../utils/activity';
+import { isStatusChangeEvent } from '../utils/events';
 import { formatDate, formatDateTime, relativeDays } from '../utils/dates';
 import { ComplianceBadge } from './Badges';
 import type { PSVEventType } from '../types';
@@ -43,7 +44,7 @@ export function UrgencyHistoryPanel({ equipmentId }: { equipmentId?: string }) {
   }, [scopedPsvs]);
 
   const activity = useMemo(() => {
-    const feed = buildActivityFeed(data, undefined);
+    const feed = buildActivityFeed(data, undefined).filter((item) => isStatusChangeEvent(item.event));
     const filtered = equipmentId ? feed.filter((a) => a.equipmentId === equipmentId) : feed;
     return filtered.slice(0, 40);
   }, [data, equipmentId]);
