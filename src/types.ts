@@ -38,6 +38,19 @@ export interface PSVEvent {
   recordedAt: string;
 }
 
+/** A repair or overhaul record kept separate from status/compliance history. */
+export interface PSVRepairRecord {
+  id: string;
+  psvId: string;
+  /** Date work was performed (YYYY-MM-DD). */
+  date: string;
+  description: string;
+  vendor?: string;
+  workOrder?: string;
+  note?: string;
+  recordedAt: string;
+}
+
 /** Nameplate / datasheet information for a PSV. */
 export interface PSVDatasheet {
   make: string;
@@ -55,6 +68,8 @@ export interface PSVDatasheet {
 export interface PSV {
   id: string;
   serialNumber: string;
+  /** Internal stock / warehouse inventory identifier. */
+  inventoryId?: string;
   tag?: string;
   locationId: string;
   status: PSVStatus;
@@ -66,6 +81,7 @@ export interface PSV {
   servicedOnSite?: boolean;
   datasheet: PSVDatasheet;
   events: PSVEvent[];
+  repairHistory?: PSVRepairRecord[];
   createdAt: string;
 }
 

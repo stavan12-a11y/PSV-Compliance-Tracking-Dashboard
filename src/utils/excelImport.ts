@@ -23,6 +23,7 @@ export const TEMPLATE_HEADERS = [
   'Location',
   'Location Tag',
   'Serial Number',
+  'Inventory ID',
   'PSV Tag',
   'Status',
   'Serviced On Site',
@@ -221,12 +222,14 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
     psvs.push({
       id: psvId,
       serialNumber: sn,
+      inventoryId: String(pick(raw, normMap, 'Inventory ID', 'Inventory No', 'Inventory') ?? '').trim() || undefined,
       tag: String(pick(raw, normMap, 'PSV Tag', 'Tag') ?? '').trim() || undefined,
       locationId: loc.id,
       status,
       servicedOnSite: servicedOnSite || undefined,
       datasheet,
       events,
+      repairHistory: [],
       createdAt: now,
     });
   }
@@ -254,6 +257,7 @@ export async function downloadImportTemplate() {
     Location: 'Steam Drum Relief',
     'Location Tag': 'BLR-001-PSV-A',
     'Serial Number': 'CV-1001',
+    'Inventory ID': 'INV-PSV-0042',
     'PSV Tag': 'BLR-001-PSV-A',
     Status: 'Installed',
     'Serviced On Site': 'No',

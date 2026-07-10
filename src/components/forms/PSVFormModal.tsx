@@ -33,6 +33,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
   const existing = psvId ? getPSV(psvId) : undefined;
 
   const [serialNumber, setSerialNumber] = useState('');
+  const [inventoryId, setInventoryId] = useState('');
   const [tag, setTag] = useState('');
   const [locationId, setLocationId] = useState('');
   const [status, setStatus] = useState<PSVStatus>('inventory');
@@ -44,6 +45,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
     if (!open) return;
     if (existing) {
       setSerialNumber(existing.serialNumber);
+      setInventoryId(existing.inventoryId ?? '');
       setTag(existing.tag ?? '');
       setLocationId(existing.locationId);
       setStatus(existing.status);
@@ -51,6 +53,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
       setSheet({ ...EMPTY_DATASHEET, ...existing.datasheet });
     } else {
       setSerialNumber('');
+      setInventoryId('');
       setTag('');
       setLocationId(presetLocationId ?? data.locations[0]?.id ?? '');
       setStatus('inventory');
@@ -80,6 +83,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
     if (editing && existing) {
       updatePSV(existing.id, {
         serialNumber: serialNumber.trim(),
+        inventoryId: inventoryId.trim(),
         tag: tag.trim(),
         locationId,
         servicedOnSite,
@@ -88,6 +92,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
     } else {
       addPSV({
         serialNumber: serialNumber.trim(),
+        inventoryId: inventoryId.trim() || undefined,
         tag: tag.trim(),
         locationId,
         datasheet: cleaned,
@@ -121,6 +126,9 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Serial Number (S/N)" required>
             <input className="input" value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder="e.g. CV-1001" />
+          </Field>
+          <Field label="Inventory ID">
+            <input className="input" value={inventoryId} onChange={(e) => setInventoryId(e.target.value)} placeholder="e.g. INV-PSV-0042" />
           </Field>
           <Field label="PSV / Service Tag">
             <input className="input" value={tag} onChange={(e) => setTag(e.target.value)} placeholder="e.g. BLR-001-PSV-A" />

@@ -18,24 +18,39 @@ import { Breadcrumbs } from '../components/Breadcrumbs';
 import { ComplianceBadge, StatusBadge } from '../components/Badges';
 import { PSVFormModal } from '../components/forms/PSVFormModal';
 import { EventFormModal } from '../components/forms/EventFormModal';
-import type { PSVDatasheet, PSVEvent } from '../types';
+import { RepairFormModal } from '../components/forms/RepairFormModal';
+import type { PSVDatasheet, PSVEvent, PSVRepairRecord } from '../types';
+
+type HistoryTab = 'status' | 'repair';
 
 export function PSVDetailPage() {
   const { psvId = '' } = useParams();
   const navigate = useNavigate();
-  const { data, getPSV, getLocation, getEquipment, deletePSV, deleteHistoryEvent } = usePSV();
+  const { data, getPSV, getLocation, getEquipment, deletePSV, deleteHistoryEvent, deleteRepairRecord } =
+    usePSV();
 
   const psv = getPSV(psvId);
   const location = psv ? getLocation(psv.locationId) : undefined;
   const equipment = location ? getEquipment(location.equipmentId) : undefined;
 
   const [editPSV, setEditPSV] = useState(false);
+  const [historyTab, setHistoryTab] = useState<HistoryTab>('status');
   const [addEvent, setAddEvent] = useState(false);
   const [editEventId, setEditEventId] = useState<string | null>(null);
+  const [addRepair, setAddRepair] = useState(false);
+  const [editRepairId, setEditRepairId] = useState<string | null>(null);
 
   const sortedEvents = useMemo(() => {
     if (!psv) return [];
     return [...psv.events].sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return a.recordedAt < b.recordedAt ? 1 : -1;
+    });
+  }, [psv]);
+
+  const sortedRepairs = useMemo(() => {
+    if (!psv?.repairHistory?.length) return [];
+    return [...psv.repairHistory].sort((a, b) => {
       if (a.date !== b.date) return a.date < b.date ? 1 : -1;
       return a.recordedAt < b.recordedAt ? 1 : -1;
     });
@@ -72,6 +87,11 @@ export function PSVDetailPage() {
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-2xl font-bold text-slate-900">{psv.serialNumber}</h2>
+              {psv.inventoryId && (
+                <span className="rounded-md bg-sky-50 px-2 py-0.5 text-sm font-semibold text-sky-800">
+                  {psv.inventoryId}
+                </span>
+              )}
               {psv.tag && (
                 <span className="rounded-md bg-slate-100 px-2 py-0.5 text-sm font-semibold text-slate-600">
                   {psv.tag}
@@ -147,29 +167,76 @@ export function PSVDetailPage() {
             <ClipboardList className="h-5 w-5 text-maroon-700" />
             <h3 className="text-lg font-bold text-slate-900">Datasheet</h3>
           </div>
-          <DatasheetGrid sheet={psv.datasheet} />
+          <DatasheetGrid sheet={psv.datasheet} inventoryId={psv.inventoryId} />
         </section>
 
         <section className="card p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-900">History</h3>
-            <button className="btn-primary" onClick={() => setAddEvent(true)}>
-              <Plus className="h-4 w-4" />
-              Add Entry
-            </button>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+              <button
+                type="button"
+                onClick={() => setHistoryTab('status')}
+                className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  historyTab === 'status'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Status History
+              </button>
+              <button
+                type="button"
+                onClick={() => setHistoryTab('repair')}
+                className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  historyTab === 'repair'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Repair / Overhaul
+              </button>
+            </div>
+            {historyTab === 'status' ? (
+              <button className="btn-primary" onClick={() => setAddEvent(true)}>
+                <Plus className="h-4 w-4" />
+                Add Entry
+              </button>
+            ) : (
+              <button className="btn-primary" onClick={() => setAddRepair(true)}>
+                <Plus className="h-4 w-4" />
+                Add Repair
+              </button>
+            )}
           </div>
 
-          {sortedEvents.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-400">No history recorded yet.</p>
+          {historyTab === 'status' ? (
+            sortedEvents.length === 0 ? (
+              <p className="py-8 text-center text-sm text-slate-400">No status history recorded yet.</p>
+            ) : (
+              <ol className="relative space-y-1 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-slate-200">
+                {sortedEvents.map((event) => (
+                  <HistoryItem
+                    key={event.id}
+                    event={event}
+                    onEdit={() => setEditEventId(event.id)}
+                    onDelete={() => {
+                      if (confirm('Delete this history entry?')) deleteHistoryEvent(psv.id, event.id);
+                    }}
+                  />
+                ))}
+              </ol>
+            )
+          ) : sortedRepairs.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-400">No repair or overhaul records yet.</p>
           ) : (
             <ol className="relative space-y-1 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-slate-200">
-              {sortedEvents.map((event) => (
-                <HistoryItem
-                  key={event.id}
-                  event={event}
-                  onEdit={() => setEditEventId(event.id)}
+              {sortedRepairs.map((record) => (
+                <RepairItem
+                  key={record.id}
+                  record={record}
+                  onEdit={() => setEditRepairId(record.id)}
                   onDelete={() => {
-                    if (confirm('Delete this history entry?')) deleteHistoryEvent(psv.id, event.id);
+                    if (confirm('Delete this repair / overhaul entry?')) deleteRepairRecord(psv.id, record.id);
                   }}
                 />
               ))}
@@ -185,6 +252,13 @@ export function PSVDetailPage() {
         psvId={psv.id}
         eventId={editEventId ?? undefined}
         onClose={() => setEditEventId(null)}
+      />
+      <RepairFormModal open={addRepair} psvId={psv.id} onClose={() => setAddRepair(false)} />
+      <RepairFormModal
+        open={editRepairId !== null}
+        psvId={psv.id}
+        repairId={editRepairId ?? undefined}
+        onClose={() => setEditRepairId(null)}
       />
     </div>
   );
@@ -225,8 +299,9 @@ function KeyFact({
   );
 }
 
-function DatasheetGrid({ sheet }: { sheet: PSVDatasheet }) {
+function DatasheetGrid({ sheet, inventoryId }: { sheet: PSVDatasheet; inventoryId?: string }) {
   const rows: Array<[string, string | number | undefined]> = [
+    ['Inventory ID', inventoryId],
     ['Make / Manufacturer', sheet.make],
     ['Model Number', sheet.model],
     ['Set Pressure', `${sheet.setPressure} ${sheet.pressureUnit}`],
@@ -294,6 +369,51 @@ function HistoryItem({
         <p className="text-xs font-medium text-slate-600">{formatDate(event.date)}</p>
         {event.note && <p className="mt-0.5 text-xs italic text-slate-500">“{event.note}”</p>}
         <p className="text-[11px] text-slate-400">Recorded {formatDateTime(event.recordedAt)}</p>
+      </div>
+    </li>
+  );
+}
+
+function RepairItem({
+  record,
+  onEdit,
+  onDelete,
+}: {
+  record: PSVRepairRecord;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <li className="group relative flex gap-3 rounded-lg py-2 pl-1 pr-1 hover:bg-slate-50">
+      <span className="relative z-10 mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full bg-amber-500 ring-4 ring-white" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-slate-800">{record.description}</p>
+          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            <button
+              onClick={onEdit}
+              className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+              title="Edit entry"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={onDelete}
+              className="rounded p-1 text-slate-400 hover:bg-red-100 hover:text-red-600"
+              title="Delete entry"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+        <p className="text-xs font-medium text-slate-600">{formatDate(record.date)}</p>
+        {(record.vendor || record.workOrder) && (
+          <p className="mt-0.5 text-xs text-slate-500">
+            {[record.vendor, record.workOrder ? `WO ${record.workOrder}` : ''].filter(Boolean).join(' · ')}
+          </p>
+        )}
+        {record.note && <p className="mt-0.5 text-xs italic text-slate-500">"{record.note}"</p>}
+        <p className="text-[11px] text-slate-400">Recorded {formatDateTime(record.recordedAt)}</p>
       </div>
     </li>
   );

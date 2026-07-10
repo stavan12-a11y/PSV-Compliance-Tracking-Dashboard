@@ -49,6 +49,7 @@ export async function exportToExcel(data: AppData, scope: ExportScope = {}) {
         Location: loc?.name ?? '',
         'Location Tag': loc?.tag ?? '',
         'Serial Number': psv.serialNumber,
+        'Inventory ID': psv.inventoryId ?? '',
         'PSV Tag': psv.tag ?? '',
         Status: STATUS_LABELS[psv.status],
         'Serviced On Site': psv.servicedOnSite ? 'Yes' : 'No',
@@ -183,6 +184,7 @@ export async function exportPSVToExcel(data: AppData, psv: PSV) {
   const summaryAoa: Array<[string, string | number]> = [
     ['PSV SUMMARY', ''],
     ['Serial Number', psv.serialNumber],
+    ['Inventory ID', psv.inventoryId ?? ''],
     ['PSV Tag', psv.tag ?? ''],
     ['Equipment', eq?.name ?? ''],
     ['Equipment Tag', eq?.tag ?? ''],
@@ -227,7 +229,26 @@ export async function exportPSVToExcel(data: AppData, psv: PSV) {
     historyRows.length ? historyRows : [{ Note: 'No history recorded.' }],
   );
   autoWidth(wsHistory, historyRows);
-  XLSX.utils.book_append_sheet(wb, wsHistory, 'History');
+  XLSX.utils.book_append_sheet(wb, wsHistory, 'Status History');
+
+  const repairRows = [...(psv.repairHistory ?? [])]
+    .sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return a.recordedAt < b.recordedAt ? 1 : -1;
+    })
+    .map((r) => ({
+      Date: formatDate(r.date),
+      Description: r.description,
+      Vendor: r.vendor ?? '',
+      'Work Order': r.workOrder ?? '',
+      Note: r.note ?? '',
+      'Recorded At': formatDateTime(r.recordedAt),
+    }));
+  const wsRepair = XLSX.utils.json_to_sheet(
+    repairRows.length ? repairRows : [{ Note: 'No repair / overhaul records.' }],
+  );
+  autoWidth(wsRepair, repairRows);
+  XLSX.utils.book_append_sheet(wb, wsRepair, 'Repair History');
 
   const safeSn = psv.serialNumber.replace(/[^\w.-]+/g, '-');
   XLSX.writeFile(wb, `PSV_${safeSn}_${todayISO()}.xlsx`);

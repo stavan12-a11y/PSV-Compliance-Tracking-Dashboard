@@ -67,6 +67,7 @@ export function KPIFilterModal({ open, filter, psvs, onClose }: KPIFilterModalPr
             <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-3 py-2.5">Serial</th>
+                <th className="px-3 py-2.5">Inventory ID</th>
                 <th className="px-3 py-2.5">Equipment</th>
                 <th className="px-3 py-2.5">Location</th>
                 <th className="px-3 py-2.5">Status</th>
@@ -85,6 +86,7 @@ export function KPIFilterModal({ open, filter, psvs, onClose }: KPIFilterModalPr
                     <p className="font-semibold text-slate-900">{psv.serialNumber}</p>
                     {psv.tag && <p className="text-xs text-slate-400">{psv.tag}</p>}
                   </td>
+                  <td className="px-3 py-2.5 font-medium text-slate-700">{psv.inventoryId || '—'}</td>
                   <td className="px-3 py-2.5 text-slate-700">{eq?.name ?? '—'}</td>
                   <td className="px-3 py-2.5 text-slate-700">{loc?.name ?? '—'}</td>
                   <td className="px-3 py-2.5">

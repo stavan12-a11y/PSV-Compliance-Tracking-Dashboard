@@ -15,6 +15,7 @@ import type {
   PSV,
   PSVDatasheet,
   PSVEvent,
+  PSVRepairRecord,
   PSVStatus,
 } from '../types';
 import { seedData } from '../data/mockData';
@@ -70,7 +71,7 @@ interface PSVContextValue {
   addPSV: (input: NewPSVInput) => PSV;
   updatePSV: (
     id: string,
-    patch: Partial<Pick<PSV, 'serialNumber' | 'tag' | 'locationId' | 'servicedOnSite'>>,
+    patch: Partial<Pick<PSV, 'serialNumber' | 'inventoryId' | 'tag' | 'locationId' | 'servicedOnSite'>>,
   ) => void;
   updateDatasheet: (id: string, datasheet: PSVDatasheet) => void;
   deletePSV: (id: string) => void;
@@ -81,12 +82,18 @@ interface PSVContextValue {
   updateHistoryEvent: (id: string, eventId: string, patch: Partial<PSVEvent>) => void;
   deleteHistoryEvent: (id: string, eventId: string) => void;
 
+  // repair / overhaul history
+  addRepairRecord: (id: string, record: NewRepairInput) => void;
+  updateRepairRecord: (id: string, repairId: string, patch: Partial<NewRepairInput>) => void;
+  deleteRepairRecord: (id: string, repairId: string) => void;
+
   // bulk
   replaceData: (data: AppData) => void;
 }
 
 export interface NewPSVInput {
   serialNumber: string;
+  inventoryId?: string;
   tag?: string;
   locationId: string;
   datasheet: PSVDatasheet;
@@ -101,6 +108,14 @@ export interface NewEventInput {
   status?: PSVStatus;
   date: string;
   description?: string;
+  note?: string;
+}
+
+export interface NewRepairInput {
+  date: string;
+  description: string;
+  vendor?: string;
+  workOrder?: string;
   note?: string;
 }
 
@@ -359,12 +374,14 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     const created: PSV = {
       id,
       serialNumber: input.serialNumber,
+      inventoryId: input.inventoryId?.trim() || undefined,
       tag: input.tag,
       locationId: input.locationId,
       status,
       servicedOnSite: input.servicedOnSite || undefined,
       datasheet: input.datasheet,
       events,
+      repairHistory: [],
       createdAt: now,
     };
     setData((d) => {
@@ -380,7 +397,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
   const updatePSV = useCallback(
     (
       id: string,
-      patch: Partial<Pick<PSV, 'serialNumber' | 'tag' | 'locationId' | 'servicedOnSite'>>,
+      patch: Partial<Pick<PSV, 'serialNumber' | 'inventoryId' | 'tag' | 'locationId' | 'servicedOnSite'>>,
     ) => {
       setData((d) => ({
         ...d,
@@ -530,6 +547,56 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const addRepairRecord = useCallback((id: string, record: NewRepairInput) => {
+    const now = new Date().toISOString();
+    setData((d) => ({
+      ...d,
+      psvs: d.psvs.map((p) => {
+        if (p.id !== id) return p;
+        const entry: PSVRepairRecord = {
+          id: uid('rpr'),
+          psvId: id,
+          date: record.date,
+          description: record.description,
+          vendor: record.vendor,
+          workOrder: record.workOrder,
+          note: record.note,
+          recordedAt: now,
+        };
+        return { ...p, repairHistory: [...(p.repairHistory ?? []), entry] };
+      }),
+    }));
+  }, []);
+
+  const updateRepairRecord = useCallback(
+    (id: string, repairId: string, patch: Partial<NewRepairInput>) => {
+      setData((d) => ({
+        ...d,
+        psvs: d.psvs.map((p) => {
+          if (p.id !== id) return p;
+          return {
+            ...p,
+            repairHistory: (p.repairHistory ?? []).map((r) =>
+              r.id === repairId ? { ...r, ...patch } : r,
+            ),
+          };
+        }),
+      }));
+    },
+    [],
+  );
+
+  const deleteRepairRecord = useCallback((id: string, repairId: string) => {
+    setData((d) => ({
+      ...d,
+      psvs: d.psvs.map((p) =>
+        p.id === id
+          ? { ...p, repairHistory: (p.repairHistory ?? []).filter((r) => r.id !== repairId) }
+          : p,
+      ),
+    }));
+  }, []);
+
   const replaceData = useCallback((d: AppData) => setData(structuredClone(d)), []);
 
   const value = useMemo<PSVContextValue>(
@@ -556,6 +623,9 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       addHistoryEvent,
       updateHistoryEvent,
       deleteHistoryEvent,
+      addRepairRecord,
+      updateRepairRecord,
+      deleteRepairRecord,
       replaceData,
     }),
     [
@@ -581,6 +651,9 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       addHistoryEvent,
       updateHistoryEvent,
       deleteHistoryEvent,
+      addRepairRecord,
+      updateRepairRecord,
+      deleteRepairRecord,
       replaceData,
     ],
   );
