@@ -31,7 +31,7 @@ export function Dashboard() {
           className="btn-secondary"
           onClick={() => exportToExcel(data)}
           disabled={data.psvs.length === 0}
-          title="Export the full PSV register and compliance report to Excel"
+          title="Download all PSVs plus installed, out for service, overdue, and upcoming due lists"
         >
           <FileSpreadsheet className="h-4 w-4" />
           Export Excel
