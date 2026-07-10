@@ -4,6 +4,7 @@ export interface ActivityItem {
   event: PSVEvent;
   psvId: string;
   serialNumber: string;
+  inventoryId?: string;
   locationId: string;
   locationName: string;
   equipmentId: string;
@@ -24,6 +25,7 @@ export function buildActivityFeed(data: AppData, limit?: number): ActivityItem[]
         event,
         psvId: psv.id,
         serialNumber: psv.serialNumber,
+        inventoryId: psv.inventoryId,
         locationId: psv.locationId,
         locationName: loc?.name ?? 'Unknown location',
         equipmentId: eq?.id ?? '',
