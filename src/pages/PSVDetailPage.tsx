@@ -21,8 +21,6 @@ import { EventFormModal } from '../components/forms/EventFormModal';
 import { RepairFormModal } from '../components/forms/RepairFormModal';
 import type { PSVDatasheet, PSVEvent, PSVRepairRecord } from '../types';
 
-type HistoryTab = 'status' | 'repair';
-
 export function PSVDetailPage() {
   const { psvId = '' } = useParams();
   const navigate = useNavigate();
@@ -34,7 +32,6 @@ export function PSVDetailPage() {
   const equipment = location ? getEquipment(location.equipmentId) : undefined;
 
   const [editPSV, setEditPSV] = useState(false);
-  const [historyTab, setHistoryTab] = useState<HistoryTab>('status');
   const [addEvent, setAddEvent] = useState(false);
   const [editEventId, setEditEventId] = useState<string | null>(null);
   const [addRepair, setAddRepair] = useState(false);
@@ -161,89 +158,73 @@ export function PSVDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <section className="card p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-maroon-700" />
-            <h3 className="text-lg font-bold text-slate-900">Datasheet</h3>
-          </div>
-          <DatasheetGrid sheet={psv.datasheet} inventoryId={psv.inventoryId} />
-        </section>
+      <section className="card p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <ClipboardList className="h-5 w-5 text-maroon-700" />
+          <h3 className="text-lg font-bold text-slate-900">Datasheet</h3>
+        </div>
+        <DatasheetGrid sheet={psv.datasheet} inventoryId={psv.inventoryId} />
+      </section>
 
-        <section className="card p-5">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1">
-              <button
-                type="button"
-                onClick={() => setHistoryTab('status')}
-                className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
-                  historyTab === 'status'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Status History
-              </button>
-              <button
-                type="button"
-                onClick={() => setHistoryTab('repair')}
-                className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
-                  historyTab === 'repair'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Repair / Overhaul
-              </button>
-            </div>
-            {historyTab === 'status' ? (
-              <button className="btn-primary" onClick={() => setAddEvent(true)}>
-                <Plus className="h-4 w-4" />
-                Add Entry
-              </button>
-            ) : (
-              <button className="btn-primary" onClick={() => setAddRepair(true)}>
-                <Plus className="h-4 w-4" />
-                Add Repair
-              </button>
-            )}
+      <section className="card p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <CalendarClock className="h-5 w-5 text-maroon-700" />
+            <h3 className="text-lg font-bold text-slate-900">Status History</h3>
           </div>
+          <button className="btn-primary" onClick={() => setAddEvent(true)}>
+            <Plus className="h-4 w-4" />
+            Add Entry
+          </button>
+        </div>
 
-          {historyTab === 'status' ? (
-            sortedEvents.length === 0 ? (
-              <p className="py-8 text-center text-sm text-slate-400">No status history recorded yet.</p>
-            ) : (
-              <ol className="relative space-y-1 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-slate-200">
-                {sortedEvents.map((event) => (
-                  <HistoryItem
-                    key={event.id}
-                    event={event}
-                    onEdit={() => setEditEventId(event.id)}
-                    onDelete={() => {
-                      if (confirm('Delete this history entry?')) deleteHistoryEvent(psv.id, event.id);
-                    }}
-                  />
-                ))}
-              </ol>
-            )
-          ) : sortedRepairs.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-400">No repair or overhaul records yet.</p>
-          ) : (
-            <ol className="relative space-y-1 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-slate-200">
-              {sortedRepairs.map((record) => (
-                <RepairItem
-                  key={record.id}
-                  record={record}
-                  onEdit={() => setEditRepairId(record.id)}
-                  onDelete={() => {
-                    if (confirm('Delete this repair / overhaul entry?')) deleteRepairRecord(psv.id, record.id);
-                  }}
-                />
-              ))}
-            </ol>
-          )}
-        </section>
-      </div>
+        {sortedEvents.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-400">No status history recorded yet.</p>
+        ) : (
+          <ol className="relative space-y-1 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-slate-200">
+            {sortedEvents.map((event) => (
+              <HistoryItem
+                key={event.id}
+                event={event}
+                onEdit={() => setEditEventId(event.id)}
+                onDelete={() => {
+                  if (confirm('Delete this history entry?')) deleteHistoryEvent(psv.id, event.id);
+                }}
+              />
+            ))}
+          </ol>
+        )}
+      </section>
+
+      <section className="card p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Wrench className="h-5 w-5 text-maroon-700" />
+            <h3 className="text-lg font-bold text-slate-900">Repair / Overhaul History</h3>
+          </div>
+          <button className="btn-primary" onClick={() => setAddRepair(true)}>
+            <Plus className="h-4 w-4" />
+            Add Repair
+          </button>
+        </div>
+
+        {sortedRepairs.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-400">No repair or overhaul records yet.</p>
+        ) : (
+          <ol className="relative space-y-1 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-slate-200">
+            {sortedRepairs.map((record) => (
+              <RepairItem
+                key={record.id}
+                record={record}
+                onEdit={() => setEditRepairId(record.id)}
+                onDelete={() => {
+                  if (confirm('Delete this repair / overhaul entry?')) deleteRepairRecord(psv.id, record.id);
+                }}
+              />
+            ))}
+          </ol>
+        )}
+      </section>
 
       <PSVFormModal open={editPSV} psvId={psv.id} onClose={() => setEditPSV(false)} />
       <EventFormModal open={addEvent} psvId={psv.id} onClose={() => setAddEvent(false)} />
