@@ -163,6 +163,14 @@ export function EquipmentPage() {
   );
 }
 
+function locationInventoryId(psvs: PSV[]): string | undefined {
+  for (const psv of psvs) {
+    const id = psv.inventoryId?.trim();
+    if (id) return id;
+  }
+  return undefined;
+}
+
 function LocationRow({
   location,
   psvs,
@@ -179,6 +187,7 @@ function LocationRow({
   const installed = psvs.find((p) => p.status === 'installed');
   const compliance = installed ? getCompliance(installed) : null;
   const spares = psvs.filter((p) => p.status !== 'installed');
+  const inventoryId = locationInventoryId(psvs);
 
   return (
     <div
@@ -189,6 +198,11 @@ function LocationRow({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="font-bold text-slate-900">{location.name}</h4>
+            {inventoryId && (
+              <span className="rounded-md bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-800">
+                {inventoryId}
+              </span>
+            )}
             {location.tag && (
               <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">
                 {location.tag}

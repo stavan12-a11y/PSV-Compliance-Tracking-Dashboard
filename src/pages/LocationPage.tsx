@@ -30,6 +30,7 @@ export function LocationPage() {
   }
 
   const installedCount = psvs.filter((p) => p.status === 'installed').length;
+  const inventoryId = psvs.find((p) => p.inventoryId?.trim())?.inventoryId?.trim();
 
   return (
     <div className="space-y-6">
@@ -45,6 +46,11 @@ export function LocationPage() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-2xl font-bold text-slate-900">{location.name}</h2>
+              {inventoryId && (
+                <span className="rounded-md bg-sky-50 px-2 py-0.5 text-sm font-semibold text-sky-800">
+                  {inventoryId}
+                </span>
+              )}
               {location.tag && (
                 <span className="rounded-md bg-slate-100 px-2 py-0.5 text-sm font-semibold text-slate-600">
                   {location.tag}
