@@ -57,22 +57,22 @@ export function KPIFilterModal({ open, filter, psvs, onClose }: KPIFilterModalPr
       onClose={onClose}
       title={label}
       description={`${rows.length} safety valve${rows.length === 1 ? '' : 's'}`}
-      size="lg"
+      size="xl"
     >
       {rows.length === 0 ? (
         <p className="py-8 text-center text-sm text-slate-500">No valves match this KPI.</p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-200">
-          <table className="min-w-full text-left text-sm">
+          <table className="w-full min-w-[56rem] text-left text-sm">
             <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="px-3 py-2.5">Serial</th>
-                <th className="px-3 py-2.5">Inventory ID</th>
-                <th className="px-3 py-2.5">Equipment</th>
-                <th className="px-3 py-2.5">Location</th>
-                <th className="px-3 py-2.5">Status</th>
-                <th className="px-3 py-2.5">Due Date</th>
-                <th className="px-3 py-2.5">Compliance</th>
+                <th className="min-w-[7rem] px-4 py-3">Serial</th>
+                <th className="min-w-[8rem] px-4 py-3">Inventory ID</th>
+                <th className="min-w-[10rem] px-4 py-3">Equipment</th>
+                <th className="min-w-[10rem] px-4 py-3">Location</th>
+                <th className="min-w-[7rem] px-4 py-3">Status</th>
+                <th className="min-w-[8rem] px-4 py-3">Due Date</th>
+                <th className="min-w-[7rem] px-4 py-3">Compliance</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -82,17 +82,19 @@ export function KPIFilterModal({ open, filter, psvs, onClose }: KPIFilterModalPr
                   onClick={() => openPSV(psv.id)}
                   className="cursor-pointer transition-colors hover:bg-maroon-50/40"
                 >
-                  <td className="px-3 py-2.5">
+                  <td className="px-4 py-3">
                     <p className="font-semibold text-slate-900">{psv.serialNumber}</p>
                     {psv.tag && <p className="text-xs text-slate-400">{psv.tag}</p>}
                   </td>
-                  <td className="px-3 py-2.5 font-medium text-slate-700">{psv.inventoryId || '—'}</td>
-                  <td className="px-3 py-2.5 text-slate-700">{eq?.name ?? '—'}</td>
-                  <td className="px-3 py-2.5 text-slate-700">{loc?.name ?? '—'}</td>
-                  <td className="px-3 py-2.5">
+                  <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-700">
+                    {psv.inventoryId || '—'}
+                  </td>
+                  <td className="px-4 py-3 text-slate-700">{eq?.name ?? '—'}</td>
+                  <td className="px-4 py-3 text-slate-700">{loc?.name ?? '—'}</td>
+                  <td className="whitespace-nowrap px-4 py-3">
                     <StatusBadge status={psv.status} />
                   </td>
-                  <td className="px-3 py-2.5">
+                  <td className="whitespace-nowrap px-4 py-3">
                     {compliance.dueDate ? (
                       <div>
                         <p className="font-medium text-slate-800">{formatDate(compliance.dueDate)}</p>
@@ -112,7 +114,7 @@ export function KPIFilterModal({ open, filter, psvs, onClose }: KPIFilterModalPr
                       <span className="text-slate-400">{STATUS_LABELS[psv.status]}</span>
                     )}
                   </td>
-                  <td className="px-3 py-2.5">
+                  <td className="whitespace-nowrap px-4 py-3">
                     <ComplianceBadge state={compliance.state} />
                   </td>
                 </tr>
