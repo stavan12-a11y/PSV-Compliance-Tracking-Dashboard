@@ -15,6 +15,7 @@ interface ExportScope {
 }
 
 type Row = Record<string, string | number>;
+type XLSXModule = typeof import('xlsx');
 
 // ---------------------------------------------------------------------------
 // Bulk export — dashboard & equipment page
@@ -22,40 +23,56 @@ type Row = Record<string, string | number>;
 
 export async function exportToExcel(data: AppData, scope: ExportScope = {}) {
   const XLSX = await import('xlsx');
-  const eqIds = scope.equipment ? new Set([scope.equipment.id]) : null;
+  const wb = buildBulkExportWorkbook(data, scope, XLSX);
+  const scopeName = scope.equipment
+    ? scope.equipment.tag || scope.equipment.name.replace(/\s+/g, '-')
+    : 'All-Equipment';
+  XLSX.writeFile(wb, `PSV-Report_${scopeName}_${todayISO()}.xlsx`);
+}
 
-  const locations = eqIds
-    ? data.locations.filter((l) => eqIds.has(l.equipmentId))
-    : data.locations;
-  const locIds = new Set(locations.map((l) => l.id));
-  const psvs = data.psvs.filter((p) => locIds.has(p.locationId));
+/** Builds the 5-sheet bulk workbook (exported for tests). */
+export function buildBulkExportWorkbook(
+  data: AppData,
+  scope: ExportScope,
+  XLSX: XLSXModule,
+): WorkBook {
+  const eqIds = scope.equipment ? new Set([scope.equipment.id]) : null;
+  const locIds = eqIds
+    ? new Set(data.locations.filter((l) => eqIds.has(l.equipmentId)).map((l) => l.id))
+    : null;
+
+  // Site-wide export includes every PSV in the database.
+  const psvs = locIds ? data.psvs.filter((p) => locIds.has(p.locationId)) : data.psvs;
 
   const eqById = new Map(data.equipment.map((e) => [e.id, e]));
   const locById = new Map(data.locations.map((l) => [l.id, l]));
 
   const wb = XLSX.utils.book_new();
+  const withCompliance = psvs.map((psv) => ({ psv, c: getCompliance(psv) }));
 
-  const allRows = buildRegisterRows(psvs, locById, eqById);
-  appendSheet(wb, XLSX, 'All PSVs', allRows, REGISTER_COLUMNS);
-
+  appendSheet(wb, XLSX, 'All PSVs', buildRegisterRows(psvs, locById, eqById), REGISTER_COLUMNS);
   appendSheet(
     wb,
     XLSX,
     'Installed',
-    buildRegisterRows(psvs.filter((p) => p.status === 'installed'), locById, eqById),
+    buildRegisterRows(
+      psvs.filter((p) => p.status === 'installed'),
+      locById,
+      eqById,
+    ),
     REGISTER_COLUMNS,
   );
-
   appendSheet(
     wb,
     XLSX,
     'Out for Service',
-    buildRegisterRows(psvs.filter((p) => p.status === 'out_for_service'), locById, eqById),
+    buildRegisterRows(
+      psvs.filter((p) => p.status === 'out_for_service'),
+      locById,
+      eqById,
+    ),
     REGISTER_COLUMNS,
   );
-
-  const withCompliance = psvs.map((psv) => ({ psv, c: getCompliance(psv) }));
-
   appendSheet(
     wb,
     XLSX,
@@ -68,7 +85,6 @@ export async function exportToExcel(data: AppData, scope: ExportScope = {}) {
     ),
     REGISTER_COLUMNS,
   );
-
   appendSheet(
     wb,
     XLSX,
@@ -82,10 +98,7 @@ export async function exportToExcel(data: AppData, scope: ExportScope = {}) {
     REGISTER_COLUMNS,
   );
 
-  const scopeName = scope.equipment
-    ? scope.equipment.tag || scope.equipment.name.replace(/\s+/g, '-')
-    : 'All-Equipment';
-  XLSX.writeFile(wb, `PSV-Report_${scopeName}_${todayISO()}.xlsx`);
+  return wb;
 }
 
 // ---------------------------------------------------------------------------
@@ -228,19 +241,6 @@ function resolveContext(
   return { loc, eq };
 }
 
-function identityColumns(psv: PSV, ctx: PsvContext): Row {
-  return {
-    Equipment: ctx.eq?.name ?? '',
-    'Equipment Tag': ctx.eq?.tag ?? '',
-    Area: ctx.eq?.area ?? '',
-    Location: ctx.loc?.name ?? '',
-    'Location Tag': ctx.loc?.tag ?? '',
-    'Serial Number': psv.serialNumber,
-    'Inventory ID': psv.inventoryId ?? '',
-    'PSV Tag': psv.tag ?? '',
-  };
-}
-
 function buildRegisterRows(
   psvs: PSV[],
   locById: Map<string, Location>,
@@ -253,7 +253,12 @@ function buildRegisterRows(
   return sorted.map((psv) => buildRegisterRow(psv, locById, eqById));
 }
 
-function sortRegisterDefault(a: PSV, b: PSV, locById: Map<string, Location>, eqById: Map<string, Equipment>): number {
+function sortRegisterDefault(
+  a: PSV,
+  b: PSV,
+  locById: Map<string, Location>,
+  eqById: Map<string, Equipment>,
+): number {
   const aCtx = resolveContext(a, locById, eqById);
   const bCtx = resolveContext(b, locById, eqById);
   const eqCmp = (aCtx.eq?.name ?? '').localeCompare(bCtx.eq?.name ?? '');
@@ -271,7 +276,14 @@ function buildRegisterRow(
   const ctx = resolveContext(psv, locById, eqById);
   const c = getCompliance(psv);
   return {
-    ...identityColumns(psv, ctx),
+    Equipment: ctx.eq?.name ?? '',
+    'Equipment Tag': ctx.eq?.tag ?? '',
+    Area: ctx.eq?.area ?? '',
+    Location: ctx.loc?.name ?? '',
+    'Location Tag': ctx.loc?.tag ?? '',
+    'Serial Number': psv.serialNumber,
+    'Inventory ID': psv.inventoryId ?? '',
+    'PSV Tag': psv.tag ?? '',
     Status: STATUS_LABELS[psv.status],
     'Serviced On Site': psv.servicedOnSite ? 'Yes' : 'No',
     Make: psv.datasheet.make,
@@ -339,21 +351,26 @@ function sortRepairsNewestFirst(records: PSVRepairRecord[]): PSVRepairRecord[] {
 
 function appendSheet(
   wb: WorkBook,
-  XLSX: typeof import('xlsx'),
+  XLSX: XLSXModule,
   name: string,
   rows: Row[],
   columns: readonly string[],
 ) {
-  const sheetRows = rows.length ? rows : [emptyPlaceholder(columns)];
-  const ws = XLSX.utils.json_to_sheet(sheetRows, { header: [...columns] });
-  autoWidth(ws, sheetRows, columns);
+  const ws =
+    rows.length > 0
+      ? rowsToSheet(XLSX, rows, columns)
+      : XLSX.utils.aoa_to_sheet([['No records to report.']]);
+  autoWidth(ws, rows, columns);
   XLSX.utils.book_append_sheet(wb, ws, name);
 }
 
-function emptyPlaceholder(columns: readonly string[]): Row {
-  const row: Row = { Note: 'No records to report.' };
-  for (const col of columns) row[col] = '';
-  return row;
+/** Writes header + one row per record using an array-of-arrays (reliable for all row counts). */
+function rowsToSheet(XLSX: XLSXModule, rows: Row[], columns: readonly string[]): WorkSheet {
+  const aoa: Array<Array<string | number>> = [
+    [...columns],
+    ...rows.map((row) => columns.map((col) => row[col] ?? '')),
+  ];
+  return XLSX.utils.aoa_to_sheet(aoa);
 }
 
 function autoWidth(ws: WorkSheet, rows: Row[], columns: readonly string[]) {
