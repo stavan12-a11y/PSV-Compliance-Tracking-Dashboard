@@ -1,5 +1,5 @@
-import type { WorkSheet } from 'xlsx';
-import type { AppData, Equipment, PSV } from '../types';
+import type { WorkBook, WorkSheet } from 'xlsx';
+import type { AppData, Equipment, Location, PSV, PSVEvent, PSVRepairRecord } from '../types';
 import {
   COMPLIANCE_LABELS,
   STATUS_LABELS,
@@ -8,19 +8,19 @@ import {
   lastServiceDate,
   summarize,
 } from './compliance';
-import { buildActivityFeed } from './activity';
 import { sortEventsNewestFirst, statusChangeEvents } from './events';
 import { formatDate, formatDateTime, todayISO } from './dates';
 
 interface ExportScope {
-  /** Optional single equipment to scope the report to. */
   equipment?: Equipment;
 }
 
-/**
- * Builds and downloads a multi-sheet Excel workbook for the given data/scope.
- * xlsx is imported dynamically so it is only loaded when an export is requested.
- */
+type Row = Record<string, string | number>;
+
+// ---------------------------------------------------------------------------
+// Bulk export — dashboard & equipment page
+// ---------------------------------------------------------------------------
+
 export async function exportToExcel(data: AppData, scope: ExportScope = {}) {
   const XLSX = await import('xlsx');
   const eqIds = scope.equipment ? new Set([scope.equipment.id]) : null;
@@ -37,59 +37,29 @@ export async function exportToExcel(data: AppData, scope: ExportScope = {}) {
 
   const wb = XLSX.utils.book_new();
 
-  // --- Sheet 1: PSV Register ------------------------------------------------
   const registerRows = psvs
-    .map((psv) => {
-      const loc = locById.get(psv.locationId);
-      const eq = loc ? eqById.get(loc.equipmentId) : undefined;
-      const c = getCompliance(psv);
-      return {
-        Equipment: eq?.name ?? '',
-        'Equipment Tag': eq?.tag ?? '',
-        Area: eq?.area ?? '',
-        Location: loc?.name ?? '',
-        'Location Tag': loc?.tag ?? '',
-        'Serial Number': psv.serialNumber,
-        'Inventory ID': psv.inventoryId ?? '',
-        'PSV Tag': psv.tag ?? '',
-        Status: STATUS_LABELS[psv.status],
-        'Serviced On Site': psv.servicedOnSite ? 'Yes' : 'No',
-        Make: psv.datasheet.make,
-        Model: psv.datasheet.model,
-        'Set Pressure': psv.datasheet.setPressure,
-        Unit: psv.datasheet.pressureUnit,
-        Capacity: psv.datasheet.capacity,
-        Inlet: psv.datasheet.inletSize,
-        Outlet: psv.datasheet.outletSize,
-        'National Board No.': psv.datasheet.nationalBoardNumber ?? '',
-        'Last Install Date': formatDate(lastInstallDate(psv)),
-        'Last Service Date': formatDate(lastServiceDate(psv)),
-        'Due Date': c.dueDate ? formatDate(c.dueDate) : '',
-        'Days Remaining': c.daysRemaining ?? '',
-        Compliance: COMPLIANCE_LABELS[c.state],
-      };
-    })
-    .sort((a, b) => a.Equipment.localeCompare(b.Equipment) || a.Location.localeCompare(b.Location));
+    .map((psv) => buildRegisterRow(psv, locById, eqById))
+    .sort(
+      (a, b) =>
+        String(a.Equipment).localeCompare(String(b.Equipment)) ||
+        String(a.Location).localeCompare(String(b.Location)) ||
+        String(a['Serial Number']).localeCompare(String(b['Serial Number'])),
+    );
+  appendSheet(wb, XLSX, 'PSV Register', registerRows, REGISTER_COLUMNS);
 
-  const wsRegister = XLSX.utils.json_to_sheet(
-    registerRows.length ? registerRows : [{ Note: 'No PSVs to report.' }],
-  );
-  autoWidth(wsRegister, registerRows);
-  XLSX.utils.book_append_sheet(wb, wsRegister, 'PSV Register');
-
-  // --- Sheet 2: Compliance Summary -----------------------------------------
-  const summaryRows: Array<Record<string, string | number>> = equipment.map((eq) => {
+  const summaryRows: Row[] = equipment.map((eq) => {
     const eqLocIds = new Set(data.locations.filter((l) => l.equipmentId === eq.id).map((l) => l.id));
     const eqPsvs = data.psvs.filter((p) => eqLocIds.has(p.locationId));
     const s = summarize(eqPsvs);
     return {
       Equipment: eq.name,
-      Tag: eq.tag,
+      'Equipment Tag': eq.tag,
       Area: eq.area,
       'Total PSVs': s.total,
       Installed: s.installed,
       Inventory: s.inventory,
       'Out for Service': s.outForService,
+      Passing: s.compliant + s.dueSoon,
       'Due Soon': s.dueSoon,
       Overdue: s.overdue,
       'Compliant %': s.complianceRate,
@@ -98,102 +68,101 @@ export async function exportToExcel(data: AppData, scope: ExportScope = {}) {
   const totals = summarize(psvs);
   summaryRows.push({
     Equipment: 'TOTAL',
-    Tag: '',
+    'Equipment Tag': '',
     Area: '',
     'Total PSVs': totals.total,
     Installed: totals.installed,
     Inventory: totals.inventory,
     'Out for Service': totals.outForService,
+    Passing: totals.compliant + totals.dueSoon,
     'Due Soon': totals.dueSoon,
     Overdue: totals.overdue,
     'Compliant %': totals.complianceRate,
   });
-  const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
-  autoWidth(wsSummary, summaryRows);
-  XLSX.utils.book_append_sheet(wb, wsSummary, 'Compliance Summary');
+  appendSheet(wb, XLSX, 'Compliance Summary', summaryRows, SUMMARY_COLUMNS);
 
-  // --- Sheet 3: Due & Overdue ----------------------------------------------
   const dueRows = psvs
     .map((psv) => ({ psv, c: getCompliance(psv) }))
     .filter((x) => x.c.state !== 'not_installed')
     .sort((a, b) => (a.c.daysRemaining ?? 0) - (b.c.daysRemaining ?? 0))
-    .map(({ psv, c }) => {
-      const loc = locById.get(psv.locationId);
-      const eq = loc ? eqById.get(loc.equipmentId) : undefined;
-      return {
-        Equipment: eq?.name ?? '',
-        Location: loc?.name ?? '',
-        'Serial Number': psv.serialNumber,
-        'Inventory ID': psv.inventoryId ?? '',
-        'Due Date': formatDate(c.dueDate),
-        'Days Remaining': c.daysRemaining ?? '',
-        Compliance: COMPLIANCE_LABELS[c.state],
-      };
-    });
-  const wsDue = XLSX.utils.json_to_sheet(
-    dueRows.length ? dueRows : [{ Note: 'No installed PSVs to report.' }],
-  );
-  autoWidth(wsDue, dueRows);
-  XLSX.utils.book_append_sheet(wb, wsDue, 'Due & Overdue');
+    .map(({ psv, c }) => buildDueRow(psv, c, locById, eqById));
+  appendSheet(wb, XLSX, 'Due & Overdue', dueRows, DUE_COLUMNS);
 
-  // --- Sheet 4: History Log -------------------------------------------------
-  const feed = buildActivityFeed(data).filter((a) =>
-    eqIds ? eqIds.has(a.equipmentId) : true,
+  const statusEntries: Array<{ row: Row; date: string; recordedAt: string }> = [];
+  for (const psv of psvs) {
+    const ctx = resolveContext(psv, locById, eqById);
+    for (const event of statusChangeEvents(psv.events)) {
+      statusEntries.push({
+        row: buildStatusHistoryRow(psv, event, ctx),
+        date: event.date,
+        recordedAt: event.recordedAt,
+      });
+    }
+  }
+  statusEntries.sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return a.recordedAt < b.recordedAt ? 1 : -1;
+  });
+  appendSheet(
+    wb,
+    XLSX,
+    'Status History',
+    statusEntries.map((entry) => entry.row),
+    STATUS_HISTORY_COLUMNS,
   );
-  const historyRows = feed.map((item) => ({
-    'Recorded At': formatDateTime(item.event.recordedAt),
-    'Event Date': formatDate(item.event.date),
-    Equipment: item.equipmentName,
-    Location: item.locationName,
-    'Serial Number': item.serialNumber,
-    'Inventory ID': item.inventoryId ?? '',
-    Type: item.event.type,
-    Description: item.event.description,
-    Note: item.event.note ?? '',
-  }));
-  const wsHistory = XLSX.utils.json_to_sheet(
-    historyRows.length ? historyRows : [{ Note: 'No history recorded.' }],
+
+  const repairEntries: Array<{ row: Row; date: string; recordedAt: string }> = [];
+  for (const psv of psvs) {
+    const ctx = resolveContext(psv, locById, eqById);
+    for (const record of psv.repairHistory ?? []) {
+      repairEntries.push({
+        row: buildRepairRow(psv, record, ctx),
+        date: record.date,
+        recordedAt: record.recordedAt,
+      });
+    }
+  }
+  repairEntries.sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return a.recordedAt < b.recordedAt ? 1 : -1;
+  });
+  appendSheet(
+    wb,
+    XLSX,
+    'Repair History',
+    repairEntries.map((entry) => entry.row),
+    REPAIR_COLUMNS,
   );
-  autoWidth(wsHistory, historyRows);
-  XLSX.utils.book_append_sheet(wb, wsHistory, 'History Log');
 
   const scopeName = scope.equipment
     ? scope.equipment.tag || scope.equipment.name.replace(/\s+/g, '-')
     : 'All-Equipment';
-  const filename = `PSV-Report_${scopeName}_${todayISO()}.xlsx`;
-  XLSX.writeFile(wb, filename);
+  XLSX.writeFile(wb, `PSV-Report_${scopeName}_${todayISO()}.xlsx`);
 }
 
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  created: 'Created',
-  'status-change': 'Status Change',
-  service: 'On-site Service',
-  'datasheet-update': 'Datasheet Update',
-  'history-edit': 'History Edit',
-  note: 'Note',
-};
+// ---------------------------------------------------------------------------
+// Single-PSV export — PSV detail page
+// ---------------------------------------------------------------------------
 
-/**
- * Builds and downloads an Excel workbook for a single PSV: a summary/datasheet
- * sheet plus the full chronological history (status changes, services, etc.).
- */
 export async function exportPSVToExcel(data: AppData, psv: PSV) {
   const XLSX = await import('xlsx');
-  const loc = data.locations.find((l) => l.id === psv.locationId);
-  const eq = loc ? data.equipment.find((e) => e.id === loc.equipmentId) : undefined;
+  const locById = new Map(data.locations.map((l) => [l.id, l]));
+  const eqById = new Map(data.equipment.map((e) => [e.id, e]));
+  const ctx = resolveContext(psv, locById, eqById);
   const c = getCompliance(psv);
 
   const wb = XLSX.utils.book_new();
 
-  // --- Sheet 1: Summary & Datasheet ----------------------------------------
   const summaryAoa: Array<[string, string | number]> = [
     ['PSV SUMMARY', ''],
     ['Serial Number', psv.serialNumber],
     ['Inventory ID', psv.inventoryId ?? ''],
     ['PSV Tag', psv.tag ?? ''],
-    ['Equipment', eq?.name ?? ''],
-    ['Equipment Tag', eq?.tag ?? ''],
-    ['Location', loc?.name ?? ''],
+    ['Equipment', ctx.eq?.name ?? ''],
+    ['Equipment Tag', ctx.eq?.tag ?? ''],
+    ['Area', ctx.eq?.area ?? ''],
+    ['Location', ctx.loc?.name ?? ''],
+    ['Location Tag', ctx.loc?.tag ?? ''],
     ['Current Status', STATUS_LABELS[psv.status]],
     ['Serviced On Site', psv.servicedOnSite ? 'Yes' : 'No'],
     ['Last Install Date', formatDate(lastInstallDate(psv))],
@@ -216,54 +185,259 @@ export async function exportPSVToExcel(data: AppData, psv: PSV) {
   wsSummary['!cols'] = [{ wch: 28 }, { wch: 40 }];
   XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
 
-  // --- Sheet 2: History -----------------------------------------------------
-  const historyRows = sortEventsNewestFirst(statusChangeEvents(psv.events)).map((e) => ({
-      'Event Date': formatDate(e.date),
-      Type: EVENT_TYPE_LABELS[e.type] ?? e.type,
-      Status: e.status ? STATUS_LABELS[e.status] : '',
-      Description: e.description,
-      Note: e.note ?? '',
-      'Recorded At': formatDateTime(e.recordedAt),
-    }));
-  const wsHistory = XLSX.utils.json_to_sheet(
-    historyRows.length ? historyRows : [{ Note: 'No history recorded.' }],
+  const statusRows = sortEventsNewestFirst(statusChangeEvents(psv.events)).map((event) =>
+    buildStatusHistoryRow(psv, event, ctx),
   );
-  autoWidth(wsHistory, historyRows);
-  XLSX.utils.book_append_sheet(wb, wsHistory, 'Status History');
+  appendSheet(wb, XLSX, 'Status History', statusRows, STATUS_HISTORY_COLUMNS);
 
-  const repairRows = [...(psv.repairHistory ?? [])]
-    .sort((a, b) => {
-      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-      return a.recordedAt < b.recordedAt ? 1 : -1;
-    })
-    .map((r) => ({
-      Date: formatDate(r.date),
-      Description: r.description,
-      Vendor: r.vendor ?? '',
-      'Work Order': r.workOrder ?? '',
-      Note: r.note ?? '',
-      'Recorded At': formatDateTime(r.recordedAt),
-    }));
-  const wsRepair = XLSX.utils.json_to_sheet(
-    repairRows.length ? repairRows : [{ Note: 'No repair / overhaul records.' }],
+  const repairRows = sortRepairsNewestFirst(psv.repairHistory ?? []).map((record) =>
+    buildRepairRow(psv, record, ctx),
   );
-  autoWidth(wsRepair, repairRows);
-  XLSX.utils.book_append_sheet(wb, wsRepair, 'Repair History');
+  appendSheet(wb, XLSX, 'Repair History', repairRows, REPAIR_COLUMNS);
 
   const safeSn = psv.serialNumber.replace(/[^\w.-]+/g, '-');
   XLSX.writeFile(wb, `PSV_${safeSn}_${todayISO()}.xlsx`);
 }
 
-/** Sets reasonable column widths based on header + content length. */
-function autoWidth(ws: WorkSheet, rows: Array<Record<string, unknown>>) {
-  if (!rows.length) return;
-  const keys = Object.keys(rows[0]);
-  ws['!cols'] = keys.map((key) => {
+// ---------------------------------------------------------------------------
+// Column layouts (fixed order for every sheet)
+// ---------------------------------------------------------------------------
+
+const REGISTER_COLUMNS = [
+  'Equipment',
+  'Equipment Tag',
+  'Area',
+  'Location',
+  'Location Tag',
+  'Serial Number',
+  'Inventory ID',
+  'PSV Tag',
+  'Status',
+  'Serviced On Site',
+  'Make',
+  'Model',
+  'Set Pressure',
+  'Pressure Unit',
+  'Capacity',
+  'Inlet Size',
+  'Outlet Size',
+  'Service Medium',
+  'National Board No.',
+  'Last Install Date',
+  'Last Service Date',
+  'Due Date',
+  'Days Remaining',
+  'Compliance',
+] as const;
+
+const SUMMARY_COLUMNS = [
+  'Equipment',
+  'Equipment Tag',
+  'Area',
+  'Total PSVs',
+  'Installed',
+  'Inventory',
+  'Out for Service',
+  'Passing',
+  'Due Soon',
+  'Overdue',
+  'Compliant %',
+] as const;
+
+const DUE_COLUMNS = [
+  'Equipment',
+  'Equipment Tag',
+  'Area',
+  'Location',
+  'Location Tag',
+  'Serial Number',
+  'Inventory ID',
+  'PSV Tag',
+  'Status',
+  'Due Date',
+  'Days Remaining',
+  'Compliance',
+] as const;
+
+const STATUS_HISTORY_COLUMNS = [
+  'Equipment',
+  'Equipment Tag',
+  'Location',
+  'Location Tag',
+  'Serial Number',
+  'Inventory ID',
+  'PSV Tag',
+  'Event Date',
+  'Status',
+  'Description',
+  'Note',
+  'Recorded At',
+] as const;
+
+const REPAIR_COLUMNS = [
+  'Equipment',
+  'Equipment Tag',
+  'Location',
+  'Location Tag',
+  'Serial Number',
+  'Inventory ID',
+  'PSV Tag',
+  'Date',
+  'Description',
+  'Vendor',
+  'Work Order',
+  'Note',
+  'Recorded At',
+] as const;
+
+// ---------------------------------------------------------------------------
+// Row builders
+// ---------------------------------------------------------------------------
+
+interface PsvContext {
+  loc?: Location;
+  eq?: Equipment;
+}
+
+function resolveContext(
+  psv: PSV,
+  locById: Map<string, Location>,
+  eqById: Map<string, Equipment>,
+): PsvContext {
+  const loc = locById.get(psv.locationId);
+  const eq = loc ? eqById.get(loc.equipmentId) : undefined;
+  return { loc, eq };
+}
+
+function identityColumns(psv: PSV, ctx: PsvContext): Row {
+  return {
+    Equipment: ctx.eq?.name ?? '',
+    'Equipment Tag': ctx.eq?.tag ?? '',
+    Area: ctx.eq?.area ?? '',
+    Location: ctx.loc?.name ?? '',
+    'Location Tag': ctx.loc?.tag ?? '',
+    'Serial Number': psv.serialNumber,
+    'Inventory ID': psv.inventoryId ?? '',
+    'PSV Tag': psv.tag ?? '',
+  };
+}
+
+function buildRegisterRow(
+  psv: PSV,
+  locById: Map<string, Location>,
+  eqById: Map<string, Equipment>,
+): Row {
+  const ctx = resolveContext(psv, locById, eqById);
+  const c = getCompliance(psv);
+  return {
+    ...identityColumns(psv, ctx),
+    Status: STATUS_LABELS[psv.status],
+    'Serviced On Site': psv.servicedOnSite ? 'Yes' : 'No',
+    Make: psv.datasheet.make,
+    Model: psv.datasheet.model,
+    'Set Pressure': psv.datasheet.setPressure,
+    'Pressure Unit': psv.datasheet.pressureUnit,
+    Capacity: psv.datasheet.capacity,
+    'Inlet Size': psv.datasheet.inletSize,
+    'Outlet Size': psv.datasheet.outletSize,
+    'Service Medium': psv.datasheet.serviceMedium ?? '',
+    'National Board No.': psv.datasheet.nationalBoardNumber ?? '',
+    'Last Install Date': formatDate(lastInstallDate(psv)),
+    'Last Service Date': formatDate(lastServiceDate(psv)),
+    'Due Date': c.dueDate ? formatDate(c.dueDate) : '',
+    'Days Remaining': c.daysRemaining ?? '',
+    Compliance: COMPLIANCE_LABELS[c.state],
+  };
+}
+
+function buildDueRow(
+  psv: PSV,
+  c: ReturnType<typeof getCompliance>,
+  locById: Map<string, Location>,
+  eqById: Map<string, Equipment>,
+): Row {
+  const ctx = resolveContext(psv, locById, eqById);
+  return {
+    ...identityColumns(psv, ctx),
+    Status: STATUS_LABELS[psv.status],
+    'Due Date': formatDate(c.dueDate),
+    'Days Remaining': c.daysRemaining ?? '',
+    Compliance: COMPLIANCE_LABELS[c.state],
+  };
+}
+
+function buildStatusHistoryRow(psv: PSV, event: PSVEvent, ctx: PsvContext): Row {
+  return {
+    Equipment: ctx.eq?.name ?? '',
+    'Equipment Tag': ctx.eq?.tag ?? '',
+    Location: ctx.loc?.name ?? '',
+    'Location Tag': ctx.loc?.tag ?? '',
+    'Serial Number': psv.serialNumber,
+    'Inventory ID': psv.inventoryId ?? '',
+    'PSV Tag': psv.tag ?? '',
+    'Event Date': formatDate(event.date),
+    Status: event.status ? STATUS_LABELS[event.status] : '',
+    Description: event.description,
+    Note: event.note ?? '',
+    'Recorded At': formatDateTime(event.recordedAt),
+  };
+}
+
+function buildRepairRow(psv: PSV, record: PSVRepairRecord, ctx: PsvContext): Row {
+  return {
+    Equipment: ctx.eq?.name ?? '',
+    'Equipment Tag': ctx.eq?.tag ?? '',
+    Location: ctx.loc?.name ?? '',
+    'Location Tag': ctx.loc?.tag ?? '',
+    'Serial Number': psv.serialNumber,
+    'Inventory ID': psv.inventoryId ?? '',
+    'PSV Tag': psv.tag ?? '',
+    Date: formatDate(record.date),
+    Description: record.description,
+    Vendor: record.vendor ?? '',
+    'Work Order': record.workOrder ?? '',
+    Note: record.note ?? '',
+    'Recorded At': formatDateTime(record.recordedAt),
+  };
+}
+
+function sortRepairsNewestFirst(records: PSVRepairRecord[]): PSVRepairRecord[] {
+  return [...records].sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return a.recordedAt < b.recordedAt ? 1 : -1;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Sheet helpers
+// ---------------------------------------------------------------------------
+
+function appendSheet(
+  wb: WorkBook,
+  XLSX: typeof import('xlsx'),
+  name: string,
+  rows: Row[],
+  columns: readonly string[],
+) {
+  const sheetRows = rows.length ? rows : [emptyPlaceholder(columns)];
+  const ws = XLSX.utils.json_to_sheet(sheetRows, { header: [...columns] });
+  autoWidth(ws, sheetRows, columns);
+  XLSX.utils.book_append_sheet(wb, ws, name);
+}
+
+function emptyPlaceholder(columns: readonly string[]): Row {
+  const row: Row = { Note: 'No records to report.' };
+  for (const col of columns) row[col] = '';
+  return row;
+}
+
+function autoWidth(ws: WorkSheet, rows: Row[], columns: readonly string[]) {
+  ws['!cols'] = columns.map((key) => {
     const maxContent = rows.reduce((max, row) => {
       const v = row[key];
       const len = v === null || v === undefined ? 0 : String(v).length;
       return Math.max(max, len);
     }, key.length);
-    return { wch: Math.min(Math.max(maxContent + 2, 10), 40) };
+    return { wch: Math.min(Math.max(maxContent + 2, 10), 48) };
   });
 }
