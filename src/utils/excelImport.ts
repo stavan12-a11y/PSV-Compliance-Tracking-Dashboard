@@ -293,7 +293,7 @@ export async function downloadImportTemplate() {
   notes['!cols'] = [{ wch: 110 }];
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'PSV Register');
+  XLSX.utils.book_append_sheet(wb, ws, 'Import Data');
   XLSX.utils.book_append_sheet(wb, notes, 'Instructions');
   XLSX.writeFile(wb, 'PSV-Import-Template.xlsx');
 }

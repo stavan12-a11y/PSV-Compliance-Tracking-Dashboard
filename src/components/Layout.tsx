@@ -1,16 +1,32 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Database, Gauge, LogOut, ShieldCheck, Upload } from 'lucide-react';
+import { Database, FileSpreadsheet, Gauge, LogOut, ShieldCheck, Upload } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { usePSV } from '../store/PSVContext';
+import { exportToExcel } from '../utils/excelExport';
 import { ImportModal } from './forms/ImportModal';
 import { SyncIndicator } from './SyncIndicator';
 
 export function Layout() {
   const { logout } = useAuth();
+  const { data } = usePSV();
   const location = useLocation();
   const isHome = location.pathname === '/';
   const [menuOpen, setMenuOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleDownloadReport = async () => {
+    setMenuOpen(false);
+    setExporting(true);
+    try {
+      await exportToExcel(data);
+    } catch {
+      alert('Could not create the Excel report. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -48,7 +64,18 @@ export function Layout() {
               {menuOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
-                  <div className="absolute right-0 z-20 mt-2 w-60 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-slate-700 shadow-xl">
+                  <div className="absolute right-0 z-20 mt-2 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-slate-700 shadow-xl">
+                    <button
+                      onClick={handleDownloadReport}
+                      disabled={exporting || data.psvs.length === 0}
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+                      <span>
+                        <span className="block font-semibold text-slate-900">Download Excel report</span>
+                        <span className="block text-xs text-slate-500">All PSVs, installed, overdue &amp; due lists</span>
+                      </span>
+                    </button>
                     <button
                       onClick={() => {
                         setMenuOpen(false);
@@ -57,7 +84,10 @@ export function Layout() {
                       className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-slate-50"
                     >
                       <Upload className="h-4 w-4 text-slate-400" />
-                      Import / export data…
+                      <span>
+                        <span className="block font-semibold text-slate-900">Import data</span>
+                        <span className="block text-xs text-slate-500">Upload rows or blank import template</span>
+                      </span>
                     </button>
                   </div>
                 </>

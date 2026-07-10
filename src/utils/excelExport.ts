@@ -27,7 +27,7 @@ export async function exportToExcel(data: AppData, scope: ExportScope = {}) {
   const scopeName = scope.equipment
     ? scope.equipment.tag || scope.equipment.name.replace(/\s+/g, '-')
     : 'All-Equipment';
-  XLSX.writeFile(wb, `PSV-Report_${scopeName}_${todayISO()}.xlsx`);
+  XLSX.writeFile(wb, `PSV-Full-Report_${scopeName}_${todayISO()}.xlsx`);
 }
 
 /** Builds the 5-sheet bulk workbook (exported for tests). */

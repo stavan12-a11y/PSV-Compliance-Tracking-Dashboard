@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Download, FileUp, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, FileUp, Loader2 } from 'lucide-react';
 import { usePSV } from '../../store/PSVContext';
 import { Modal } from '../Modal';
+import { exportToExcel } from '../../utils/excelExport';
 import {
   downloadImportTemplate,
   exportBackupJSON,
@@ -15,6 +16,7 @@ export function ImportModal({ open, onClose }: { open: boolean; onClose: () => v
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [fileName, setFileName] = useState('');
@@ -31,6 +33,18 @@ export function ImportModal({ open, onClose }: { open: boolean; onClose: () => v
     onClose();
   };
 
+  const handleDownloadReport = async () => {
+    setExporting(true);
+    setError(null);
+    try {
+      await exportToExcel(data);
+    } catch {
+      setError('Could not create the Excel report. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const onExcelSelected = async (file: File) => {
     setBusy(true);
     setError(null);
@@ -39,7 +53,7 @@ export function ImportModal({ open, onClose }: { open: boolean; onClose: () => v
     try {
       const r = await parseExcelFile(file);
       if (r.counts.psvs === 0) {
-        setError('No PSV rows were found. Check that the sheet matches the template columns.');
+        setError('No PSV rows were found. Check that the sheet matches the import template columns.');
       } else {
         setResult(r);
       }
@@ -66,8 +80,8 @@ export function ImportModal({ open, onClose }: { open: boolean; onClose: () => v
       open={open}
       onClose={handleClose}
       size="md"
-      title="Import & export data"
-      description="Upload additional PSV rows from Excel/CSV, or export a JSON backup."
+      title="Import data"
+      description="Upload new PSV rows, or download a blank template. For a full snapshot of your data, use Download Excel report."
       footer={
         <button className="btn-secondary" onClick={handleClose}>
           Close
@@ -75,19 +89,43 @@ export function ImportModal({ open, onClose }: { open: boolean; onClose: () => v
       }
     >
       <div className="space-y-6">
+        <section className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Download Excel report</h3>
+              <p className="mt-1 text-sm text-slate-600">
+                Full export with 5 sheets: All PSVs, Installed, Out for Service, Overdue, and Upcoming Due.
+              </p>
+              <p className="mt-1 text-xs text-slate-500">File name: PSV-Full-Report-*.xlsx</p>
+            </div>
+            <button
+              className="btn-primary shrink-0"
+              onClick={handleDownloadReport}
+              disabled={exporting || data.psvs.length === 0}
+            >
+              {exporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="h-4 w-4" />
+              )}
+              Download report
+            </button>
+          </div>
+        </section>
+
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
             <h3 className="text-sm font-bold uppercase tracking-wide text-slate-400">
-              Step 1 · Get the template
+              Step 1 · Blank import template
             </h3>
             <button className="btn-secondary" onClick={() => downloadImportTemplate()}>
               <Download className="h-4 w-4" />
-              Download Excel template
+              Download import template
             </button>
           </div>
           <p className="text-sm text-slate-500">
-            Fill one row per PSV. Equipment and locations are created automatically from the
-            names/tags. Status, install date, and the “serviced on site” flag are all supported.
+            For adding new PSVs only — one example row plus instructions. Not your live data export.
+            File name: PSV-Import-Template.xlsx
           </p>
         </section>
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ChevronRight, FileSpreadsheet, MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ChevronRight, FileSpreadsheet, Loader2, MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 import { getCompliance, summarize } from '../utils/compliance';
 import type { KPIFilterKey } from '../utils/kpiFilter';
@@ -33,6 +33,7 @@ export function EquipmentPage() {
   const [showAddLocation, setShowAddLocation] = useState(false);
   const [editLocationId, setEditLocationId] = useState<string | null>(null);
   const [kpiFilter, setKpiFilter] = useState<KPIFilterKey | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const locations = locationsForEquipment(equipmentId);
   const equipmentPsvs = useMemo(() => psvsForEquipment(equipmentId), [psvsForEquipment, equipmentId]);
@@ -81,11 +82,21 @@ export function EquipmentPage() {
           <div className="flex items-center gap-2">
             <button
               className="btn-secondary"
-              onClick={() => exportToExcel(data, { equipment })}
-              title="Export this equipment's PSV report to Excel"
+              onClick={async () => {
+                setExporting(true);
+                try {
+                  await exportToExcel(data, { equipment });
+                } catch {
+                  alert('Could not create the Excel report. Please try again.');
+                } finally {
+                  setExporting(false);
+                }
+              }}
+              disabled={exporting}
+              title="Download Excel report for this equipment"
             >
-              <FileSpreadsheet className="h-4 w-4" />
-              Export Excel
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+              Download Excel Report
             </button>
             <button className="btn-secondary" onClick={() => setEditEquipment(true)}>
               <Pencil className="h-4 w-4" />

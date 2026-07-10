@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { FileSpreadsheet, Plus } from 'lucide-react';
+import { FileSpreadsheet, Loader2, Plus } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 import { summarize } from '../utils/compliance';
 import type { KPIFilterKey } from '../utils/kpiFilter';
@@ -15,8 +15,20 @@ export function Dashboard() {
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [kpiFilter, setKpiFilter] = useState<KPIFilterKey | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const summary = useMemo(() => summarize(data.psvs), [data.psvs]);
+
+  const handleDownloadReport = async () => {
+    setExporting(true);
+    try {
+      await exportToExcel(data);
+    } catch {
+      alert('Could not create the Excel report. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -29,12 +41,12 @@ export function Dashboard() {
         </div>
         <button
           className="btn-secondary"
-          onClick={() => exportToExcel(data)}
-          disabled={data.psvs.length === 0}
-          title="Download all PSVs plus installed, out for service, overdue, and upcoming due lists"
+          onClick={handleDownloadReport}
+          disabled={data.psvs.length === 0 || exporting}
+          title="Downloads PSV-Full-Report-*.xlsx with 5 sheets: All PSVs, Installed, Out for Service, Overdue, Upcoming Due"
         >
-          <FileSpreadsheet className="h-4 w-4" />
-          Export Excel
+          {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+          Download Excel Report
         </button>
       </div>
 
