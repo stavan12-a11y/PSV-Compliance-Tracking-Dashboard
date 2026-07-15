@@ -28,9 +28,11 @@ Leadership briefing for the full Steam Safety Management Program:
 ## Regenerate the deck
 
 ```bash
-pip install python-pptx
+pip install python-pptx pillow
 npm run presentation
 ```
+
+The deck uses styled tables, screenshot callout panels, and a visual Position Tag diagram (`assets/tag-diagram.png`).
 
 ## Live dashboard
 
