@@ -29,6 +29,14 @@ npm run preview  # preview the production build
 npm run lint     # run ESLint
 ```
 
+## Leadership presentation (PowerPoint)
+
+**Direct download:** [UES-Steam-Safety-Management-Program.pptx](https://raw.githubusercontent.com/stavan12-a11y/PSV-Compliance-Tracking-Dashboard/cursor/psv-tracking-dashboard-81be/docs/presentation/UES-Steam-Safety-Management-Program.pptx)
+
+26-slide leadership briefing: field work → Excel master file → dashboard → maintenance strategy.
+
+File path: `docs/presentation/UES-Steam-Safety-Management-Program.pptx` — see [`docs/presentation/README.md`](docs/presentation/README.md).
+
 ## How it's organized (navigation)
 
 The data hierarchy is **Site → Equipment → Location → PSV (serial number)**.
