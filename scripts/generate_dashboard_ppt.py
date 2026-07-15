@@ -11,7 +11,7 @@ from pptx.util import Inches, Pt
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "docs" / "presentation" / "assets"
 SCREENSHOTS = ROOT / "docs" / "presentation" / "screenshots"
-OUTPUT = ROOT / "docs" / "presentation" / "UES-Steam-Safety-Management-Program.pptx"
+OUTPUT = ROOT / "docs" / "presentation" / "UES-Steam-Safety-Program-v3.pptx"
 
 MAROON = RGBColor(0x50, 0x00, 0x00)
 DARK = RGBColor(0x1E, 0x29, 0x3B)

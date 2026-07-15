@@ -1,20 +1,29 @@
 # Steam Safety Management Program — Presentation
 
-## Download the PowerPoint (direct link)
+## Download the PowerPoint (v3 — latest)
 
-Use this link — it downloads the file immediately (no GitHub preview page):
+**Use this direct link** (downloads immediately — do NOT use the GitHub preview page):
 
-**https://raw.githubusercontent.com/stavan12-a11y/PSV-Compliance-Tracking-Dashboard/cursor/psv-tracking-dashboard-81be/docs/presentation/UES-Steam-Safety-Management-Program.pptx**
+**https://raw.githubusercontent.com/stavan12-a11y/PSV-Compliance-Tracking-Dashboard/cursor/psv-tracking-dashboard-81be/docs/presentation/UES-Steam-Safety-Program-v3.pptx**
 
 **File in this repo:**
 
 ```
-docs/presentation/UES-Steam-Safety-Management-Program.pptx
+docs/presentation/UES-Steam-Safety-Program-v3.pptx
 ```
 
-Open in Microsoft PowerPoint, Google Slides (upload), or Apple Keynote.
+See also: [`DOWNLOAD.txt`](DOWNLOAD.txt) for version checks if your browser cached an older file.
 
-**How to confirm you have the right file:** Slide 1 title should say **"Steam Safety Management Program"** and the deck has **26 slides** (not the old 13-slide dashboard-only version).
+### How to confirm you have v3 (not an old cached copy)
+
+| Check | v3 (correct) | Old (wrong) |
+|-------|----------------|-------------|
+| **File size** | ~640 KB | ~590–600 KB |
+| **Slide 1** | Four chips under title | Plain title only |
+| **Slide 20** | Large Position Tag diagram `B012-SD-STM-SV-001B` | Text-only labeling bullets |
+| **Most content slides** | Maroon-header **tables** | Plain bullet lists |
+
+If it still looks old: **delete** any previous `.pptx` from Downloads, then open the link above in a **new incognito/private window**.
 
 ## What this deck covers
 
