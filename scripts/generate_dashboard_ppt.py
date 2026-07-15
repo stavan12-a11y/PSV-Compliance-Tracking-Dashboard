@@ -27,6 +27,42 @@ AMBER_BG = RGBColor(0xFF, 0xFB, 0xEB)
 TABLE_HEADER = MAROON
 TABLE_ALT = RGBColor(0xF8, 0xFA, 0xFC)
 
+# Section 4.1 — Pre-Test Visual Inspection (from PSV Maintenance Strategy v3)
+FIELD_CHECKLIST_ROWS = [
+    (
+        "Valve body and bonnet",
+        "No active corrosion, pitting, or mechanical damage; minor surface rust OK if no pitting",
+    ),
+    (
+        "Discharge pipe / stack",
+        "Clear and unobstructed; properly supported; no standing water; drip pocket if applicable",
+    ),
+    (
+        "Drain / weep hole (if equipped)",
+        "Open and unobstructed; no plugging or paint blockage",
+    ),
+    (
+        "Body and bonnet bolting",
+        "All fasteners present and intact; no visible cracks or corrosion",
+    ),
+    (
+        "Nameplate legibility",
+        "CDTP, serial number, orifice, and manufacture year legible — record in work order",
+    ),
+    (
+        "Inlet / nozzle area",
+        "No visible leakage or weeping at seat; dry mating surfaces",
+    ),
+    (
+        "Test gag / lifting lever",
+        "Free of obstructions; lever not locked or wired shut (if equipped)",
+    ),
+    (
+        "Inlet isolation (if applicable)",
+        "Valve in-line and not inadvertently isolated",
+    ),
+]
+
 
 def set_slide_bg(slide, rgb: RGBColor) -> None:
     fill = slide.background.fill
@@ -212,6 +248,56 @@ def add_table_slide(
             style_table_cell(table.cell(r, c), value, alt=r % 2 == 0, size=11)
 
     add_footer_bar(slide, "Texas A&M UES · Steam Safety Management Program")
+
+
+def add_field_checklist_slide(prs: Presentation) -> None:
+    """Render Section 4.1 as a field-ready inspection form with Pass / Fail / N/A columns."""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_slide_bg(slide, WHITE)
+    top = add_header(
+        slide,
+        "Pre-Test Visual Inspection — Field Checklist",
+        "Section 4.1 · Complete before every removal or in-place test · File in CMMS work order",
+    )
+
+    headers = ["Checkpoint", "Accept / Reject criteria", "Pass", "Fail", "N/A"]
+    rows = [[cp, crit, "☐", "☐", "☐"] for cp, crit in FIELD_CHECKLIST_ROWS]
+
+    n_rows = len(rows) + 1
+    n_cols = len(headers)
+    table_top = top + 0.05
+    table_h = 5.35
+    table_shape = slide.shapes.add_table(
+        n_rows, n_cols, Inches(0.65), Inches(table_top), Inches(12.0), Inches(table_h)
+    )
+    table = table_shape.table
+    col_widths = [2.6, 7.0, 0.75, 0.75, 0.75]
+    for idx, width in enumerate(col_widths):
+        table.columns[idx].width = Inches(width)
+
+    for col, header in enumerate(headers):
+        style_table_cell(table.cell(0, col), header, header=True, size=11)
+
+    for r, row in enumerate(rows, start=1):
+        for c, value in enumerate(row):
+            cell = table.cell(r, c)
+            style_table_cell(cell, value, alt=r % 2 == 0, size=9 if c == 1 else 10)
+            cell.text_frame.word_wrap = True
+            if c >= 2:
+                for p in cell.text_frame.paragraphs:
+                    p.alignment = PP_ALIGN.CENTER
+
+    note = slide.shapes.add_shape(1, Inches(0.65), Inches(6.62), Inches(12.0), Inches(0.42))
+    note.fill.solid()
+    note.fill.fore_color.rgb = AMBER_BG
+    note.line.color.rgb = ACCENT
+    tf = note.text_frame
+    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+    p = tf.paragraphs[0]
+    p.text = "Inspector: _________________________   Date: __________   WO #: __________   Equipment / Location: _________________________"
+    style_paragraph(p, size=10, bold=True, color=DARK, align=PP_ALIGN.CENTER)
+
+    add_footer_bar(slide, "Maintenance Strategy · Section 4.1")
 
 
 def add_bullet_slide(
@@ -569,19 +655,7 @@ def build() -> Path:
         col_widths=[2.2, 4.9, 4.9],
     )
 
-    add_bullet_slide(
-        prs,
-        "Pre-Test Field Checklist (Highlights)",
-        [
-            "Valve body/bonnet — no active corrosion or mechanical damage",
-            "Discharge stack — clear, supported, no standing water",
-            "Nameplate legible — record set pressure, serial, orifice, manufacture year",
-            "No seat weeping at inlet; lifting lever free if equipped",
-            "Confirm valve not inadvertently isolated",
-            "Checklist completed before every removal or in-place test — filed in CMMS work order",
-        ],
-        subtitle="Section 4.1 of Maintenance Strategy",
-    )
+    add_field_checklist_slide(prs)
 
     add_tag_diagram_slide(prs)
 
