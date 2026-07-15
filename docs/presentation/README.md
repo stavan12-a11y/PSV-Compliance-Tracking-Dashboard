@@ -2,19 +2,17 @@
 
 ## Download the PowerPoint
 
-**Primary file (leadership briefing):**
+**File path in this repository:**
 
 ```
-docs/presentation/Steam-Safety-Management-Program.pptx
+docs/presentation/PSV-Dashboard-Overview.pptx
 ```
-
-A copy is also saved as `PSV-Dashboard-Overview.pptx` for backward compatibility.
 
 Open in Microsoft PowerPoint, Google Slides (upload), or Apple Keynote.
 
 ## What this deck covers
 
-This is a **leadership briefing**, not just a dashboard demo. It tells the full story:
+This is a **leadership briefing** covering the full Steam Safety Management Program:
 
 1. **Field data collection** — site walks, nameplate photos, valve verification  
 2. **Master Excel register** — comprehensive master file for sorting and analysis  
@@ -23,7 +21,7 @@ This is a **leadership briefing**, not just a dashboard demo. It tells the full 
 
 Content is drawn from the UES Maintenance Strategy document and the dashboard work completed in this repository.
 
-## Slide outline (~24 slides)
+## Slide outline (~26 slides)
 
 | Section | Topics |
 |--------|--------|

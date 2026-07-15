@@ -33,9 +33,7 @@ npm run lint     # run ESLint
 
 Leadership briefing deck covering the **full Steam Safety Management Program** (field work → Excel → dashboard → maintenance strategy):
 
-📁 **`docs/presentation/Steam-Safety-Management-Program.pptx`**
-
-Also available as `docs/presentation/PSV-Dashboard-Overview.pptx` (same content).
+📁 **`docs/presentation/PSV-Dashboard-Overview.pptx`**
 
 More details: [`docs/presentation/README.md`](docs/presentation/README.md)
 

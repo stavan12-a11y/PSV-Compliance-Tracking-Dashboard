@@ -11,8 +11,7 @@ from pptx.util import Inches, Pt
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "docs" / "presentation" / "assets"
 SCREENSHOTS = ROOT / "docs" / "presentation" / "screenshots"
-OUTPUT = ROOT / "docs" / "presentation" / "Steam-Safety-Management-Program.pptx"
-LEGACY_OUTPUT = ROOT / "docs" / "presentation" / "PSV-Dashboard-Overview.pptx"
+OUTPUT = ROOT / "docs" / "presentation" / "PSV-Dashboard-Overview.pptx"
 
 MAROON = RGBColor(0x50, 0x00, 0x00)
 DARK = RGBColor(0x1E, 0x29, 0x3B)
@@ -522,8 +521,6 @@ def build() -> Path:
     add_section_slide(prs, "Discussion", "Steam Safety Management Program · Texas A&M UES · Reliability & Compliance")
 
     prs.save(OUTPUT)
-    # Keep legacy filename as a copy for existing links
-    prs.save(LEGACY_OUTPUT)
     return OUTPUT
 
 
