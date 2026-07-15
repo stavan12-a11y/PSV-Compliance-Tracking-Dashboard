@@ -107,6 +107,41 @@ async function firstHref(prefix) {
   }, prefix);
 }
 
+async function clickSectionCard(sectionHeading) {
+  return page.evaluate((heading) => {
+    const h3 = [...document.querySelectorAll('h3')].find((h) =>
+      h.innerText.trim().startsWith(heading),
+    );
+    const container = h3?.closest('section') ?? h3?.parentElement;
+    const card = container?.querySelector('.card.cursor-pointer');
+    if (card) {
+      card.click();
+      return true;
+    }
+    return false;
+  }, sectionHeading);
+}
+
+async function clickFirstFaceplate() {
+  return page.evaluate(() => {
+    const h3 = [...document.querySelectorAll('h3')].find((h) =>
+      h.innerText.includes('PSVs at this location'),
+    );
+    const grid = h3?.nextElementSibling;
+    const btn = grid?.querySelector('button.group');
+    if (btn) {
+      btn.click();
+      return true;
+    }
+    return false;
+  });
+}
+
+async function gotoPath(path, fallback) {
+  const target = path ?? (LOCAL ? fallback : null);
+  if (target) await page.goto(`${BASE.replace(/\/$/, '')}${target}`, { waitUntil: 'networkidle0' });
+}
+
 try {
   console.log('Capturing from:', BASE);
   await login();
@@ -120,39 +155,28 @@ try {
   await page.keyboard.press('Escape');
   await delay(500);
 
-  // Equipment page — cards use onClick, not <a> tags; fall back to known/local path
-  let eqPath = await firstHref('/equipment/');
-  if (!eqPath && LOCAL) eqPath = '/equipment/eq-blr2';
-  if (eqPath) {
-    await page.goto(`${BASE.replace(/\/$/, '')}${eqPath}`, { waitUntil: 'networkidle0' });
-  } else {
-    await page.evaluate(() => {
-      const card = [...document.querySelectorAll('.card')].find((n) => n.className.includes('cursor-pointer'));
-      if (card) card.click();
-    });
-    await delay(2000);
+  if (!(await clickSectionCard('Equipment'))) {
+    await gotoPath(await firstHref('/equipment/'), '/equipment/eq-blr2');
   }
-
+  await delay(1500);
   await page.waitForFunction(() => document.body.innerText.includes('Locations'), { timeout: 20000 });
   await delay(800);
   await shot('03-equipment');
 
-  let locPath = await firstHref('/location/');
-  if (!locPath && LOCAL) locPath = '/location/loc-blr2-drum';
-  if (locPath) {
-    await page.goto(`${BASE.replace(/\/$/, '')}${locPath}`, { waitUntil: 'networkidle0' });
+  if (!(await clickSectionCard('Locations'))) {
+    await gotoPath(await firstHref('/location/'), '/location/loc-blr2-drum');
   }
-
-  await page.waitForFunction(() => document.body.innerText.includes('PSVs at this location'), { timeout: 20000 });
+  await delay(1500);
+  await page.waitForFunction(() => document.body.innerText.includes('PSVs at this location'), {
+    timeout: 20000,
+  });
   await delay(800);
   await shot('04-location');
 
-  let psvPath = await firstHref('/psv/');
-  if (!psvPath && LOCAL) psvPath = '/psv/psv-2001';
-  if (psvPath) {
-    await page.goto(`${BASE.replace(/\/$/, '')}${psvPath}`, { waitUntil: 'networkidle0' });
+  if (!(await clickFirstFaceplate())) {
+    await gotoPath(await firstHref('/psv/'), '/psv/psv-2001');
   }
-
+  await delay(1500);
   await page.waitForFunction(() => document.body.innerText.includes('Datasheet'), { timeout: 20000 });
   await delay(800);
   await shot('05-psv-detail');
