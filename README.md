@@ -29,6 +29,19 @@ npm run preview  # preview the production build
 npm run lint     # run ESLint
 ```
 
+## Presentation (PowerPoint)
+
+Project overview deck with **app screenshots and logo**:
+
+📁 **`docs/presentation/PSV-Dashboard-Overview.pptx`**
+
+More details: [`docs/presentation/README.md`](docs/presentation/README.md)
+
+```bash
+pip install python-pptx          # one-time
+npm run presentation               # regenerate the .pptx
+```
+
 ## How it's organized (navigation)
 
 The data hierarchy is **Site → Equipment → Location → PSV (serial number)**.
