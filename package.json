@@ -7,11 +7,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "test": "vitest run",
     "preview": "vite preview",
-    "presentation": "python3 scripts/generate_dashboard_ppt.py",
-    "presentation:screenshots": "node scripts/capture-presentation-screenshots.mjs",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "presentation": "python3 scripts/generate_tag_diagram.py && python3 scripts/generate_dashboard_ppt.py"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
@@ -32,10 +30,8 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.14",
     "postcss": "^8.4.49",
-    "puppeteer-core": "^25.3.0",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.6.3",
-    "vite": "^5.4.11",
-    "vitest": "^3.2.4"
+    "vite": "^5.4.11"
   }
 }

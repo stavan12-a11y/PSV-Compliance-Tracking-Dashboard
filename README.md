@@ -29,7 +29,7 @@ npm run preview  # preview the production build
 npm run lint     # run ESLint
 ```
 
-## Presentation (PowerPoint)
+## Leadership presentation (PowerPoint)
 
 **Direct download:** [UES-Steam-Safety-Management-Program.pptx](https://raw.githubusercontent.com/stavan12-a11y/PSV-Compliance-Tracking-Dashboard/cursor/psv-tracking-dashboard-81be/docs/presentation/UES-Steam-Safety-Management-Program.pptx)
 
