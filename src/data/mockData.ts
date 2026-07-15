@@ -104,6 +104,7 @@ function buildValve(args: {
     id: args.id,
     serialNumber: args.sn,
     tag: args.tag,
+    inventoryId: args.tag,
     locationId: args.locationId,
     status,
     servicedOnSite: args.servicedOnSite || undefined,
