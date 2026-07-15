@@ -11,7 +11,7 @@ from pptx.util import Inches, Pt
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "docs" / "presentation" / "assets"
 SCREENSHOTS = ROOT / "docs" / "presentation" / "screenshots"
-OUTPUT = ROOT / "docs" / "presentation" / "UES-Steam-Safety-Program-v3.pptx"
+OUTPUT = ROOT / "docs" / "presentation" / "UES-Steam-Safety-Program.pptx"
 
 MAROON = RGBColor(0x50, 0x00, 0x00)
 DARK = RGBColor(0x1E, 0x29, 0x3B)
@@ -333,34 +333,14 @@ def add_journey_slide(prs: Presentation) -> None:
     add_footer_bar(slide, "Texas A&M UES · Steam Safety Management Program")
 
 
-def add_screenshot_slide(prs: Presentation, title: str, image_name: str, caption: str, callouts: list[str] | None = None) -> None:
+def add_screenshot_slide(prs: Presentation, title: str, image_name: str, caption: str) -> None:
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_slide_bg(slide, WHITE)
     top = add_header(slide, title)
 
     image_path = SCREENSHOTS / image_name
-    img_width = 8.8 if callouts else 12.0
     if image_path.exists():
-        slide.shapes.add_picture(str(image_path), Inches(0.65), Inches(top), width=Inches(img_width))
-
-    if callouts:
-        panel = slide.shapes.add_shape(1, Inches(9.65), Inches(top), Inches(3.0), Inches(5.55))
-        panel.fill.solid()
-        panel.fill.fore_color.rgb = CREAM
-        panel.line.color.rgb = ACCENT
-
-        label = slide.shapes.add_textbox(Inches(9.85), Inches(top + 0.15), Inches(2.6), Inches(0.35))
-        style_paragraph(label.text_frame.paragraphs[0], size=13, bold=True, color=MAROON)
-        label.text_frame.paragraphs[0].text = "Key takeaways"
-
-        box = slide.shapes.add_textbox(Inches(9.85), Inches(top + 0.55), Inches(2.65), Inches(4.8))
-        tf = box.text_frame
-        tf.word_wrap = True
-        for i, item in enumerate(callouts):
-            p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-            p.text = f"▸ {item}"
-            style_paragraph(p, size=12, color=DARK)
-            p.space_after = Pt(10)
+        slide.shapes.add_picture(str(image_path), Inches(0.65), Inches(top), width=Inches(12.0))
 
     cap = slide.shapes.add_textbox(Inches(0.65), Inches(6.82), Inches(12), Inches(0.35))
     style_paragraph(cap.text_frame.paragraphs[0], size=11, color=GRAY, align=PP_ALIGN.CENTER)
@@ -395,35 +375,6 @@ def add_tag_diagram_slide(prs: Presentation) -> None:
     add_footer_bar(slide, "Section 8 · Maintenance Strategy")
 
 
-def add_image_table_slide(
-    prs: Presentation,
-    title: str,
-    image_name: str,
-    headers: list[str],
-    rows: list[list[str]],
-    subtitle: str = "",
-) -> None:
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    set_slide_bg(slide, WHITE)
-    top = add_header(slide, title, subtitle)
-
-    image_path = SCREENSHOTS / image_name
-    if image_path.exists():
-        slide.shapes.add_picture(str(image_path), Inches(0.65), Inches(top), width=Inches(5.6))
-
-    n_rows = len(rows) + 1
-    n_cols = len(headers)
-    table_shape = slide.shapes.add_table(n_rows, n_cols, Inches(6.55), Inches(top), Inches(6.1), Inches(5.55))
-    table = table_shape.table
-    for col, header in enumerate(headers):
-        style_table_cell(table.cell(0, col), header, header=True, size=11)
-    for r, row in enumerate(rows, start=1):
-        for c, value in enumerate(row):
-            style_table_cell(table.cell(r, c), value, alt=r % 2 == 0, size=10)
-
-    add_footer_bar(slide, "Texas A&M UES · Steam Safety Management Program")
-
-
 def build() -> Path:
     tag_script = ROOT / "scripts" / "generate_tag_diagram.py"
     if tag_script.exists():
@@ -437,6 +388,7 @@ def build() -> Path:
     prs.slide_width = Inches(13.333)
     prs.slide_height = Inches(7.5)
 
+    # --- Opening ---------------------------------------------------------------
     add_title_slide(prs)
 
     slide = prs.slides.add_slide(prs.slide_layouts[6])
@@ -446,7 +398,7 @@ def build() -> Path:
         slide,
         [
             ("4 Phases", "Program path", "Field → Excel → Dashboard → Strategy"),
-            ("26+ Valves", "Fleet tracked", "Boilers, HRSG, hot water"),
+            ("Fleet-wide", "PSVs tracked", "Boilers, HRSG, hot water"),
             ("3 Years", "Recert cycle", "NBIC / ASME aligned"),
             ("1 Source", "System of record", "Dashboard + master Excel"),
         ],
@@ -454,155 +406,136 @@ def build() -> Path:
     box = slide.shapes.add_textbox(Inches(0.85), Inches(3.05), Inches(11.8), Inches(3.55))
     tf = box.text_frame
     tf.word_wrap = True
-    summary_points = [
+    for i, point in enumerate([
         "Walked boiler rooms and steam systems — photographed nameplates and verified installed valves",
         "Built a comprehensive Excel master register, then a live compliance dashboard for the full fleet",
         "Authored a formal PSV/SRV Maintenance Strategy aligned to ASME, NBIC, API RP 576, and Texas code",
         "Outcome: visible compliance, proactive due-date management, and a defendable maintenance program",
-    ]
-    for i, point in enumerate(summary_points):
+    ]):
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         p.text = f"✓  {point}"
         style_paragraph(p, size=16, color=DARK)
         p.space_after = Pt(12)
     add_footer_bar(slide, "Texas A&M UES · Steam Safety Management Program")
 
-    add_table_slide(
+    add_bullet_slide(
         prs,
         "Why Leadership Should Care",
-        ["Risk area", "What was happening", "What the program fixes"],
         [
-            ["Regulatory", "Missed 3-year recertification creates TDLR / NBIC exposure", "Visible overdue tracking and PM schedule"],
-            ["Operational", "Valve status and spare coverage hard to see across units", "Equipment → Location → PSV hierarchy"],
-            ["Financial", "Last-minute testing and unplanned outages drive cost", "Planned Setpoint outages and spare pooling"],
-            ["Audit / safety", "Scattered files and memory-based tracking", "Traceable history, exports, and strategy document"],
+            "Boiler PSVs are code-required safety devices — missed recertification creates regulatory and operational risk",
+            "Before this work, valve status, spare coverage, and due dates were difficult to see across the fleet",
+            "Unplanned failures and last-minute testing drive cost, outages, and audit exposure",
+            "A structured program reduces surprises, supports TDLR/NBIC expectations, and improves capital planning",
+            "This is reliability work that protects people, equipment, and compliance standing",
         ],
-        subtitle="Reliability work that protects people, equipment, and compliance standing",
-        col_widths=[2.0, 4.8, 5.2],
+        subtitle="Risk reduction through visibility and a defendable maintenance program",
     )
 
-    add_table_slide(
+    add_bullet_slide(
         prs,
         "Regulatory & Standards Foundation",
-        ["Standard / code", "Requirement", "How the program uses it"],
         [
-            ["ASME Section I", "Safety valve design, capacity, manual-lift rules", "Datasheet fields + capacity verification"],
-            ["NBIC Part 2", "In-service inspection; max 3-year test interval", "Due-date engine + PM schedule"],
-            ["API RP 576", "Inspection, testing, repair best practice", "Walkdowns, send-out vs in-place guidance"],
-            ["16 TAC Ch. 65 / TX HSC 755", "State boiler program requirements", "Strategy ties PM to Texas expectations"],
+            "ASME Section I — boiler safety valve design, capacity, and manual-lift requirements",
+            "NBIC Part 2 — in-service inspection and maximum 3-year test intervals",
+            "API RP 576 — industry best practice for inspection, testing, and repair of relief devices",
+            "16 TAC Chapter 65 & Texas Health & Safety Code Ch. 755 — state boiler program requirements",
+            "Maintenance Strategy document ties every PM activity back to these references",
         ],
         subtitle="Program decisions are code-informed, not ad hoc",
-        col_widths=[2.8, 4.5, 4.7],
     )
 
     add_section_slide(prs, "Building the Program", "Field data → Master register → Dashboard → Maintenance strategy")
     add_journey_slide(prs)
 
-    add_table_slide(
+    add_bullet_slide(
         prs,
         "Phase 1 — Field Data Collection",
-        ["Data element", "How captured", "Why it matters"],
         [
-            ["Equipment identity", "Site walk + nameplate photo", "Links valve to boiler / HRSG / unit"],
-            ["Protected location", "Physical position on system", "Steam drum, economizer, outlet, etc."],
-            ["Serial number & NB #", "Nameplate photo + field notes", "Unique traceability for Setpoint / CMMS"],
-            ["Set pressure & capacity", "Nameplate + datasheet review", "Correct valve at correct point"],
-            ["Installed vs spare", "Visual verification", "Determines send-out vs in-place testing"],
-            ["Condition flags", "Eyes-on inspection", "Weeping, corrosion, isolation concerns"],
+            "Walked boiler rooms and steam systems to locate every relief valve and protected point",
+            "Captured nameplate photos: serial number, set pressure (CDTP), orifice, manufacturer, NB number",
+            "Verified what was actually installed vs. what drawings or records showed",
+            "Documented spare availability, valve orientation, discharge path, and visible condition",
+            "Flagged gaps: missing spares, illegible nameplates, weeping seats, isolation concerns",
         ],
         subtitle="Ground truth before any database or dashboard",
-        col_widths=[2.8, 3.8, 5.4],
     )
 
     add_two_column_cards(
         prs,
-        "Field Work in Practice",
-        "On-site activities",
+        "What We Captured in the Field",
+        "Equipment & location context",
         [
-            "Walk every boiler room and steam path",
-            "Photograph every nameplate",
-            "Confirm installed valve vs drawings",
-            "Note discharge path and orientation",
-            "Flag missing spares immediately",
+            "Boiler / HRSG / commercial unit identity",
+            "Protected location (steam drum, economizer, etc.)",
+            "Position on the system",
+            "Installed vs. spare status",
         ],
-        "Deliverables from the field",
+        "Valve identity & condition",
         [
-            "Photo library per valve",
-            "Verified equipment/location list",
-            "Gap list (no spare, bad nameplate)",
-            "Inputs for Excel master register",
-            "Confidence before digitizing",
+            "Serial number & manufacturer",
+            "Set pressure and capacity",
+            "National Board number",
+            "Nameplate photo evidence",
+            "Visible leakage, corrosion, or damage",
         ],
     )
 
-    add_table_slide(
+    add_bullet_slide(
         prs,
         "Phase 2 — Master Excel Register",
-        ["Register function", "What it tracks", "Leadership value"],
         [
-            ["Master inventory", "Every PSV by equipment, location, serial", "Complete fleet picture"],
-            ["Due-date logic", "Install date + 3-year recert", "No valve left behind"],
-            ["Spare tracking", "Installed / inventory / out for service", "Swap planning for Setpoint"],
-            ["Inventory IDs", "Warehouse + CMMS identifiers", "Procurement and tagging alignment"],
-            ["Bulk reporting", "5-sheet export structure", "Reviews without opening the app"],
+            "Built a comprehensive Excel master file as the first system of record",
+            "Sorted and normalized field data across equipment, locations, and serial numbers",
+            "Tracked install dates, service history, spare availability, and recert due dates",
+            "Assigned Inventory IDs and position-oriented tags for procurement and CMMS use",
+            "Used Excel to validate completeness before investing in a digital platform",
+            "Master file still supports bulk reporting and leadership reviews",
         ],
         subtitle="The bridge between field discovery and digital management",
-        col_widths=[2.8, 4.5, 4.7],
     )
 
     add_section_slide(prs, "Phase 3 — Digital Compliance Dashboard", "Operational visibility for the whole fleet")
 
-    add_table_slide(
+    add_bullet_slide(
         prs,
         "Dashboard Capabilities",
-        ["Feature", "What you see", "Who benefits"],
         [
-            ["Fleet KPIs", "Total, Installed, Out for Service, Overdue, Compliant %", "Leadership snapshot"],
-            ["KPI drill-down", "Click any metric → valve list with Inventory ID", "Planners & reliability"],
-            ["Hierarchy views", "Equipment → Location → PSV faceplates", "Operators"],
-            ["Compliance clock", "Auto 3-year due date from install / service", "Compliance tracking"],
-            ["Dual history", "Status changes separate from repair/overhaul", "Audit trail"],
-            ["Excel export", "All PSVs, Installed, OOS, Overdue, Upcoming", "Reporting & meetings"],
+            "Site-wide KPIs: Total PSVs, Installed, Out for Service, Overdue, Compliant %",
+            "Equipment → Location → PSV hierarchy matching how operators think about the plant",
+            "Automatic 3-year due-date calculation from install or on-site service history",
+            "Inventory ID visible on locations, KPI views, and exports",
+            "Status history and separate repair/overhaul history per valve",
+            "Excel report download: All PSVs, Installed, Out for Service, Overdue, Upcoming Due",
         ],
         subtitle="reliability-and-compliance-dashboar.vercel.app",
-        col_widths=[2.5, 5.0, 4.5],
     )
 
     add_screenshot_slide(
         prs,
         "Dashboard — Fleet Compliance at a Glance",
         "01-dashboard.png",
-        "Site-wide compliance posture with equipment cards and upcoming due list",
-        ["Fleet KPIs at the top — click any card to drill down", "Equipment grid mirrors plant layout", "Urgency panel shows overdue and due-soon valves"],
+        "Live production dashboard — site-wide compliance posture and equipment overview",
     )
 
     add_screenshot_slide(
         prs,
-        "KPI Drill-Down — Compliant Valves",
+        "KPI Drill-Down",
         "02-kpi-modal.png",
-        "Every KPI opens a filterable table — serial, Inventory ID, due date, compliance state",
-        ["Inventory ID column on every filter", "Due Soon counts toward Compliant %", "Export-ready data for meetings"],
+        "Click any KPI to see the exact valves driving that metric",
     )
 
-    add_image_table_slide(
+    add_screenshot_slide(
         prs,
         "Equipment & Location Views",
         "03-equipment.png",
-        ["View level", "Shows", "Example"],
-        [
-            ["Equipment", "Scoped KPIs + location list", "Boiler #2 → 4 PSVs"],
-            ["Location", "Installed valve + due date", "Steam Drum Relief"],
-            ["Faceplate", "Status toggle + quick context", "CV-2001 installed"],
-        ],
-        subtitle="Scoped views per boiler with Inventory ID on every location row",
+        "Scoped view per boiler with location-level Inventory ID and installed valve due dates",
     )
 
     add_screenshot_slide(
         prs,
         "Valve Record Detail",
         "05-psv-detail.png",
-        "Full datasheet, compliance clock, status history, and repair/overhaul log in one place",
-        ["Inventory ID on header and datasheet", "Status History vs Repair split", "One-click Excel export per valve"],
+        "Full datasheet, compliance clock, status history, and repair/overhaul log",
     )
 
     add_section_slide(prs, "Phase 4 — Maintenance Strategy", "Formal PSV/SRV program document for UES operations")
@@ -636,46 +569,44 @@ def build() -> Path:
         col_widths=[2.2, 4.9, 4.9],
     )
 
-    add_table_slide(
+    add_bullet_slide(
         prs,
-        "Pre-Test Field Checklist",
-        ["Check item", "Pass criteria", "Action if fail"],
+        "Pre-Test Field Checklist (Highlights)",
         [
-            ["Valve body / bonnet", "No active corrosion or mechanical damage", "Defer test — evaluate repair/replace"],
-            ["Discharge stack", "Clear, supported, no standing water", "Clear path before testing"],
-            ["Nameplate", "Legible — set pressure, serial, orifice", "Re-tag or replace nameplate"],
-            ["Seat / lever", "No weeping; lifting lever free", "Repair before test"],
-            ["Isolation", "Valve not inadvertently isolated", "Restore to service position"],
+            "Valve body/bonnet — no active corrosion or mechanical damage",
+            "Discharge stack — clear, supported, no standing water",
+            "Nameplate legible — record set pressure, serial, orifice, manufacture year",
+            "No seat weeping at inlet; lifting lever free if equipped",
+            "Confirm valve not inadvertently isolated",
+            "Checklist completed before every removal or in-place test — filed in CMMS work order",
         ],
-        subtitle="Section 4.1 of Maintenance Strategy — filed in CMMS work order",
-        col_widths=[2.5, 4.8, 4.7],
+        subtitle="Section 4.1 of Maintenance Strategy",
     )
 
     add_tag_diagram_slide(prs)
 
-    add_table_slide(
+    add_bullet_slide(
         prs,
         "Overhaul vs. Repair vs. Replace",
-        ["Decision", "When to use", "Requirements", "Outcome"],
         [
-            ["Overhaul", "Scheduled 3-year send-out", "VR-stamp shop + pop test", "Valve returned certified"],
-            ["Repair", "Limited defect found", "VR-stamp work + re-test", "Targeted fix, lower cost"],
-            ["Replace", "Body damage / obsolete / economics", "New valve + correct capacity", "Long-term reliability"],
-            ["Spare re-test", "In storage > 5 years", "API RP 576 guidance", "Verify before installation"],
+            "Overhaul: full disassembly, seat lapping, spring inspection, certified pop test — bundled with 3-year send-out",
+            "Repair: limited-scope fix (e.g., seat lapping, spring) — must be VR-stamp work with re-test before return",
+            "Replace when: body damage, obsolete design, economics favor new valve, or high-criticality risk",
+            "Spares in storage >5 years: re-test before installation per API RP 576 guidance",
+            "Decision criteria documented so procurement and operations align on the same rules",
         ],
-        col_widths=[1.8, 3.0, 3.2, 4.0],
     )
 
     add_table_slide(
         prs,
         "Commercial 125 psi Boiler Strategy",
-        ["Approach", "Annual valves", "Unit cost trend", "Recommendation"],
+        ["Approach", "Annual valves", "Cost trend", "Recommendation"],
         [
             ["Replace-and-discard", "~16+ / year", "Recurring purchase every cycle", "Simple but highest lifecycle cost"],
             ["Test-and-reuse + spare pool", "Same fleet, pooled spares", "~40% reduction after pool built*", "Mirror high-pressure program"],
             ["Pilot program", "3–5 valves first", "Validate quotes & turnaround", "Prove before fleet-wide change"],
         ],
-        subtitle="Section 7 of Maintenance Strategy — *illustrative pending actual vendor quotes",
+        subtitle="Section 7 — *illustrative pending actual vendor quotes",
         col_widths=[2.8, 2.0, 3.5, 3.7],
     )
 
@@ -683,44 +614,47 @@ def build() -> Path:
         prs,
         "Highest-Impact Program Improvements",
         [
-            "Acquire spares for no-spare locations — unlocks full bench testing",
-            "Rank valves by criticality (pressure, capacity, consequence) for capital prioritization",
-            "Adopt semi-annual visual walkdowns as standard UES practice",
-            "Keep dashboard + Excel register as single source of truth for due dates",
-            "Management decision on routine manual lever testing — risk vs. PG-73.1.3",
+            "Acquire spares for valves currently without a designated spare — enables full bench testing",
+            "Rank valves by criticality (pressure, capacity, consequence of failure) to prioritize capital",
+            "Adopt semi-annual visual walkdowns as standard UES practice between formal tests",
+            "Keep dashboard and master register as the single source of truth for due dates and status",
+            "Management decision needed on routine manual lever testing — risk vs. PG-73.1.3 compliance",
         ],
-        subtitle="Quick wins and decisions that multiply program value",
-        icons=["①", "②", "③", "④", "⑤"],
     )
 
-    add_table_slide(
+    add_two_column_cards(
         prs,
         "Program Outcomes & Value Delivered",
-        ["Category", "Deliverable", "Impact"],
+        "Operational value",
         [
-            ["Operational", "Complete valve inventory across steam systems", "Nothing missed in the field"],
-            ["Operational", "Visible compliance by equipment and site", "Leadership-ready status"],
-            ["Operational", "Traceable status + repair history", "Audit and incident support"],
-            ["Strategic", "Code-aligned maintenance strategy", "Defendable PM program"],
-            ["Strategic", "Dashboard + Excel reporting", "Capital requests backed by data"],
-            ["Strategic", "Spare-pool foundation", "Lower long-term testing cost"],
+            "Complete valve inventory across steam systems",
+            "Visible compliance status by equipment and site",
+            "Traceable history for audits and incidents",
+            "Faster planning for Setpoint outages and swaps",
+            "Reduced reliance on memory and scattered files",
         ],
-        col_widths=[2.0, 5.0, 5.0],
+        "Strategic value",
+        [
+            "Code-aligned maintenance strategy document",
+            "Foundation for CMMS integration and spare pooling",
+            "Data to support capital requests for spares",
+            "Leadership-ready reporting via dashboard & Excel",
+            "Sustainable program ownership within UES",
+        ],
     )
 
-    add_table_slide(
+    add_bullet_slide(
         prs,
         "Recommended Next Steps",
-        ["#", "Action", "Decision owner", "Target"],
         [
-            ["1", "Endorse Maintenance Strategy and PM frequencies", "Leadership", "This quarter"],
-            ["2", "Decide manual lever testing policy", "Operations / Safety", "Policy memo"],
-            ["3", "Approve spare-acquisition priority list", "Leadership / Capital", "FY planning"],
-            ["4", "Pilot test-and-reuse on 125 psi valves", "Reliability", "3–5 valve pilot"],
-            ["5", "Fleet-wide physical tagging (Position Tag + Inventory ID)", "Operations", "Rolling install"],
+            "Leadership endorsement of the Maintenance Strategy and PM frequencies",
+            "Decision on manual lever testing policy (Section 3 — management choice)",
+            "Approve spare-acquisition prioritization for no-spare locations",
+            "Pilot test-and-reuse for commercial 125 psi valves (Section 7.5)",
+            "Continue populating dashboard with remaining field discoveries",
+            "Integrate Position Tags and Inventory IDs fleet-wide on physical valve tags",
         ],
-        subtitle="Concrete actions to move from program build to program sustainment",
-        col_widths=[0.5, 5.5, 3.0, 3.0],
+        font_size=16,
     )
 
     add_section_slide(prs, "Discussion", "Steam Safety Management Program · Texas A&M UES · Reliability & Compliance")

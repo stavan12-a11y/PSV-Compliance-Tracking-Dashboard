@@ -31,11 +31,11 @@ npm run lint     # run ESLint
 
 ## Leadership presentation (PowerPoint)
 
-**Direct download (v3 — latest):** [UES-Steam-Safety-Program-v3.pptx](https://raw.githubusercontent.com/stavan12-a11y/PSV-Compliance-Tracking-Dashboard/cursor/psv-tracking-dashboard-81be/docs/presentation/UES-Steam-Safety-Program-v3.pptx)
+**Direct download:** [UES-Steam-Safety-Program.pptx](https://raw.githubusercontent.com/stavan12-a11y/PSV-Compliance-Tracking-Dashboard/cursor/psv-tracking-dashboard-81be/docs/presentation/UES-Steam-Safety-Program.pptx)
 
-26-slide leadership briefing with tables, tag diagram, and dashboard screenshots. If your download looks old, use an incognito window — see [`docs/presentation/DOWNLOAD.txt`](docs/presentation/DOWNLOAD.txt).
+Leadership briefing: field work → Excel master file → dashboard → maintenance strategy.
 
-File path: `docs/presentation/UES-Steam-Safety-Program-v3.pptx` — see [`docs/presentation/README.md`](docs/presentation/README.md).
+File path: `docs/presentation/UES-Steam-Safety-Program.pptx` — see [`docs/presentation/README.md`](docs/presentation/README.md).
 
 ## How it's organized (navigation)
 
