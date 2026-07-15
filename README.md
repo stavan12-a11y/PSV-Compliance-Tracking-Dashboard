@@ -31,16 +31,11 @@ npm run lint     # run ESLint
 
 ## Presentation (PowerPoint)
 
-Leadership briefing deck covering the **full Steam Safety Management Program** (field work → Excel → dashboard → maintenance strategy):
+**Direct download:** [UES-Steam-Safety-Management-Program.pptx](https://raw.githubusercontent.com/stavan12-a11y/PSV-Compliance-Tracking-Dashboard/cursor/psv-tracking-dashboard-81be/docs/presentation/UES-Steam-Safety-Management-Program.pptx)
 
-📁 **`docs/presentation/PSV-Dashboard-Overview.pptx`**
+26-slide leadership briefing: field work → Excel master file → dashboard → maintenance strategy.
 
-More details: [`docs/presentation/README.md`](docs/presentation/README.md)
-
-```bash
-pip install python-pptx          # one-time
-npm run presentation               # regenerate the .pptx
-```
+File path: `docs/presentation/UES-Steam-Safety-Management-Program.pptx` — see [`docs/presentation/README.md`](docs/presentation/README.md).
 
 ## How it's organized (navigation)
 
