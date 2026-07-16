@@ -2,13 +2,13 @@
 
 ## Download
 
-**Direct link:**
+**Direct link (default branch — 12-slide condensed deck):**
 
 https://raw.githubusercontent.com/stavan12-a11y/PSV-Compliance-Tracking-Dashboard/cursor/psv-tracking-dashboard-81be/docs/presentation/UES-Steam-Safety-Program.pptx
 
 **File path:** `docs/presentation/UES-Steam-Safety-Program.pptx`
 
-There is only one presentation file in this repo — no versioned copies.
+If your browser shows an older version, hard-refresh or append a cache-buster: `...UES-Steam-Safety-Program.pptx?v=20260716`
 
 ## Regenerate
 
