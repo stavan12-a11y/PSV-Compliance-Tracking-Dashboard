@@ -172,25 +172,39 @@ def add_section_slide(prs: Presentation, counter: SlideCounter, title: str, subt
     counter.mark(slide)
 
 
-def add_agenda_strip(slide, top: float, sections: list[tuple[str, str]]) -> None:
-    """Compact horizontal agenda — used at the bottom of a combined slide."""
-    chip_w = 2.35
-    gap = 0.12
-    start_x = (13.333 - (chip_w * len(sections) + gap * (len(sections) - 1))) / 2
-    for i, (num, title) in enumerate(sections):
-        x = start_x + i * (chip_w + gap)
-        box = slide.shapes.add_shape(1, Inches(x), Inches(top), Inches(chip_w), Inches(0.72))
-        box.fill.solid()
-        box.fill.fore_color.rgb = CREAM if i % 2 == 0 else SKY
-        box.line.color.rgb = ACCENT
-        tf = box.text_frame
-        tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+def add_agenda_slide(prs: Presentation, counter: SlideCounter) -> None:
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_slide_bg(slide, WHITE)
+    top = add_header(slide, "Today's Briefing", "19 slides — context, program build, dashboard, strategy, next steps")
+
+    sections = [
+        ("I", "Context & Why It Matters", "Risk, regulatory foundation"),
+        ("II", "Building the Program", "Field → Excel → validation path"),
+        ("III", "Live Dashboard", "Production screenshots & capabilities"),
+        ("IV", "Maintenance Strategy", "PM intervals, testing, checklist, tagging"),
+        ("V", "Outcomes & Next Steps", "Value delivered, leadership decisions"),
+    ]
+
+    for i, (num, title, desc) in enumerate(sections):
+        y = top + 0.2 + i * 1.05
+        badge = slide.shapes.add_shape(1, Inches(0.75), Inches(y), Inches(0.55), Inches(0.55))
+        badge.fill.solid()
+        badge.fill.fore_color.rgb = MAROON
+        badge.line.fill.background()
+        bp = badge.text_frame.paragraphs[0]
+        bp.text = num
+        style_paragraph(bp, size=14, bold=True, color=WHITE, align=PP_ALIGN.CENTER)
+
+        tb = slide.shapes.add_textbox(Inches(1.5), Inches(y - 0.02), Inches(10.5), Inches(0.75))
+        tf = tb.text_frame
         p1 = tf.paragraphs[0]
-        p1.text = num
-        style_paragraph(p1, size=11, bold=True, color=MAROON, align=PP_ALIGN.CENTER)
+        p1.text = title
+        style_paragraph(p1, size=18, bold=True, color=DARK)
         p2 = tf.add_paragraph()
-        p2.text = title
-        style_paragraph(p2, size=9, color=DARK, align=PP_ALIGN.CENTER)
+        p2.text = desc
+        style_paragraph(p2, size=13, color=GRAY)
+
+    counter.mark(slide)
 
 
 def add_stat_cards(slide, stats: list[tuple[str, str, str]], top: float = 1.45) -> None:
@@ -217,11 +231,10 @@ def add_stat_cards(slide, stats: list[tuple[str, str, str]], top: float = 1.45) 
         hbox.text_frame.paragraphs[0].text = hint
 
 
-def add_context_slide(prs: Presentation, counter: SlideCounter) -> None:
-    """Risk cards + regulatory foundation on one slide."""
+def add_risk_cards_slide(prs: Presentation, counter: SlideCounter) -> None:
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_slide_bg(slide, WHITE)
-    top = add_header(slide, "Why This Program Matters", "Risks addressed and code foundation", compact=True)
+    top = add_header(slide, "Why Leadership Should Care", "Four risks this program directly addresses")
 
     cards = [
         ("⚠", "Regulatory", "Missed 3-year recert → TDLR / NBIC exposure"),
@@ -229,54 +242,27 @@ def add_context_slide(prs: Presentation, counter: SlideCounter) -> None:
         ("💰", "Cost", "Last-minute testing & unplanned outages"),
         ("📋", "Audit", "Scattered records, no defendable program"),
     ]
-    positions = [(0.65, 0), (6.75, 0), (0.65, 1.55), (6.75, 1.55)]
+    positions = [(0.65, 0), (6.75, 0), (0.65, 2.85), (6.75, 2.85)]
     for (x, y_off), (icon, title, desc) in zip(positions, cards):
         y = top + y_off
-        panel = slide.shapes.add_shape(1, Inches(x), Inches(y), Inches(5.95), Inches(1.35))
+        panel = slide.shapes.add_shape(1, Inches(x), Inches(y), Inches(5.95), Inches(2.55))
         panel.fill.solid()
         panel.fill.fore_color.rgb = CREAM if y_off == 0 and x < 5 else SKY if y_off == 0 else GREEN_BG
         panel.line.color.rgb = ACCENT
 
-        ib = slide.shapes.add_textbox(Inches(x + 0.2), Inches(y + 0.12), Inches(0.4), Inches(0.35))
-        style_paragraph(ib.text_frame.paragraphs[0], size=18, color=MAROON)
+        ib = slide.shapes.add_textbox(Inches(x + 0.25), Inches(y + 0.2), Inches(0.5), Inches(0.45))
+        style_paragraph(ib.text_frame.paragraphs[0], size=22, color=MAROON)
         ib.text_frame.paragraphs[0].text = icon
 
-        tb = slide.shapes.add_textbox(Inches(x + 0.6), Inches(y + 0.1), Inches(5.1), Inches(1.1))
+        tb = slide.shapes.add_textbox(Inches(x + 0.75), Inches(y + 0.2), Inches(5.0), Inches(1.8))
         tf = tb.text_frame
         tf.word_wrap = True
         p1 = tf.paragraphs[0]
         p1.text = title
-        style_paragraph(p1, size=14, bold=True, color=DARK)
+        style_paragraph(p1, size=17, bold=True, color=DARK)
         p2 = tf.add_paragraph()
         p2.text = desc
-        style_paragraph(p2, size=11, color=GRAY)
-
-    reg_top = top + 3.35
-    label = slide.shapes.add_textbox(Inches(0.65), Inches(reg_top), Inches(12), Inches(0.3))
-    style_paragraph(label.text_frame.paragraphs[0], size=12, bold=True, color=MAROON)
-    label.text_frame.paragraphs[0].text = "Regulatory & standards foundation"
-
-    standards = [
-        ("ASME Sec. I", "Design, capacity, manual-lift rules"),
-        ("NBIC Pt. 2", "3-year max in-service interval"),
-        ("API RP 576", "Inspection & repair best practice"),
-        ("TX Ch. 65", "State boiler program requirements"),
-    ]
-    col_w = 2.95
-    for i, (code, note) in enumerate(standards):
-        x = 0.65 + i * (col_w + 0.15)
-        box = slide.shapes.add_shape(1, Inches(x), Inches(reg_top + 0.38), Inches(col_w), Inches(1.05))
-        box.fill.solid()
-        box.fill.fore_color.rgb = CREAM if i % 2 == 0 else SKY
-        box.line.color.rgb = ACCENT
-        tf = box.text_frame
-        tf.word_wrap = True
-        p1 = tf.paragraphs[0]
-        p1.text = code
-        style_paragraph(p1, size=12, bold=True, color=DARK, align=PP_ALIGN.CENTER)
-        p2 = tf.add_paragraph()
-        p2.text = note
-        style_paragraph(p2, size=10, color=GRAY, align=PP_ALIGN.CENTER)
+        style_paragraph(p2, size=14, color=GRAY)
 
     counter.mark(slide)
 
@@ -554,93 +540,54 @@ def add_tag_diagram_slide(prs: Presentation, counter: SlideCounter) -> None:
     counter.mark(slide)
 
 
-def add_field_excel_slide(prs: Presentation, counter: SlideCounter) -> None:
-    """Phases 1–2: field discovery, captured data, and Excel register."""
+def add_decision_columns_slide(prs: Presentation, counter: SlideCounter) -> None:
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_slide_bg(slide, WHITE)
-    top = add_header(slide, "Phases 1–2: Field Discovery & Master Register", "Ground truth before digitizing", compact=True)
+    top = add_header(slide, "Overhaul vs. Repair vs. Replace", "Decision guide for Setpoint and procurement")
 
-    left_panel = slide.shapes.add_shape(1, Inches(0.65), Inches(top), Inches(5.95), Inches(5.55))
-    left_panel.fill.solid()
-    left_panel.fill.fore_color.rgb = CREAM
-    left_panel.line.color.rgb = ACCENT
-
-    left_title = slide.shapes.add_textbox(Inches(0.85), Inches(top + 0.12), Inches(5.5), Inches(0.3))
-    style_paragraph(left_title.text_frame.paragraphs[0], size=14, bold=True, color=MAROON)
-    left_title.text_frame.paragraphs[0].text = "Phase 1 — Field collection"
-
-    left_box = slide.shapes.add_textbox(Inches(0.9), Inches(top + 0.45), Inches(5.4), Inches(2.0))
-    tf = left_box.text_frame
-    tf.word_wrap = True
-    for i, item in enumerate([
-        "Walk every boiler room — locate each relief valve",
-        "Photograph nameplates; verify install vs. records",
-        "Document spares, discharge path, condition gaps",
-    ]):
-        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-        p.text = f"• {item}"
-        style_paragraph(p, size=12, color=DARK)
-        p.space_after = Pt(4)
-
-    cap_title = slide.shapes.add_textbox(Inches(0.85), Inches(top + 2.55), Inches(5.5), Inches(0.3))
-    style_paragraph(cap_title.text_frame.paragraphs[0], size=13, bold=True, color=MAROON)
-    cap_title.text_frame.paragraphs[0].text = "What we captured"
-
-    cap_box = slide.shapes.add_textbox(Inches(0.9), Inches(top + 2.85), Inches(5.4), Inches(2.5))
-    tf2 = cap_box.text_frame
-    tf2.word_wrap = True
-    for i, item in enumerate([
-        "Unit identity, protected location, installed vs. spare",
-        "Serial #, manufacturer, set pressure, capacity, NB #",
-        "Nameplate photo evidence for every valve",
-    ]):
-        p = tf2.paragraphs[0] if i == 0 else tf2.add_paragraph()
-        p.text = f"• {item}"
-        style_paragraph(p, size=12, color=DARK)
-        p.space_after = Pt(4)
-
-    right_panel = slide.shapes.add_shape(1, Inches(6.75), Inches(top), Inches(5.95), Inches(5.55))
-    right_panel.fill.solid()
-    right_panel.fill.fore_color.rgb = SKY
-    right_panel.line.color.rgb = ACCENT
-
-    right_title = slide.shapes.add_textbox(Inches(6.95), Inches(top + 0.12), Inches(5.5), Inches(0.3))
-    style_paragraph(right_title.text_frame.paragraphs[0], size=14, bold=True, color=MAROON)
-    right_title.text_frame.paragraphs[0].text = "Phase 2 — Master Excel register"
-
-    steps = [
-        ("📥", "Import", "Normalize field data by equipment & location"),
-        ("📊", "Sort", "Due dates, spares, Inventory IDs assigned"),
-        ("✓", "Validate", "Completeness check before digitizing"),
-        ("📤", "Report", "5-sheet export for leadership reviews"),
+    columns = [
+        ("🔧", "Overhaul", "Scheduled 3-year send-out", "Full disassembly, lapping, spring check, certified pop test"),
+        ("🛠", "Repair", "Limited defect found", "VR-stamp scope + re-test before return to service"),
+        ("🔄", "Replace", "Body damage or obsolete", "New valve when economics or risk favor replacement"),
     ]
-    for i, (icon, label, desc) in enumerate(steps):
-        y = top + 0.55 + i * 1.22
-        ib = slide.shapes.add_textbox(Inches(7.0), Inches(y), Inches(0.45), Inches(0.4))
-        style_paragraph(ib.text_frame.paragraphs[0], size=20, color=MAROON)
+    col_w = 3.85
+    start_x = 0.65
+    for i, (icon, title, when, detail) in enumerate(columns):
+        x = start_x + i * (col_w + 0.25)
+        panel = slide.shapes.add_shape(1, Inches(x), Inches(top + 0.1), Inches(col_w), Inches(5.2))
+        panel.fill.solid()
+        panel.fill.fore_color.rgb = [CREAM, SKY, GREEN_BG][i]
+        panel.line.color.rgb = ACCENT
+        ib = slide.shapes.add_textbox(Inches(x), Inches(top + 0.35), Inches(col_w), Inches(0.5))
+        style_paragraph(ib.text_frame.paragraphs[0], size=26, color=MAROON, align=PP_ALIGN.CENTER)
         ib.text_frame.paragraphs[0].text = icon
-        lb = slide.shapes.add_textbox(Inches(7.45), Inches(y - 0.02), Inches(5.0), Inches(1.05))
-        tf3 = lb.text_frame
-        tf3.word_wrap = True
-        p1 = tf3.paragraphs[0]
-        p1.text = label
-        style_paragraph(p1, size=13, bold=True, color=DARK)
-        p2 = tf3.add_paragraph()
-        p2.text = desc
-        style_paragraph(p2, size=11, color=GRAY)
+        tb = slide.shapes.add_textbox(Inches(x + 0.15), Inches(top + 0.95), Inches(col_w - 0.3), Inches(4.0))
+        tf = tb.text_frame
+        tf.word_wrap = True
+        p1 = tf.paragraphs[0]
+        p1.text = title
+        style_paragraph(p1, size=17, bold=True, color=DARK, align=PP_ALIGN.CENTER)
+        p2 = tf.add_paragraph()
+        p2.text = when
+        style_paragraph(p2, size=13, bold=True, color=ACCENT, align=PP_ALIGN.CENTER)
+        p3 = tf.add_paragraph()
+        p3.text = detail
+        style_paragraph(p3, size=13, color=GRAY, align=PP_ALIGN.CENTER)
 
+    foot = slide.shapes.add_textbox(Inches(0.65), Inches(6.55), Inches(12), Inches(0.35))
+    style_paragraph(foot.text_frame.paragraphs[0], size=11, color=GRAY, align=PP_ALIGN.CENTER)
+    foot.text_frame.paragraphs[0].text = "Spares in storage >5 years: re-test before install per API RP 576"
     counter.mark(slide)
 
 
 def add_capability_chips(slide, top: float, items: list[tuple[str, str]]) -> float:
-    """Return y position below a row of compact capability chips."""
     n = len(items)
     chip_w = min(2.95, 12.0 / n - 0.12)
     gap = 0.12
     start_x = (13.333 - (chip_w * n + gap * (n - 1))) / 2
     for i, (label, desc) in enumerate(items):
         x = start_x + i * (chip_w + gap)
-        box = slide.shapes.add_shape(1, Inches(x), Inches(top), Inches(chip_w), Inches(0.85))
+        box = slide.shapes.add_shape(1, Inches(x), Inches(top), Inches(chip_w), Inches(0.72))
         box.fill.solid()
         box.fill.fore_color.rgb = CREAM if i % 2 == 0 else SKY
         box.line.color.rgb = ACCENT
@@ -652,10 +599,11 @@ def add_capability_chips(slide, top: float, items: list[tuple[str, str]]) -> flo
         p2 = tf.add_paragraph()
         p2.text = desc
         style_paragraph(p2, size=9, color=GRAY, align=PP_ALIGN.CENTER)
-    return top + 0.95
+    return top + 0.82
 
 
-def add_dashboard_overview_slide(prs: Presentation, counter: SlideCounter) -> None:
+def add_dashboard_hero_slide(prs: Presentation, counter: SlideCounter) -> None:
+    """Dashboard capabilities as a slim chip row above a full-bleed screenshot."""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_slide_bg(slide, WHITE)
     top = add_header(
@@ -675,7 +623,7 @@ def add_dashboard_overview_slide(prs: Presentation, counter: SlideCounter) -> No
     if stream:
         slide.shapes.add_picture(stream, Inches(0.2), Inches(img_top), width=Inches(12.9))
 
-    cap = slide.shapes.add_shape(1, Inches(0.2), Inches(6.85), Inches(12.9), Inches(0.35))
+    cap = slide.shapes.add_shape(1, Inches(0.2), Inches(6.88), Inches(12.9), Inches(0.38))
     cap.fill.solid()
     cap.fill.fore_color.rgb = RGBColor(0xF1, 0xF5, 0xF9)
     cap.line.fill.background()
@@ -686,269 +634,61 @@ def add_dashboard_overview_slide(prs: Presentation, counter: SlideCounter) -> No
     counter.mark(slide)
 
 
-def add_dual_screenshot_slide(
-    prs: Presentation,
-    counter: SlideCounter,
-    title: str,
-    left_name: str,
-    left_caption: str,
-    right_name: str,
-    right_caption: str,
-    subtitle: str = "",
-) -> None:
+def add_outcomes_and_next_steps_slide(prs: Presentation, counter: SlideCounter) -> None:
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_slide_bg(slide, WHITE)
-    top = add_header(slide, title, subtitle, compact=True)
-
-    img_w = 6.15
-    img_top = top + 0.05
-    for x, name, caption in ((0.45, left_name, left_caption), (6.75, right_name, right_caption)):
-        stream = screenshot_stream(name)
-        if stream:
-            slide.shapes.add_picture(stream, Inches(x), Inches(img_top), width=Inches(img_w))
-        cap = slide.shapes.add_shape(1, Inches(x), Inches(6.55), Inches(img_w), Inches(0.55))
-        cap.fill.solid()
-        cap.fill.fore_color.rgb = RGBColor(0xF1, 0xF5, 0xF9)
-        cap.line.fill.background()
-        cp = cap.text_frame.paragraphs[0]
-        cp.text = caption
-        style_paragraph(cp, size=9, color=GRAY, align=PP_ALIGN.CENTER)
-        cap.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
-    counter.mark(slide)
-
-
-def add_stacked_tables_slide(prs: Presentation, counter: SlideCounter) -> None:
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    set_slide_bg(slide, WHITE)
-    top = add_header(slide, "Maintenance Strategy — PM & Testing", "Phase 4 · Formal program document for UES operations", compact=True)
-
-    t1 = slide.shapes.add_table(
-        5, 4, Inches(0.65), Inches(top), Inches(12.0), Inches(2.45)
-    )
-    table1 = t1.table
-    for idx, width in enumerate([2.5, 1.8, 2.8, 5.0]):
-        table1.columns[idx].width = Inches(width)
-    headers1 = ["Activity", "Frequency", "Code / reference", "Notes"]
-    rows1 = [
-        ["Pop test & overhaul", "Every 3 years", "NBIC Part 2, ASME Sec. I", "Send to Setpoint — complete before due"],
-        ["Visual walkdown", "Semi-annual", "API RP 576", "Weeping, corrosion, discharge path"],
-        ["Manual lever test", "Annual (optional)", "PG-73.1.3", "Management decision — seat damage risk"],
-        ["Condition inspection", "As needed", "API RP 576", "Leakage, chattering, damage"],
-    ]
-    for col, header in enumerate(headers1):
-        style_table_cell(table1.cell(0, col), header, header=True, size=10)
-    for r, row in enumerate(rows1, start=1):
-        for c, value in enumerate(row):
-            style_table_cell(table1.cell(r, c), value, alt=r % 2 == 0, size=9)
-
-    sub = slide.shapes.add_textbox(Inches(0.65), Inches(top + 2.55), Inches(12), Inches(0.28))
-    style_paragraph(sub.text_frame.paragraphs[0], size=11, bold=True, color=MAROON)
-    sub.text_frame.paragraphs[0].text = "Testing methods — send-out (preferred) vs. in-place (no spare)"
-
-    t2 = slide.shapes.add_table(
-        6, 3, Inches(0.65), Inches(top + 2.85), Inches(12.0), Inches(2.85)
-    )
-    table2 = t2.table
-    for idx, width in enumerate([2.2, 4.9, 4.9]):
-        table2.columns[idx].width = Inches(width)
-    headers2 = ["Factor", "Send-out (preferred)", "In-place (no spare)"]
-    rows2 = [
-        ["Process", "Remove valve → install spare → bench overhaul", "Setpoint tests on live system"],
-        ["Inspection depth", "Full disassembly, lapping, spring check", "Functional lift only"],
-        ["Certification", "Complete overhaul + pop test", "Equivalent certification issued"],
-        ["Risk", "Lower seat-damage risk", "Higher risk on older valves"],
-        ["Goal", "Fleet-wide spare coverage", "Interim until spare acquired"],
-    ]
-    for col, header in enumerate(headers2):
-        style_table_cell(table2.cell(0, col), header, header=True, size=10)
-    for r, row in enumerate(rows2, start=1):
-        for c, value in enumerate(row):
-            style_table_cell(table2.cell(r, c), value, alt=r % 2 == 0, size=9)
-
-    foot = slide.shapes.add_textbox(Inches(0.65), Inches(6.72), Inches(12), Inches(0.3))
-    style_paragraph(foot.text_frame.paragraphs[0], size=9, color=GRAY, align=PP_ALIGN.CENTER)
-    foot.text_frame.paragraphs[0].text = "Long-term goal: spare coverage for all valves to enable send-out testing"
-    counter.mark(slide)
-
-
-def add_checklist_tag_slide(prs: Presentation, counter: SlideCounter) -> None:
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    set_slide_bg(slide, WHITE)
-    top = add_header(
-        slide,
-        "Field Operations — Inspection Checklist & Valve Tagging",
-        "Section 4.1 checklist · Position tag labeling standard",
-        compact=True,
-    )
-
-    headers = ["Checkpoint", "Accept / Reject criteria", "P", "F", "N"]
-    rows = [[cp, crit, "☐", "☐", "☐"] for cp, crit in FIELD_CHECKLIST_ROWS]
-    table_shape = slide.shapes.add_table(
-        len(rows) + 1, len(headers), Inches(0.65), Inches(top), Inches(7.1), Inches(4.85)
-    )
-    table = table_shape.table
-    for idx, width in enumerate([1.55, 4.35, 0.35, 0.35, 0.35]):
-        table.columns[idx].width = Inches(width)
-    for col, header in enumerate(headers):
-        style_table_cell(table.cell(0, col), header, header=True, size=9)
-    for r, row in enumerate(rows, start=1):
-        for c, value in enumerate(row):
-            cell = table.cell(r, c)
-            style_table_cell(cell, value, alt=r % 2 == 0, size=8 if c == 1 else 9)
-            cell.text_frame.word_wrap = True
-            if c >= 2:
-                for p in cell.text_frame.paragraphs:
-                    p.alignment = PP_ALIGN.CENTER
-
-    diagram = ASSETS / "tag-diagram.png"
-    if diagram.exists():
-        slide.shapes.add_picture(str(diagram), Inches(8.0), Inches(top), width=Inches(4.65))
-
-    note = slide.shapes.add_shape(1, Inches(8.0), Inches(top + 4.15), Inches(4.65), Inches(0.7))
-    note.fill.solid()
-    note.fill.fore_color.rgb = AMBER_BG
-    note.line.color.rgb = ACCENT
-    tf = note.text_frame
-    tf.word_wrap = True
-    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
-    p = tf.paragraphs[0]
-    p.text = "Two-sided tag: Position Tag + Inventory ID + Serial + Service + Location"
-    style_paragraph(p, size=10, bold=True, color=DARK, align=PP_ALIGN.CENTER)
-
-    inspector = slide.shapes.add_shape(1, Inches(0.65), Inches(6.55), Inches(7.1), Inches(0.38))
-    inspector.fill.solid()
-    inspector.fill.fore_color.rgb = AMBER_BG
-    inspector.line.color.rgb = ACCENT
-    itf = inspector.text_frame
-    itf.vertical_anchor = MSO_ANCHOR.MIDDLE
-    ip = itf.paragraphs[0]
-    ip.text = "Inspector: ________  Date: ________  WO #: ________  Equipment: ________"
-    style_paragraph(ip, size=9, bold=True, color=DARK, align=PP_ALIGN.CENTER)
-    counter.mark(slide)
-
-
-def add_decision_strategy_slide(prs: Presentation, counter: SlideCounter) -> None:
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    set_slide_bg(slide, WHITE)
-    top = add_header(slide, "Repair Decisions & 125 psi Boiler Strategy", "Setpoint guidance · Section 7 management framework", compact=True)
-    add_caveat_badge(slide, "ILLUSTRATIVE — pending vendor quotes", x=9.4, y=0.3)
-
-    columns = [
-        ("🔧", "Overhaul", "3-year send-out", "Disassembly, lapping, certified pop test"),
-        ("🛠", "Repair", "Limited defect", "VR-stamp scope + re-test"),
-        ("🔄", "Replace", "Body damage", "New valve when economics favor"),
-    ]
-    col_w = 3.85
-    for i, (icon, title, when, detail) in enumerate(columns):
-        x = 0.65 + i * (col_w + 0.25)
-        panel = slide.shapes.add_shape(1, Inches(x), Inches(top), Inches(col_w), Inches(1.85))
-        panel.fill.solid()
-        panel.fill.fore_color.rgb = [CREAM, SKY, GREEN_BG][i]
-        panel.line.color.rgb = ACCENT
-        ib = slide.shapes.add_textbox(Inches(x), Inches(top + 0.1), Inches(col_w), Inches(0.35))
-        style_paragraph(ib.text_frame.paragraphs[0], size=18, color=MAROON, align=PP_ALIGN.CENTER)
-        ib.text_frame.paragraphs[0].text = icon
-        tb = slide.shapes.add_textbox(Inches(x + 0.1), Inches(top + 0.42), Inches(col_w - 0.2), Inches(1.3))
-        tf = tb.text_frame
-        tf.word_wrap = True
-        p1 = tf.paragraphs[0]
-        p1.text = title
-        style_paragraph(p1, size=12, bold=True, color=DARK, align=PP_ALIGN.CENTER)
-        p2 = tf.add_paragraph()
-        p2.text = f"{when} — {detail}"
-        style_paragraph(p2, size=9, color=GRAY, align=PP_ALIGN.CENTER)
-
-    table_top = top + 2.05
-    t = slide.shapes.add_table(
-        4, 4, Inches(0.65), Inches(table_top), Inches(12.0), Inches(2.55)
-    )
-    table = t.table
-    for idx, width in enumerate([2.8, 2.0, 3.5, 3.7]):
-        table.columns[idx].width = Inches(width)
-    headers = ["Approach", "Annual valves", "Cost trend", "Recommendation"]
-    rows = [
-        ["Replace-and-discard", "~16+ / year", "Recurring purchase every cycle", "Simple but highest lifecycle cost"],
-        ["Test-and-reuse + spare pool", "Same fleet, pooled spares", "~40% reduction after pool built", "Mirror high-pressure program"],
-        ["Pilot program", "3–5 valves first", "Validate quotes & turnaround", "Prove before fleet-wide change"],
-    ]
-    for col, header in enumerate(headers):
-        style_table_cell(table.cell(0, col), header, header=True, size=10)
-    for r, row in enumerate(rows, start=1):
-        for c, value in enumerate(row):
-            style_table_cell(table.cell(r, c), value, alt=r % 2 == 0, size=9)
-
-    foot = slide.shapes.add_textbox(Inches(0.65), Inches(6.55), Inches(12), Inches(0.35))
-    style_paragraph(foot.text_frame.paragraphs[0], size=9, color=GRAY, align=PP_ALIGN.CENTER)
-    foot.text_frame.paragraphs[0].text = "Spares in storage >5 years: re-test before install per API RP 576"
-    counter.mark(slide)
-
-
-def add_outcomes_next_steps_slide(prs: Presentation, counter: SlideCounter) -> None:
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    set_slide_bg(slide, WHITE)
-    top = add_header(slide, "Value Delivered & Recommended Next Steps", "Leadership decisions to sustain the program", compact=True)
+    top = add_header(slide, "Program Outcomes & Next Steps", "Value delivered · leadership decisions to sustain the program")
 
     for col_x, col_title, items, bg in (
         (0.65, "Operational value", [
             "Complete fleet inventory & visible compliance by site",
             "Traceable audit history & faster Setpoint planning",
-            "Spare coverage, walkdowns, dashboard as system of record",
         ], CREAM),
         (6.75, "Strategic value", [
             "Code-aligned strategy doc (ASME, NBIC, API RP 576)",
-            "CMMS & spare-pool foundation for capital requests",
-            "Sustainable UES ownership of steam safety program",
+            "CMMS foundation, spare-pool path, sustainable UES ownership",
         ], SKY),
     ):
-        panel = slide.shapes.add_shape(1, Inches(col_x), Inches(top), Inches(5.95), Inches(3.35))
+        panel = slide.shapes.add_shape(1, Inches(col_x), Inches(top), Inches(5.95), Inches(2.35))
         panel.fill.solid()
         panel.fill.fore_color.rgb = bg
         panel.line.color.rgb = ACCENT
         label = slide.shapes.add_textbox(Inches(col_x + 0.2), Inches(top + 0.12), Inches(5.5), Inches(0.3))
-        style_paragraph(label.text_frame.paragraphs[0], size=13, bold=True, color=MAROON)
+        style_paragraph(label.text_frame.paragraphs[0], size=14, bold=True, color=MAROON)
         label.text_frame.paragraphs[0].text = col_title
-        box = slide.shapes.add_textbox(Inches(col_x + 0.25), Inches(top + 0.45), Inches(5.45), Inches(2.7))
+        box = slide.shapes.add_textbox(Inches(col_x + 0.25), Inches(top + 0.48), Inches(5.45), Inches(1.65))
         tf = box.text_frame
         tf.word_wrap = True
         for i, item in enumerate(items):
             p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
             p.text = f"• {item}"
-            style_paragraph(p, size=12, color=DARK)
-            p.space_after = Pt(6)
+            style_paragraph(p, size=13, color=DARK)
+            p.space_after = Pt(8)
 
-    steps_panel = slide.shapes.add_shape(1, Inches(0.65), Inches(top + 3.55), Inches(12.05), Inches(2.15))
-    steps_panel.fill.solid()
-    steps_panel.fill.fore_color.rgb = GREEN_BG
-    steps_panel.line.color.rgb = ACCENT
+    steps_top = top + 2.65
+    steps_label = slide.shapes.add_textbox(Inches(0.65), Inches(steps_top), Inches(12), Inches(0.3))
+    style_paragraph(steps_label.text_frame.paragraphs[0], size=14, bold=True, color=MAROON)
+    steps_label.text_frame.paragraphs[0].text = "Recommended next steps"
 
-    steps_title = slide.shapes.add_textbox(Inches(0.85), Inches(top + 3.68), Inches(11.5), Inches(0.3))
-    style_paragraph(steps_title.text_frame.paragraphs[0], size=13, bold=True, color=MAROON)
-    steps_title.text_frame.paragraphs[0].text = "Recommended next steps"
-
-    steps = [
+    for i, bullet in enumerate([
         "Endorse Maintenance Strategy and PM frequencies",
         "Approve spare-acquisition priority list",
         "Pilot test-and-reuse on 125 psi valves (3–5 unit pilot)",
         "Fleet-wide physical tagging — Position Tag + Inventory ID",
-    ]
-    step_w = 2.85
-    gap = 0.18
-    start_x = (13.333 - (step_w * 4 + gap * 3)) / 2
-    for i, step in enumerate(steps):
-        x = start_x + i * (step_w + gap)
-        box = slide.shapes.add_shape(1, Inches(x), Inches(top + 4.05), Inches(step_w), Inches(1.45))
-        box.fill.solid()
-        box.fill.fore_color.rgb = WHITE
-        box.line.color.rgb = ACCENT
+    ]):
+        y = steps_top + 0.42 + i * 0.72
+        marker = slide.shapes.add_shape(1, Inches(0.75), Inches(y + 0.08), Inches(0.14), Inches(0.14))
+        marker.fill.solid()
+        marker.fill.fore_color.rgb = ACCENT
+        marker.line.fill.background()
+        box = slide.shapes.add_textbox(Inches(1.05), Inches(y), Inches(11.5), Inches(0.65))
         tf = box.text_frame
         tf.word_wrap = True
-        tf.vertical_anchor = MSO_ANCHOR.MIDDLE
         p = tf.paragraphs[0]
-        p.text = f"{i + 1}. {step}"
-        style_paragraph(p, size=10, color=DARK, align=PP_ALIGN.CENTER)
+        p.text = bullet
+        style_paragraph(p, size=15, color=DARK)
 
     counter.mark(slide)
-
 
 
 def build() -> Path:
@@ -965,17 +705,16 @@ def build() -> Path:
 
     add_title_slide(prs)
 
-    # Executive summary + compact agenda strip
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_slide_bg(slide, WHITE)
-    add_header(slide, "Executive Summary", "End-to-end program built from the ground up", compact=True)
+    add_header(slide, "Executive Summary", "End-to-end program built from the ground up")
     add_stat_cards(slide, [
         ("4 Phases", "Program path", "Field → Excel → Dashboard → Strategy"),
         ("51 PSVs", "Live fleet", "Production dashboard today"),
         ("3 Years", "Recert cycle", "NBIC / ASME aligned"),
         ("1 Source", "System of record", "Dashboard + master Excel"),
-    ], top=1.15)
-    box = slide.shapes.add_textbox(Inches(0.85), Inches(2.65), Inches(11.8), Inches(2.35))
+    ])
+    box = slide.shapes.add_textbox(Inches(0.85), Inches(3.05), Inches(11.8), Inches(3.2))
     tf = box.text_frame
     tf.word_wrap = True
     for i, point in enumerate([
@@ -986,39 +725,114 @@ def build() -> Path:
     ]):
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         p.text = f"✓  {point}"
-        style_paragraph(p, size=15, color=DARK)
-        p.space_after = Pt(10)
-    add_agenda_strip(slide, 5.35, [
-        ("I", "Context"),
-        ("II", "Field & Excel"),
-        ("III", "Dashboard"),
-        ("IV", "Maintenance"),
-        ("V", "Next Steps"),
-    ])
+        style_paragraph(p, size=17, color=DARK)
+        p.space_after = Pt(14)
     counter.mark(slide)
 
-    add_context_slide(prs, counter)
+    add_agenda_slide(prs, counter)
+    add_risk_cards_slide(prs, counter)
+
+    add_icon_row_slide(
+        prs, counter,
+        "Regulatory & Standards Foundation",
+        [
+            ("I", "ASME Sec. I", "Valve design, capacity, manual-lift rules"),
+            ("II", "NBIC Pt. 2", "In-service inspection; 3-year max interval"),
+            ("III", "API RP 576", "Inspection, testing, repair best practice"),
+            ("IV", "TX Ch. 65", "State boiler program requirements"),
+        ],
+        subtitle="Program decisions are code-informed, not ad hoc",
+    )
+
     add_journey_slide(prs, counter)
-    add_field_excel_slide(prs, counter)
-    add_dashboard_overview_slide(prs, counter)
-    add_dual_screenshot_slide(
+
+    add_two_column_cards(
         prs, counter,
-        "Dashboard Drill-Down & Equipment Views",
-        "02-kpi-modal.png",
-        "Click any KPI to see the valves driving that metric",
-        "03-equipment.png",
-        "Boiler 001/HRSG — locations with Inventory ID and due dates",
+        "Phase 1 — Field Data Collection",
+        "How we worked",
+        [
+            "Walk every boiler room — locate each relief valve",
+            "Photograph nameplates; verify install vs. drawings and records",
+            "Document spares, discharge path, condition — flag gaps immediately",
+        ],
+        "What we captured",
+        [
+            "Unit identity (boiler / HRSG), protected location, installed vs. spare",
+            "Serial number, manufacturer, set pressure, capacity, NB #",
+            "Nameplate photo evidence for every valve",
+        ],
+        subtitle="Ground truth before any database or dashboard",
     )
-    add_screenshot_slide(
+
+    add_icon_row_slide(
         prs, counter,
-        "Valve Record Detail",
-        "05-psv-detail.png",
-        "Datasheet, compliance clock, status & repair history",
+        "Phase 2 — Master Excel Register",
+        [
+            ("📥", "Import", "Field data normalized by equipment & location"),
+            ("📊", "Sort", "Due dates, spares, Inventory IDs assigned"),
+            ("✓", "Validate", "Completeness check before digitizing"),
+            ("📤", "Report", "5-sheet export still supports leadership reviews"),
+        ],
+        subtitle="The bridge between field discovery and digital management",
     )
-    add_stacked_tables_slide(prs, counter)
-    add_checklist_tag_slide(prs, counter)
-    add_decision_strategy_slide(prs, counter)
-    add_outcomes_next_steps_slide(prs, counter)
+
+    add_dashboard_hero_slide(prs, counter)
+
+    add_screenshot_slide(prs, counter, "KPI Drill-Down", "02-kpi-modal.png",
+                         "Click any KPI to see the valves driving that metric")
+    add_screenshot_slide(prs, counter, "Equipment & Location Views", "03-equipment.png",
+                         "Boiler 001/HRSG — locations with Inventory ID and due dates")
+    add_screenshot_slide(prs, counter, "Valve Record Detail", "05-psv-detail.png",
+                         "Datasheet, compliance clock, status & repair history")
+
+    add_table_slide(
+        prs, counter,
+        "PM Intervals & Triggers",
+        ["Activity", "Frequency", "Code / reference", "Notes"],
+        [
+            ["Pop test & overhaul", "Every 3 years", "NBIC Part 2, ASME Sec. I", "Send to Setpoint — complete before due"],
+            ["Visual walkdown", "Semi-annual", "API RP 576", "Weeping, corrosion, discharge path"],
+            ["Manual lever test", "Annual (optional)", "PG-73.1.3", "Management decision — seat damage risk"],
+            ["Condition inspection", "As needed", "API RP 576", "Leakage, chattering, damage"],
+        ],
+        subtitle="Phase 4 — Maintenance Strategy · maximum intervals shown; complete before due date",
+        col_widths=[2.5, 1.8, 2.8, 5.0],
+    )
+
+    add_table_slide(
+        prs, counter,
+        "Testing Methods — Send-Out vs. In-Place",
+        ["Factor", "Send-out (preferred)", "In-place (no spare)"],
+        [
+            ["Process", "Remove valve → install spare → bench overhaul", "Setpoint tests on live system"],
+            ["Inspection depth", "Full disassembly, lapping, spring check", "Functional lift only"],
+            ["Certification", "Complete overhaul + pop test", "Equivalent certification issued"],
+            ["Risk", "Lower seat-damage risk", "Higher risk on older valves"],
+            ["Goal", "Fleet-wide spare coverage", "Interim until spare acquired"],
+        ],
+        subtitle="Long-term goal: spare coverage for all valves to enable send-out testing",
+        col_widths=[2.2, 4.9, 4.9],
+    )
+
+    add_field_checklist_slide(prs, counter)
+    add_tag_diagram_slide(prs, counter)
+    add_decision_columns_slide(prs, counter)
+
+    add_table_slide(
+        prs, counter,
+        "Commercial 125 psi Boiler Strategy",
+        ["Approach", "Annual valves", "Cost trend", "Recommendation"],
+        [
+            ["Replace-and-discard", "~16+ / year", "Recurring purchase every cycle", "Simple but highest lifecycle cost"],
+            ["Test-and-reuse + spare pool", "Same fleet, pooled spares", "~40% reduction after pool built", "Mirror high-pressure program"],
+            ["Pilot program", "3–5 valves first", "Validate quotes & turnaround", "Prove before fleet-wide change"],
+        ],
+        subtitle="Section 7 — management decision framework",
+        col_widths=[2.8, 2.0, 3.5, 3.7],
+        caveat_badge="ILLUSTRATIVE — pending vendor quotes",
+    )
+
+    add_outcomes_and_next_steps_slide(prs, counter)
 
     prs.save(OUTPUT)
     return OUTPUT
