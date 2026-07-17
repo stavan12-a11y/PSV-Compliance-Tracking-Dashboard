@@ -2,9 +2,9 @@
 
 ## Download
 
-**Direct link (19-slide deck — design refresh, lightly trimmed):**
+**Direct link (27-slide deck — aligned with Maintenance Strategy v4):**
 
-https://raw.githubusercontent.com/stavan12-a11y/PSV-Compliance-Tracking-Dashboard/cursor/psv-tracking-dashboard-81be/docs/presentation/UES-Steam-Safety-Program.pptx?v=20260716b
+https://raw.githubusercontent.com/stavan12-a11y/PSV-Compliance-Tracking-Dashboard/cursor/psv-tracking-dashboard-81be/docs/presentation/UES-Steam-Safety-Program.pptx?v=20260717
 
 **File path:** `docs/presentation/UES-Steam-Safety-Program.pptx`
 
