@@ -691,6 +691,92 @@ def add_outcomes_and_next_steps_slide(prs: Presentation, counter: SlideCounter) 
     counter.mark(slide)
 
 
+def add_replacement_cycle_slide(prs: Presentation, counter: SlideCounter) -> None:
+    """3-year location-based replacement rotation to spread capital costs."""
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    set_slide_bg(slide, WHITE)
+    top = add_header(
+        slide,
+        "3-Year Replacement Cycle by Location",
+        "Stagger replacements across sites so capital costs are predictable — not concentrated in one year",
+    )
+
+    why = slide.shapes.add_textbox(Inches(0.65), Inches(top), Inches(12.0), Inches(1.05))
+    tf = why.text_frame
+    tf.word_wrap = True
+    for i, line in enumerate([
+        "Without a rotation plan, valves installed together age out together — creating a single-year budget spike.",
+        "Assign each building or boiler location to a Year 1, 2, or 3 bucket so replacement and recert spend is level-loaded.",
+    ]):
+        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        p.text = line
+        style_paragraph(p, size=13, color=DARK)
+        p.space_after = Pt(4)
+
+    years = [
+        ("Year 1", "Rotation group A", [
+            "Assign ~⅓ of locations (by valve count)",
+            "Commercial 150 psi replacements due this cycle",
+            "Setpoint send-outs aligned to spare swaps",
+        ], CREAM),
+        ("Year 2", "Rotation group B", [
+            "Next third of campus / plant locations",
+            "Balance workload with Year 1 completions",
+            "Update dashboard due dates after each swap",
+        ], SKY),
+        ("Year 3", "Rotation group C", [
+            "Remaining locations complete the cycle",
+            "Cycle restarts — locations return to Year 1",
+            "One due-date logic across the whole fleet",
+        ], GREEN_BG),
+    ]
+    col_w = 3.85
+    card_top = top + 1.2
+    for i, (year, group, items, bg) in enumerate(years):
+        x = 0.65 + i * (col_w + 0.25)
+        panel = slide.shapes.add_shape(1, Inches(x), Inches(card_top), Inches(col_w), Inches(3.55))
+        panel.fill.solid()
+        panel.fill.fore_color.rgb = bg
+        panel.line.color.rgb = ACCENT
+
+        yb = slide.shapes.add_shape(1, Inches(x + 0.15), Inches(card_top + 0.15), Inches(col_w - 0.3), Inches(0.42))
+        yb.fill.solid()
+        yb.fill.fore_color.rgb = MAROON
+        yb.line.fill.background()
+        yp = yb.text_frame.paragraphs[0]
+        yp.text = year
+        style_paragraph(yp, size=14, bold=True, color=WHITE, align=PP_ALIGN.CENTER)
+
+        gt = slide.shapes.add_textbox(Inches(x + 0.15), Inches(card_top + 0.65), Inches(col_w - 0.3), Inches(0.35))
+        style_paragraph(gt.text_frame.paragraphs[0], size=12, bold=True, color=MAROON, align=PP_ALIGN.CENTER)
+        gt.text_frame.paragraphs[0].text = group
+
+        box = slide.shapes.add_textbox(Inches(x + 0.2), Inches(card_top + 1.05), Inches(col_w - 0.4), Inches(2.3))
+        btf = box.text_frame
+        btf.word_wrap = True
+        for j, item in enumerate(items):
+            p = btf.paragraphs[0] if j == 0 else btf.add_paragraph()
+            p.text = f"• {item}"
+            style_paragraph(p, size=11, color=DARK)
+            p.space_after = Pt(5)
+
+    foot = slide.shapes.add_shape(1, Inches(0.65), Inches(6.35), Inches(12.0), Inches(0.75))
+    foot.fill.solid()
+    foot.fill.fore_color.rgb = AMBER_BG
+    foot.line.color.rgb = ACCENT
+    ftf = foot.text_frame
+    ftf.word_wrap = True
+    ftf.vertical_anchor = MSO_ANCHOR.MIDDLE
+    fp = ftf.paragraphs[0]
+    fp.text = (
+        "How to build the plan: use dashboard valve counts and due dates per location · "
+        "prioritize failed annual lever tests and overdue recerts into the nearest rotation year · "
+        "leadership approves a 3-year capital forecast (~⅓ of fleet cost per year)"
+    )
+    style_paragraph(fp, size=11, bold=True, color=DARK, align=PP_ALIGN.CENTER)
+    counter.mark(slide)
+
+
 def add_for_against_slide(
     prs: Presentation,
     counter: SlideCounter,
@@ -950,6 +1036,8 @@ def build() -> Path:
         font_size=14,
     )
 
+    add_replacement_cycle_slide(prs, counter)
+
     add_bullet_slide(
         prs, counter,
         "Highest-Impact Program Improvements",
@@ -991,6 +1079,7 @@ def build() -> Path:
         [
             "Leadership endorsement of the Maintenance Strategy and PM frequencies",
             "Decision on manual lever testing policy (Section 3 — management choice)",
+            "Approve 3-year location rotation plan for commercial replacements and recert spend",
             "Approve spare-acquisition prioritization for no-spare locations",
             "Continue populating dashboard with remaining field discoveries (walkdowns in progress)",
             "Integrate Position Tags and Inventory IDs fleet-wide on physical valve tags",
