@@ -1,9 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { isAuthorized } from '../_lib/auth.js';
-import { ensureSchema, getSql, STATE_ROW_ID } from '../_lib/db.js';
-import { json } from '../_lib/http.js';
-
-export const config = { runtime: 'nodejs20.x' };
+import { isAuthorized } from '@psv/server/auth';
+import { ensureSchema, getSql, STATE_ROW_ID } from '@psv/server/db';
+import { json } from '@psv/server/http';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!isAuthorized(req)) {

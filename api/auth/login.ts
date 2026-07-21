@@ -1,8 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createSessionToken, verifyTeamLogin } from '../_lib/auth.js';
-import { json } from '../_lib/http.js';
-
-export const config = { runtime: 'nodejs20.x' };
+import { createSessionToken, verifyTeamLogin } from '@psv/server/auth';
+import { json } from '@psv/server/http';
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
