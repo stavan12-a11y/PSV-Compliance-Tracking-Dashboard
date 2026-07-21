@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { isAuthorized } from '../server/auth';
-import { ensureSchema, getSql, STATE_ROW_ID } from '../server/db';
-import { json } from '../server/http';
+import { isAuthorized } from './lib/auth';
+import { ensureSchema, getSql, STATE_ROW_ID } from './lib/db';
+import { json } from './lib/http';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!isAuthorized(req)) {

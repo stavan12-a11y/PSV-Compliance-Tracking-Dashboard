@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createSessionToken, verifyTeamLogin } from '../../server/auth';
-import { json } from '../../server/http';
+import { createSessionToken, verifyTeamLogin } from '../lib/auth';
+import { json } from '../lib/http';
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
