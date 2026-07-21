@@ -2,6 +2,7 @@
   "name": "psv-dashboard",
   "private": true,
   "version": "0.1.0",
+  "type": "module",
   "description": "PSV (Pressure Safety Valve) compliance tracking dashboard for Texas A&M Utilities & Energy Services",
   "scripts": {
     "dev": "vite",
