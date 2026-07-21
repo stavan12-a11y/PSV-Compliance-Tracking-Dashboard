@@ -1,4 +1,4 @@
-async function sendBackupEmail({ to, subject, html, filename, buffer }) {
+async function sendBackupEmail({ to, subject, html, attachments }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error('RESEND_API_KEY is not configured on Vercel.');
 
@@ -16,12 +16,10 @@ async function sendBackupEmail({ to, subject, html, filename, buffer }) {
       to: [to],
       subject,
       html,
-      attachments: [
-        {
-          filename,
-          content: buffer.toString('base64'),
-        },
-      ],
+      attachments: attachments.map(({ filename, buffer }) => ({
+        filename,
+        content: buffer.toString('base64'),
+      })),
     }),
   });
 

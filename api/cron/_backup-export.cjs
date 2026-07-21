@@ -14,6 +14,15 @@ const COMPLIANCE_LABELS = {
   not_installed: 'Not Installed',
 };
 
+const EVENT_TYPE_LABELS = {
+  created: 'Created',
+  'status-change': 'Status Change',
+  service: 'Service',
+  'datasheet-update': 'Datasheet Update',
+  'history-edit': 'History Edit',
+  note: 'Note',
+};
+
 function todayISO() {
   const d = new Date();
   const year = d.getFullYear();
@@ -119,6 +128,7 @@ function buildRegisterRow(psv, locById, eqById) {
   const ctx = resolveContext(psv, locById, eqById);
   const c = getCompliance(psv);
   return {
+    'PSV ID': psv.id,
     Equipment: ctx.eq?.name ?? '',
     'Equipment Tag': ctx.eq?.tag ?? '',
     Area: ctx.eq?.area ?? '',
@@ -129,6 +139,7 @@ function buildRegisterRow(psv, locById, eqById) {
     'PSV Tag': psv.tag ?? '',
     Status: STATUS_LABELS[psv.status] ?? psv.status,
     'Serviced On Site': psv.servicedOnSite ? 'Yes' : 'No',
+    'Created At': psv.createdAt ? formatDateTime(psv.createdAt) : '',
     Make: psv.datasheet?.make ?? '',
     Model: psv.datasheet?.model ?? '',
     'Set Pressure': psv.datasheet?.setPressure ?? '',
@@ -147,6 +158,7 @@ function buildRegisterRow(psv, locById, eqById) {
 }
 
 const REGISTER_COLUMNS = [
+  'PSV ID',
   'Equipment',
   'Equipment Tag',
   'Area',
@@ -157,6 +169,7 @@ const REGISTER_COLUMNS = [
   'PSV Tag',
   'Status',
   'Serviced On Site',
+  'Created At',
   'Make',
   'Model',
   'Set Pressure',
@@ -174,6 +187,7 @@ const REGISTER_COLUMNS = [
 ];
 
 const HISTORY_COLUMNS = [
+  'Event ID',
   'Equipment',
   'Equipment Tag',
   'Location',
@@ -190,6 +204,7 @@ const HISTORY_COLUMNS = [
 ];
 
 const REPAIR_COLUMNS = [
+  'Record ID',
   'Equipment',
   'Equipment Tag',
   'Location',
@@ -221,7 +236,42 @@ function appendSheet(wb, XLSX, name, rows, columns) {
   XLSX.utils.book_append_sheet(wb, ws, name);
 }
 
-function buildBackupWorkbook(data) {
+function buildBackupInfoRows(data, generatedAt) {
+  const psvs = data.psvs ?? [];
+  const eventCount = psvs.reduce((n, p) => n + (p.events?.length ?? 0), 0);
+  const repairCount = psvs.reduce((n, p) => n + (p.repairHistory?.length ?? 0), 0);
+
+  return [
+    ['PSV Tracking Dashboard — Monthly Backup'],
+    ['Generated', formatDateTime(generatedAt)],
+    [''],
+    ['This email contains TWO files:'],
+    ['1. Excel (.xlsx)', 'Human-readable reports — open in Excel or Google Sheets'],
+    ['2. JSON (.json)', 'Complete lossless backup — re-import via Data → Import data in the dashboard'],
+    [''],
+    ['EXCEL WORKBOOK SHEETS'],
+    ['Sheet', 'What it contains'],
+    ['Backup Info', 'This summary (first tab)'],
+    ['All PSVs', 'Every valve: datasheet, status, compliance dates, equipment/location'],
+    ['Installed / Out for Service / Overdue / Upcoming Due', 'Filtered views of the register'],
+    ['History Log', 'Every history entry: status changes, services, notes, datasheet edits — with Description AND Note columns'],
+    ['Repair History', 'All repair/overhaul records with vendor, work order, description, and notes'],
+    ['Equipment', 'All equipment: name, tag, type, area, description'],
+    ['Locations', 'All locations: name, tag, description, parent equipment'],
+    [''],
+    ['COUNTS IN THIS BACKUP'],
+    ['Equipment', data.equipment?.length ?? 0],
+    ['Locations', data.locations?.length ?? 0],
+    ['PSVs', psvs.length],
+    ['History events', eventCount],
+    ['Repair records', repairCount],
+    [''],
+    ['NOTES ARE INCLUDED in History Log (Note column) and Repair History (Note column).'],
+    ['Location descriptions and equipment descriptions are on their respective sheets.'],
+  ];
+}
+
+function buildBackupWorkbook(data, generatedAt = new Date().toISOString()) {
   const XLSX = require('xlsx');
   const psvs = data.psvs ?? [];
   const locById = new Map((data.locations ?? []).map((l) => [l.id, l]));
@@ -229,6 +279,10 @@ function buildBackupWorkbook(data) {
   const withCompliance = psvs.map((psv) => ({ psv, c: getCompliance(psv) }));
 
   const wb = XLSX.utils.book_new();
+
+  const infoWs = XLSX.utils.aoa_to_sheet(buildBackupInfoRows(data, generatedAt));
+  infoWs['!cols'] = [{ wch: 28 }, { wch: 72 }];
+  XLSX.utils.book_append_sheet(wb, infoWs, 'Backup Info');
 
   appendSheet(
     wb,
@@ -281,6 +335,7 @@ function buildBackupWorkbook(data) {
     const ctx = resolveContext(psv, locById, eqById);
     for (const event of psv.events ?? []) {
       historyRows.push({
+        'Event ID': event.id,
         Equipment: ctx.eq?.name ?? '',
         'Equipment Tag': ctx.eq?.tag ?? '',
         Location: ctx.loc?.name ?? '',
@@ -288,7 +343,7 @@ function buildBackupWorkbook(data) {
         'Serial Number': psv.serialNumber,
         'Inventory ID': psv.inventoryId ?? '',
         'PSV Tag': psv.tag ?? '',
-        'Event Type': event.type,
+        'Event Type': EVENT_TYPE_LABELS[event.type] ?? event.type,
         'Event Date': formatDate(event.date),
         Status: event.status ? (STATUS_LABELS[event.status] ?? event.status) : '',
         Description: event.description ?? '',
@@ -308,6 +363,7 @@ function buildBackupWorkbook(data) {
     const ctx = resolveContext(psv, locById, eqById);
     for (const record of psv.repairHistory ?? []) {
       repairRows.push({
+        'Record ID': record.id,
         Equipment: ctx.eq?.name ?? '',
         'Equipment Tag': ctx.eq?.tag ?? '',
         Location: ctx.loc?.name ?? '',
@@ -331,12 +387,14 @@ function buildBackupWorkbook(data) {
     XLSX,
     'Equipment',
     (data.equipment ?? []).map((eq) => ({
+      'Equipment ID': eq.id,
       Name: eq.name,
       Tag: eq.tag ?? '',
+      Type: eq.type ?? '',
       Area: eq.area ?? '',
       Description: eq.description ?? '',
     })),
-    ['Name', 'Tag', 'Area', 'Description'],
+    ['Equipment ID', 'Name', 'Tag', 'Type', 'Area', 'Description'],
   );
 
   appendSheet(
@@ -346,14 +404,15 @@ function buildBackupWorkbook(data) {
     (data.locations ?? []).map((loc) => {
       const eq = eqById.get(loc.equipmentId);
       return {
+        'Location ID': loc.id,
         Equipment: eq?.name ?? '',
         'Equipment Tag': eq?.tag ?? '',
         'Location Name': loc.name,
         'Location Tag': loc.tag ?? '',
-        Notes: loc.notes ?? '',
+        Description: loc.description ?? '',
       };
     }),
-    ['Equipment', 'Equipment Tag', 'Location Name', 'Location Tag', 'Notes'],
+    ['Location ID', 'Equipment', 'Equipment Tag', 'Location Name', 'Location Tag', 'Description'],
   );
 
   return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });

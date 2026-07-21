@@ -6,17 +6,32 @@
 
 ---
 
-## What you get
+Every month you receive an email with **two attachments**:
 
-Every month you receive an email with an `.xlsx` file containing:
+### 1. Excel file (`.xlsx`) — for reading and reporting
 
-- All PSVs (register with compliance dates)
-- Installed / out for service / overdue / upcoming due sheets
-- Full history log (every change)
-- Repair history
-- Equipment and locations lists
+Open in Excel or Google Sheets. The first tab **Backup Info** explains everything.
+
+| Sheet | What's in it |
+|-------|----------------|
+| **Backup Info** | Summary of the backup and what each sheet contains |
+| **All PSVs** | Every valve: serial number, tags, datasheet (make, model, pressure, sizes…), status, compliance dates |
+| **Installed** | PSVs currently installed |
+| **Out for Service** | PSVs out for recertification |
+| **Overdue** | Installed PSVs past their due date |
+| **Upcoming Due** | Installed PSVs due within 90 days |
+| **History Log** | **Every history entry** for every PSV — status changes, services, notes, datasheet edits. Columns include **Description** and **Note** (your free-text notes) |
+| **Repair History** | All repair/overhaul records — description, vendor, work order, **notes** |
+| **Equipment** | All equipment with name, tag, type, area, description |
+| **Locations** | All locations with name, tag, description, parent equipment |
+
+### 2. JSON file (`.json`) — for full restore
+
+This is a **100% complete copy** of everything in the database — nothing is left out. If you ever need to rebuild the dashboard, use **Data → Import data → JSON backup** and select this file.
 
 ---
+
+## What you get
 
 ## Step 1 — Create a free Resend account (email sender)
 

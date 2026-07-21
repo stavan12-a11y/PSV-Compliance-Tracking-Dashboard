@@ -37,8 +37,11 @@ module.exports = async function handler(req, res) {
 
     const date = todayISO();
     const monthLabel = date.slice(0, 7);
-    const filename = `PSV-Dashboard-Backup_${monthLabel}.xlsx`;
-    const buffer = buildBackupWorkbook(data);
+    const xlsxFilename = `PSV-Dashboard-Backup_${monthLabel}.xlsx`;
+    const jsonFilename = `PSV-Dashboard-Backup_${monthLabel}.json`;
+    const generatedAt = new Date().toISOString();
+    const xlsxBuffer = buildBackupWorkbook(data, generatedAt);
+    const jsonBuffer = Buffer.from(JSON.stringify(data, null, 2), 'utf8');
     const psvCount = data.psvs?.length ?? 0;
     const equipmentCount = data.equipment?.length ?? 0;
 
@@ -46,24 +49,30 @@ module.exports = async function handler(req, res) {
       to,
       subject: `PSV Dashboard monthly backup — ${monthLabel}`,
       html: `
-        <p>Your monthly PSV Tracking Dashboard backup is attached.</p>
+        <p>Your monthly PSV Tracking Dashboard backup is attached (<strong>2 files</strong>).</p>
+        <ul>
+          <li><strong>Excel (.xlsx)</strong> — readable reports with every PSV, history, notes, repairs, equipment, and locations</li>
+          <li><strong>JSON (.json)</strong> — complete lossless copy you can re-import into the dashboard (Data → Import data)</li>
+        </ul>
         <ul>
           <li><strong>Date:</strong> ${date}</li>
           <li><strong>Equipment:</strong> ${equipmentCount}</li>
           <li><strong>PSVs:</strong> ${psvCount}</li>
           <li><strong>Last saved in cloud:</strong> ${updatedAt ?? 'unknown'}</li>
         </ul>
-        <p>Store this file somewhere safe (OneDrive, shared drive, etc.) in case you ever need to restore data.</p>
+        <p>Store both files somewhere safe (OneDrive, shared drive, etc.).</p>
         <p style="color:#666;font-size:12px">Texas A&amp;M · Utilities &amp; Energy Services · PSV Compliance Dashboard</p>
       `,
-      filename,
-      buffer,
+      attachments: [
+        { filename: xlsxFilename, buffer: xlsxBuffer },
+        { filename: jsonFilename, buffer: jsonBuffer },
+      ],
     });
 
     return json(res, 200, {
       ok: true,
       sentTo: to,
-      filename,
+      files: [xlsxFilename, jsonFilename],
       psvCount,
       equipmentCount,
       emailId: emailResult?.id ?? null,
