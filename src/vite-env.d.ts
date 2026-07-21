@@ -4,8 +4,6 @@ interface ImportMetaEnv {
   readonly VITE_APP_USERNAME?: string;
   readonly VITE_APP_PASSWORD?: string;
   readonly VITE_CLOUD_MODE?: string;
-  readonly VITE_SUPABASE_URL?: string;
-  readonly VITE_SUPABASE_ANON_KEY?: string;
 }
 
 interface ImportMeta {

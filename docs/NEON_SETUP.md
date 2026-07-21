@@ -125,10 +125,10 @@ Leave your team these items in a shared doc or password manager:
 | “Incorrect username or password” | Check `TEAM_USERNAME` and `TEAM_PASSWORD` in Vercel env vars; redeploy |
 | Blank dashboard after login | Run `neon/schema.sql`; check `DATABASE_URL` is correct |
 | Changes don’t appear for teammate | Normal — updates sync every ~20 seconds, or refresh the page |
-| Still asking for email | Remove Supabase env vars; ensure `VITE_CLOUD_MODE=true`; redeploy |
+| Still asking for email | Ensure `VITE_CLOUD_MODE=true`; redeploy |
 
 ---
 
 ## Need help?
 
-Ask whoever maintains the GitHub repo to check the latest deployment logs in Vercel → **Functions** tab for `/api/auth/login` and `/api/state`.
+Ask whoever maintains the GitHub repo to check the latest deployment logs in Vercel → **Functions** tab for `/api/auth/login` and `/api/data`.

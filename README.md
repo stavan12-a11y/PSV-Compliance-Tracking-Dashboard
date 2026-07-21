@@ -73,17 +73,13 @@ Both thresholds live in `src/utils/dates.ts`.
 
 ## Modes: shared cloud data vs. local
 
-The app runs in one of three modes:
+The app runs in one of two modes:
 
-- **Cloud mode — Neon + Vercel (recommended):** set `VITE_CLOUD_MODE=true` plus
-  server env vars on Vercel (`DATABASE_URL`, `TEAM_USERNAME`, `TEAM_PASSWORD`,
-  `AUTH_SECRET`). Everyone signs in with a shared username/password and sees one
-  shared dataset. Data syncs every ~20 seconds between users. **No Supabase pause
-  policy.** See **[docs/NEON_SETUP.md](docs/NEON_SETUP.md)** for step-by-step setup
-  (no coding required).
-- **Cloud mode — Supabase (legacy):** set `VITE_SUPABASE_URL` and
-  `VITE_SUPABASE_ANON_KEY`. Real-time sync via Supabase. Subject to free-tier
-  inactivity pause — migrate to Neon when possible.
+- **Cloud mode (recommended):** set `VITE_CLOUD_MODE=true` plus server env vars on
+  Vercel (`DATABASE_URL`, `TEAM_USERNAME`, `TEAM_PASSWORD`, `AUTH_SECRET`). Everyone
+  signs in with a shared username/password and sees one shared dataset. Data syncs
+  every ~20 seconds between users. See **[docs/NEON_SETUP.md](docs/NEON_SETUP.md)**
+  for step-by-step setup (no coding required).
 - **Local mode (development):** no cloud configured. Static login +
   per-browser `localStorage`.
 
@@ -91,13 +87,6 @@ The app runs in one of three modes:
 
 Follow **[docs/NEON_SETUP.md](docs/NEON_SETUP.md)** — create Neon account, run
 `neon/schema.sql`, paste env vars into Vercel, redeploy.
-
-### Legacy: Supabase setup
-
-1. Create a free project at **[supabase.com](https://supabase.com)**.
-2. Run [`supabase/schema.sql`](supabase/schema.sql) in the SQL Editor.
-3. Create a shared user under **Authentication → Users**.
-4. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` on Vercel.
 
 ## Going live (deploy a shareable URL) — step by step
 
@@ -110,20 +99,17 @@ The app is a static Vite build with SPA routing config already included
    (If asked, give Vercel permission to access the repo.)
 3. On the configure screen, Vercel auto-detects **Vite** — leave Build Command
    (`npm run build`) and Output Directory (`dist`) as-is.
-4. Expand **Environment Variables** and add two:
-   - `VITE_APP_USERNAME` = the login id you want
-   - `VITE_APP_PASSWORD` = the password you want
+4. Expand **Environment Variables** and add:
+   - `VITE_CLOUD_MODE` = `true`
+   - `DATABASE_URL`, `TEAM_USERNAME`, `TEAM_PASSWORD`, `AUTH_SECRET` (see
+     [docs/NEON_SETUP.md](docs/NEON_SETUP.md))
+   - Or for local-only testing: `VITE_APP_USERNAME` and `VITE_APP_PASSWORD`
 5. Click **Deploy**. After ~1 minute you'll get a URL like
    `psv-dashboard.vercel.app`. Open it, sign in with your credentials, and share
    the link + credentials with your manager.
 
-To change the password later: Vercel → your project → **Settings → Environment
-Variables**, edit `VITE_APP_PASSWORD`, then **Deployments → … → Redeploy**.
-
-> For a single shared dataset that everyone sees live, also configure Supabase
-> (see “Setting up shared cloud data” above) and add the `VITE_SUPABASE_*`
-> environment variables in step 4. Without them, the site runs in local mode and
-> each browser keeps its own copy.
+To change credentials later: Vercel → your project → **Settings → Environment
+Variables**, edit the values, then **Deployments → … → Redeploy**.
 
 ## Importing your data
 

@@ -3,7 +3,7 @@ import { usePSV } from '../store/PSVContext';
 
 /**
  * Small header badge showing the cloud sync state. Hidden in local mode
- * (no Supabase backend) since there is nothing to sync.
+ * (no cloud backend) since there is nothing to sync.
  */
 export function SyncIndicator() {
   const { syncStatus } = usePSV();

@@ -1,16 +1,13 @@
 import { useState } from 'react';
 import { AlertTriangle, Loader2, Lock, LogIn, ShieldCheck } from 'lucide-react';
-import { AUTH_MODE, USING_DEFAULT_CREDENTIALS, useAuth } from './AuthContext';
+import { USING_DEFAULT_CREDENTIALS, useAuth } from './AuthContext';
 
 export function LoginScreen() {
-  const { login, cloudBackend } = useAuth();
+  const { login } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const cloud = AUTH_MODE === 'cloud';
-  const useEmail = cloud && cloudBackend === 'supabase';
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,10 +36,10 @@ export function LoginScreen() {
           </h2>
 
           <label className="mb-3 block">
-            <span className="label">{useEmail ? 'Email' : 'Username'}</span>
+            <span className="label">Username</span>
             <input
               className="input"
-              type={useEmail ? 'email' : 'text'}
+              type="text"
               value={identifier}
               onChange={(e) => {
                 setIdentifier(e.target.value);

@@ -24,7 +24,6 @@ import { todayISO } from '../utils/dates';
 import { STATUS_LABELS } from '../utils/compliance';
 import { isCloudApiMode, cloudLoadState, cloudSaveState, CLOUD_POLL_MS } from '../lib/cloudApi';
 import { isCloudMode } from '../lib/cloudMode';
-import { isSupabaseConfigured, STATE_ROW_ID, STATE_TABLE, supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 
 const STORAGE_KEY = 'psv-dashboard-data-v3';
@@ -48,7 +47,7 @@ function loadData(): AppData {
 
 interface PSVContextValue {
   data: AppData;
-  /** Cloud sync state ('local' when running without Supabase). */
+  /** Cloud sync state ('local' when running without cloud backend). */
   syncStatus: SyncStatus;
 
   // selectors
@@ -168,7 +167,6 @@ export function PSVProvider({ children }: { children: ReactNode }) {
   const { authed } = useAuth();
   const cloud = isCloudMode;
   const cloudApi = isCloudApiMode;
-  const cloudSupabase = isSupabaseConfigured;
 
   const [data, setData] = useState<AppData>(() =>
     cloud ? structuredClone(EMPTY_DATA) : loadData(),
@@ -246,85 +244,6 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [data, cloudApi, authed, synced]);
-
-  // --- Legacy Supabase: load + realtime ---------------------------------------
-  useEffect(() => {
-    if (!cloudSupabase || !authed || !supabase) return;
-    const sb = supabase;
-    let active = true;
-    setSyncStatus('loading');
-
-    (async () => {
-      const { data: row, error } = await sb
-        .from(STATE_TABLE)
-        .select('data')
-        .eq('id', STATE_ROW_ID)
-        .maybeSingle();
-      if (!active) return;
-
-      if (!error && row?.data) {
-        applyingRemote.current = true;
-        setData(row.data as AppData);
-      } else if (!error) {
-        // First run: seed the shared table with the sample data.
-        const seed = structuredClone(seedData);
-        await sb
-          .from(STATE_TABLE)
-          .upsert({ id: STATE_ROW_ID, data: seed, updated_at: new Date().toISOString() });
-        applyingRemote.current = true;
-        setData(seed);
-      }
-      setSynced(true);
-      setSyncStatus(error ? 'error' : 'saved');
-    })();
-
-    const channel = sb
-      .channel('app_state_sync')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: STATE_TABLE, filter: `id=eq.${STATE_ROW_ID}` },
-        (payload) => {
-          const incoming = (payload.new as { data?: AppData } | null)?.data;
-          if (incoming) {
-            applyingRemote.current = true;
-            setData(incoming);
-            setSyncStatus('saved');
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      active = false;
-      sb.removeChannel(channel);
-    };
-  }, [cloudSupabase, authed]);
-
-  // --- Legacy Supabase: save (debounced) --------------------------------------
-  useEffect(() => {
-    if (!cloudSupabase || !authed || !synced || !supabase) return;
-    if (applyingRemote.current) {
-      // This change came from a remote update — don't echo it back.
-      applyingRemote.current = false;
-      return;
-    }
-    const sb = supabase;
-    setSyncStatus('saving');
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    const snapshot = data;
-    saveTimer.current = setTimeout(() => {
-      sb.from(STATE_TABLE)
-        .upsert({
-          id: STATE_ROW_ID,
-          data: snapshot,
-          updated_at: new Date().toISOString(),
-        })
-        .then(({ error }) => setSyncStatus(error ? 'error' : 'saved'));
-    }, 400);
-    return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    };
-  }, [data, cloudSupabase, authed, synced]);
 
   const getEquipment = useCallback(
     (id: string) => data.equipment.find((e) => e.id === id),

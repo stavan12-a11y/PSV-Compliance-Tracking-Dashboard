@@ -1,12 +1,9 @@
 import { isCloudApiMode } from './cloudApi';
-import { isSupabaseConfigured } from './supabase';
 
-export type CloudBackend = 'api' | 'supabase' | 'local';
+export type CloudBackend = 'api' | 'local';
 
 export function getCloudBackend(): CloudBackend {
-  if (isCloudApiMode) return 'api';
-  if (isSupabaseConfigured) return 'supabase';
-  return 'local';
+  return isCloudApiMode ? 'api' : 'local';
 }
 
 export const isCloudMode = getCloudBackend() !== 'local';
