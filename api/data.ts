@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const updatedAt = new Date().toISOString();
       await sql`
         insert into app_state (id, data, updated_at)
-        values (${STATE_ROW_ID}, ${JSON.stringify(data)}::jsonb, ${updatedAt})
+        values (${STATE_ROW_ID}, ${data}, ${updatedAt})
         on conflict (id) do update
         set data = excluded.data,
             updated_at = excluded.updated_at
