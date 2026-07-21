@@ -1,7 +1,5 @@
 # PSV Tracking Dashboard
 
-**Production:** [https://reliability-and-compliance-dashboar.vercel.app/](https://reliability-and-compliance-dashboar.vercel.app/)
-
 A Pressure Safety Valve (PSV) compliance tracking dashboard for the **Texas A&M
 University – Utilities & Energy Services** department.
 
@@ -29,22 +27,13 @@ npm run preview  # preview the production build
 npm run lint     # run ESLint
 ```
 
-## Leadership presentation (PowerPoint)
-
-**Direct download:** [UES-Steam-Safety-Program.pptx](https://raw.githubusercontent.com/stavan12-a11y/PSV-Compliance-Tracking-Dashboard/cursor/psv-tracking-dashboard-81be/docs/presentation/UES-Steam-Safety-Program.pptx)
-
-Leadership briefing: field work → Excel master file → dashboard → maintenance strategy.
-
-File path: `docs/presentation/UES-Steam-Safety-Program.pptx` — see [`docs/presentation/README.md`](docs/presentation/README.md).
-
 ## How it's organized (navigation)
 
 The data hierarchy is **Site → Equipment → Location → PSV (serial number)**.
 
 1. **Dashboard (front page)**
-   - Site-wide KPIs: total PSVs, compliant %, installed, out for service, and
-     overdue. Click any KPI to open a compact list of matching valves (serial,
-     equipment, location, due date, compliance).
+   - Site-wide KPIs: total PSVs, installed, in inventory, out for service,
+     due soon (≤ 90 days), overdue, and overall compliance rate.
    - Middle: a grid of **equipment** cards.
    - Right: an **Urgency & History** panel with two tabs — *Due Dates*
      (upcoming/overdue recertifications) and *History* (every change recorded).
@@ -65,8 +54,8 @@ The data hierarchy is **Site → Equipment → Location → PSV (serial number)*
    - Add/edit PSVs here.
 
 4. **PSV detail page** (click a faceplate)
-   - Full **datasheet** (make, model, set pressure, capacity, inlet/outlet sizes,
-     service medium, National Board number, etc.).
+   - Full **datasheet** (make, model, type, set pressure, capacity, orifice,
+     sizes, materials, National Board number, etc.).
    - **History** timeline of install / service / inventory events. The
      recertification due date is computed as **last install date + 3 years**.
    - Every history entry is **editable / deletable** to correct mistakes, and you
@@ -84,51 +73,57 @@ Both thresholds live in `src/utils/dates.ts`.
 
 ## Modes: shared cloud data vs. local
 
-The app runs in one of two modes depending on whether Supabase is configured:
+The app runs in one of three modes:
 
-- **Cloud mode (recommended for a team):** set `VITE_SUPABASE_URL` and
-  `VITE_SUPABASE_ANON_KEY`. Everyone signs in with a shared Supabase account and
-  sees **one shared, live dataset** (edits sync to all users in real time). Sign-in
-  is real authentication and the database is locked to signed-in users.
-- **Local mode (default / development):** no Supabase. A lightweight static
-  username/password gate (`VITE_APP_USERNAME` / `VITE_APP_PASSWORD`, defaults
-  `admin` / `tamu-psv-2026`) with data stored per-browser in `localStorage`.
+- **Cloud mode — Neon + Vercel (recommended):** set `VITE_CLOUD_MODE=true` plus
+  server env vars on Vercel (`DATABASE_URL`, `TEAM_USERNAME`, `TEAM_PASSWORD`,
+  `AUTH_SECRET`). Everyone signs in with a shared username/password and sees one
+  shared dataset. Data syncs every ~20 seconds between users. **No Supabase pause
+  policy.** See **[docs/NEON_SETUP.md](docs/NEON_SETUP.md)** for step-by-step setup
+  (no coding required).
+- **Cloud mode — Supabase (legacy):** set `VITE_SUPABASE_URL` and
+  `VITE_SUPABASE_ANON_KEY`. Real-time sync via Supabase. Subject to free-tier
+  inactivity pause — migrate to Neon when possible.
+- **Local mode (development):** no cloud configured. Static login +
+  per-browser `localStorage`.
 
-### Setting up shared cloud data (Supabase) — one time, ~5 minutes
+### Quick start: Neon cloud setup
+
+Follow **[docs/NEON_SETUP.md](docs/NEON_SETUP.md)** — create Neon account, run
+`neon/schema.sql`, paste env vars into Vercel, redeploy.
+
+### Legacy: Supabase setup
 
 1. Create a free project at **[supabase.com](https://supabase.com)**.
-2. In the project, open **SQL Editor → New query**, paste the contents of
-   [`supabase/schema.sql`](supabase/schema.sql), and click **Run**. This creates the
-   shared table, security rules, and live sync.
-3. Open **Authentication → Users → Add user**. Create the **one shared account**
-   your team will use (email + password) and tick **Auto Confirm User** so it can
-   sign in immediately. Share these credentials with whoever should have access.
-4. Open **Project Settings → API** and copy the **Project URL** and the
-   **anon public** key.
-5. In your host (e.g. Vercel), add these environment variables and redeploy:
-   - `VITE_SUPABASE_URL` = the Project URL
-   - `VITE_SUPABASE_ANON_KEY` = the anon public key
+2. Run [`supabase/schema.sql`](supabase/schema.sql) in the SQL Editor.
+3. Create a shared user under **Authentication → Users**.
+4. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` on Vercel.
 
-That's it — anyone who opens the site signs in with the shared account and works
-on the same live data. (Local-mode `VITE_APP_*` vars are ignored in cloud mode.)
+## Going live (deploy a shareable URL) — step by step
 
-## Going live (deploy a shareable URL)
+The app is a static Vite build with SPA routing config already included
+(`vercel.json`, `netlify.toml`, `public/_redirects`). The easiest free host is
+**Vercel**:
 
-The app is hosted on **Vercel** and auto-deploys from the `main` branch.
+1. Go to **[vercel.com](https://vercel.com)** and click **Sign Up** → **Continue with GitHub**.
+2. Click **Add New… → Project**. Find the **PSV-Dashboard** repo and click **Import**.
+   (If asked, give Vercel permission to access the repo.)
+3. On the configure screen, Vercel auto-detects **Vite** — leave Build Command
+   (`npm run build`) and Output Directory (`dist`) as-is.
+4. Expand **Environment Variables** and add two:
+   - `VITE_APP_USERNAME` = the login id you want
+   - `VITE_APP_PASSWORD` = the password you want
+5. Click **Deploy**. After ~1 minute you'll get a URL like
+   `psv-dashboard.vercel.app`. Open it, sign in with your credentials, and share
+   the link + credentials with your manager.
 
-**Live site:** [https://reliability-and-compliance-dashboar.vercel.app/](https://reliability-and-compliance-dashboar.vercel.app/)
+To change the password later: Vercel → your project → **Settings → Environment
+Variables**, edit `VITE_APP_PASSWORD`, then **Deployments → … → Redeploy**.
 
-SPA routing is configured in `vercel.json`, `netlify.toml`, and
-`public/_redirects`. To redeploy after pushing to `main`, Vercel picks up the
-change automatically (usually within a minute).
-
-Environment variables (set in Vercel → Project → Settings → Environment Variables):
-
-- **Cloud mode (team):** `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-- **Local gate (dev / no Supabase):** `VITE_APP_USERNAME`, `VITE_APP_PASSWORD`
-
-To change credentials or Supabase keys, edit the variables in Vercel and
-**Redeploy** the latest `main` deployment.
+> For a single shared dataset that everyone sees live, also configure Supabase
+> (see “Setting up shared cloud data” above) and add the `VITE_SUPABASE_*`
+> environment variables in step 4. Without them, the site runs in local mode and
+> each browser keeps its own copy.
 
 ## Importing your data
 

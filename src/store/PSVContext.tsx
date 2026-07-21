@@ -22,6 +22,8 @@ import { seedData } from '../data/mockData';
 import { uid } from '../utils/id';
 import { todayISO } from '../utils/dates';
 import { STATUS_LABELS } from '../utils/compliance';
+import { isCloudApiMode, cloudLoadState, cloudSaveState, CLOUD_POLL_MS } from '../lib/cloudApi';
+import { isCloudMode } from '../lib/cloudMode';
 import { isSupabaseConfigured, STATE_ROW_ID, STATE_TABLE, supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 
@@ -164,7 +166,9 @@ function enforceSingleInstalled(
 
 export function PSVProvider({ children }: { children: ReactNode }) {
   const { authed } = useAuth();
-  const cloud = isSupabaseConfigured;
+  const cloud = isCloudMode;
+  const cloudApi = isCloudApiMode;
+  const cloudSupabase = isSupabaseConfigured;
 
   const [data, setData] = useState<AppData>(() =>
     cloud ? structuredClone(EMPTY_DATA) : loadData(),
@@ -185,9 +189,67 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     }
   }, [data, cloud]);
 
-  // --- Cloud mode: load the shared state + subscribe to live changes -------
+  // --- Cloud API mode: load + poll for updates --------------------------------
   useEffect(() => {
-    if (!cloud || !authed || !supabase) return;
+    if (!cloudApi || !authed) return;
+    let active = true;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    setSyncStatus('loading');
+
+    const loadFromServer = async (initial = false) => {
+      const { data: remote, error } = await cloudLoadState();
+      if (!active) return;
+      if (error && initial) {
+        setSyncStatus('error');
+        return;
+      }
+      if (remote) {
+        applyingRemote.current = true;
+        setData(remote);
+      } else if (initial) {
+        const seed = structuredClone(seedData);
+        applyingRemote.current = true;
+        setData(seed);
+        await cloudSaveState(seed);
+      }
+      if (initial) {
+        setSynced(true);
+        setSyncStatus('saved');
+      } else if (!error) {
+        setSyncStatus('saved');
+      }
+    };
+
+    void loadFromServer(true);
+    pollTimer = setInterval(() => void loadFromServer(false), CLOUD_POLL_MS);
+
+    return () => {
+      active = false;
+      if (pollTimer) clearInterval(pollTimer);
+    };
+  }, [cloudApi, authed]);
+
+  // --- Cloud API mode: save local edits (debounced) ---------------------------
+  useEffect(() => {
+    if (!cloudApi || !authed || !synced) return;
+    if (applyingRemote.current) {
+      applyingRemote.current = false;
+      return;
+    }
+    setSyncStatus('saving');
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    const snapshot = data;
+    saveTimer.current = setTimeout(() => {
+      cloudSaveState(snapshot).then(({ ok }) => setSyncStatus(ok ? 'saved' : 'error'));
+    }, 400);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [data, cloudApi, authed, synced]);
+
+  // --- Legacy Supabase: load + realtime ---------------------------------------
+  useEffect(() => {
+    if (!cloudSupabase || !authed || !supabase) return;
     const sb = supabase;
     let active = true;
     setSyncStatus('loading');
@@ -236,11 +298,11 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       active = false;
       sb.removeChannel(channel);
     };
-  }, [cloud, authed]);
+  }, [cloudSupabase, authed]);
 
-  // --- Cloud mode: save local edits back to the shared state (debounced) ---
+  // --- Legacy Supabase: save (debounced) --------------------------------------
   useEffect(() => {
-    if (!cloud || !authed || !synced || !supabase) return;
+    if (!cloudSupabase || !authed || !synced || !supabase) return;
     if (applyingRemote.current) {
       // This change came from a remote update — don't echo it back.
       applyingRemote.current = false;
@@ -262,7 +324,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [data, cloud, authed, synced]);
+  }, [data, cloudSupabase, authed, synced]);
 
   const getEquipment = useCallback(
     (id: string) => data.equipment.find((e) => e.id === id),

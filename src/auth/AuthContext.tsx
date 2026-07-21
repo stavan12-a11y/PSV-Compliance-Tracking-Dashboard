@@ -7,35 +7,38 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import {
+  cloudCheckSession,
+  cloudLogin,
+  cloudLogout,
+  isCloudApiMode,
+} from '../lib/cloudApi';
+import { isCloudMode } from '../lib/cloudMode';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 // ---------------------------------------------------------------------------
-// Single shared login.
-//
-// • Cloud mode (Supabase configured): the login is a real Supabase Auth account
-//   shared by the team. Sign-in protects the shared database (RLS requires an
-//   authenticated session), so the data is genuinely access-controlled.
-//
-// • Local mode (no Supabase): a lightweight static username/password gate using
-//   VITE_APP_USERNAME / VITE_APP_PASSWORD, with per-browser localStorage data.
-//   Handy for development; not server-grade security.
+// Login modes:
+// • Cloud API (recommended): VITE_CLOUD_MODE=true → Vercel API + Neon database
+// • Supabase (legacy): VITE_SUPABASE_* env vars
+// • Local: per-browser localStorage + static password
 // ---------------------------------------------------------------------------
 
 const LOCAL_USERNAME = import.meta.env.VITE_APP_USERNAME ?? 'admin';
 const LOCAL_PASSWORD = import.meta.env.VITE_APP_PASSWORD ?? 'tamu-psv-2026';
 
-/** True when running the local static gate with its built-in default password. */
-export const USING_DEFAULT_CREDENTIALS = !isSupabaseConfigured && !import.meta.env.VITE_APP_PASSWORD;
+export const USING_DEFAULT_CREDENTIALS =
+  !isCloudMode && !import.meta.env.VITE_APP_PASSWORD;
 
-export const AUTH_MODE: 'cloud' | 'local' = isSupabaseConfigured ? 'cloud' : 'local';
+export const AUTH_MODE: 'cloud' | 'local' = isCloudMode ? 'cloud' : 'local';
 
 const LOCAL_STORAGE_KEY = 'psv-auth-v1';
 
 interface AuthContextValue {
   authed: boolean;
-  /** False until the initial session check completes (cloud mode). */
   ready: boolean;
   mode: 'cloud' | 'local';
+  /** Which cloud backend is active (api vs legacy supabase). */
+  cloudBackend: 'api' | 'supabase' | null;
   login: (identifier: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
@@ -44,37 +47,41 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authed, setAuthed] = useState<boolean>(() => {
-    if (isSupabaseConfigured) return false;
+    if (isCloudMode) return false;
     try {
       return localStorage.getItem(LOCAL_STORAGE_KEY) === '1';
     } catch {
       return false;
     }
   });
-  const [ready, setReady] = useState<boolean>(!isSupabaseConfigured);
+  const [ready, setReady] = useState<boolean>(!isCloudMode);
 
-  // Cloud mode: restore an existing Supabase session and watch for changes.
+  const cloudBackend = isCloudApiMode ? 'api' : isSupabaseConfigured ? 'supabase' : null;
+
+  // Cloud API: restore session token
+  useEffect(() => {
+    if (!isCloudApiMode) return;
+    let active = true;
+    cloudCheckSession().then((ok) => {
+      if (!active) return;
+      setAuthed(ok);
+      setReady(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Legacy Supabase session
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
     let active = true;
 
-    const finish = () => {
-      if (active) setReady(true);
-    };
-
-    // Never leave the app on a blank spinner if Supabase is slow or unreachable.
-    const timeout = setTimeout(finish, 8000);
-
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
-        if (!active) return;
-        setAuthed(Boolean(data.session));
-      })
-      .catch(() => {
-        // Session check failed — show login instead of hanging.
-      })
-      .finally(finish);
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      setAuthed(Boolean(data.session));
+      setReady(true);
+    });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setAuthed(Boolean(session));
@@ -82,12 +89,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       active = false;
-      clearTimeout(timeout);
       sub.subscription.unsubscribe();
     };
   }, []);
 
   const login = useCallback(async (identifier: string, password: string) => {
+    if (isCloudApiMode) {
+      const res = await cloudLogin(identifier, password);
+      if (res.ok) setAuthed(true);
+      return res;
+    }
+
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase.auth.signInWithPassword({
         email: identifier.trim(),
@@ -111,6 +123,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    if (isCloudApiMode) {
+      await cloudLogout();
+      setAuthed(false);
+      return;
+    }
     if (isSupabaseConfigured && supabase) {
       await supabase.auth.signOut();
       setAuthed(false);
@@ -125,8 +142,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ authed, ready, mode: AUTH_MODE, login, logout }),
-    [authed, ready, login, logout],
+    () => ({ authed, ready, mode: AUTH_MODE, cloudBackend, login, logout }),
+    [authed, ready, cloudBackend, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

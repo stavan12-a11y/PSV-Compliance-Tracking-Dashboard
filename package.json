@@ -8,11 +8,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "presentation": "python3 scripts/generate_tag_diagram.py && python3 scripts/generate_dashboard_ppt.py",
-    "presentation:screenshots": "node scripts/capture-presentation-screenshots.mjs",
     "lint": "eslint ."
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
     "@supabase/supabase-js": "^2.108.2",
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",
@@ -21,6 +20,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@vercel/node": "^3.2.29",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@typescript-eslint/eslint-plugin": "^8.15.0",
