@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { VercelRequest } from '@vercel/node';
 
-const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 function base64url(input: string): string {
   return Buffer.from(input).toString('base64url');
@@ -28,24 +28,20 @@ export function getTeamCredentials(): { username: string; password: string } {
   return { username, password };
 }
 
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
 export function verifyTeamLogin(identifier: string, password: string): boolean {
   const { username, password: expected } = getTeamCredentials();
-
-  function safeEqual(a: string, b: string): boolean {
-    const bufA = Buffer.from(a);
-    const bufB = Buffer.from(b);
-    if (bufA.length !== bufB.length) return false;
-    return timingSafeEqual(bufA, bufB);
-  }
-
   return safeEqual(identifier.trim(), username) && safeEqual(password, expected);
 }
 
 export function createSessionToken(): string {
-  const payload = {
-    v: 1,
-    exp: Date.now() + TOKEN_TTL_MS,
-  };
+  const payload = { v: 1, exp: Date.now() + TOKEN_TTL_MS };
   const body = base64url(JSON.stringify(payload));
   const sig = createHmac('sha256', getAuthSecret()).update(body).digest('base64url');
   return `${body}.${sig}`;
@@ -53,16 +49,12 @@ export function createSessionToken(): string {
 
 export function verifySessionToken(token: string | undefined): boolean {
   if (!token) return false;
-  const [body, sig] = token.split('.');
-  if (!body || !sig) return false;
-  const expected = createHmac('sha256', getAuthSecret()).update(body).digest('base64url');
-  if (sig.length !== expected.length) return false;
   try {
+    const [body, sig] = token.split('.');
+    if (!body || !sig) return false;
+    const expected = createHmac('sha256', getAuthSecret()).update(body).digest('base64url');
+    if (sig.length !== expected.length) return false;
     if (!timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return false;
-  } catch {
-    return false;
-  }
-  try {
     const payload = JSON.parse(fromBase64url(body)) as { exp?: number };
     return typeof payload.exp === 'number' && payload.exp > Date.now();
   } catch {
@@ -77,5 +69,9 @@ export function bearerToken(req: VercelRequest): string | undefined {
 }
 
 export function isAuthorized(req: VercelRequest): boolean {
-  return verifySessionToken(bearerToken(req));
+  try {
+    return verifySessionToken(bearerToken(req));
+  } catch {
+    return false;
+  }
 }

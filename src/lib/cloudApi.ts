@@ -81,7 +81,7 @@ export async function cloudLoadState(): Promise<{
   updatedAt: string | null;
   error?: string;
 }> {
-  const { res, body } = await apiFetch('/api/state');
+  const { res, body } = await apiFetch('/api/data');
   if (!res.ok) {
     return { data: null, updatedAt: null, error: String(body.error ?? 'Failed to load data') };
   }
@@ -92,7 +92,7 @@ export async function cloudLoadState(): Promise<{
 }
 
 export async function cloudSaveState(data: AppData): Promise<{ ok: boolean; error?: string }> {
-  const { res, body } = await apiFetch('/api/state', {
+  const { res, body } = await apiFetch('/api/data', {
     method: 'PUT',
     body: JSON.stringify({ data }),
   });
