@@ -88,6 +88,12 @@ The app runs in one of two modes:
 Follow **[docs/NEON_SETUP.md](docs/NEON_SETUP.md)** — create Neon account, run
 `neon/schema.sql`, paste env vars into Vercel, redeploy.
 
+### Monthly Excel backup (recommended)
+
+To get a full Excel backup emailed on the 1st of every month (safety copy if the
+free database ever goes away), follow **[docs/MONTHLY_BACKUP.md](docs/MONTHLY_BACKUP.md)**.
+You only need a free Resend account and three extra env vars in Vercel.
+
 ## Going live (deploy a shareable URL) — step by step
 
 The app is a static Vite build with SPA routing config already included

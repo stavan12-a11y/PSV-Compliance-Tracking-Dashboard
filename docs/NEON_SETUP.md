@@ -67,6 +67,10 @@ openssl rand -base64 32
 
 5. Go to **Deployments** → click **⋯** on the latest deployment → **Redeploy** (so new env vars take effect).
 
+### Optional: monthly Excel backup by email
+
+See **[docs/MONTHLY_BACKUP.md](MONTHLY_BACKUP.md)** — adds a free monthly email with a full Excel export of all dashboard data (recommended as a safety copy).
+
 ---
 
 ## Step 4 — Copy your data from Supabase (optional but recommended)
