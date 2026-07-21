@@ -1,97 +1,105 @@
 # Monthly Excel backup by email
 
-**You do not need to write code.** This sends a full Excel backup of your dashboard data to your email on the **1st of every month** — so you always have a copy even if the free cloud database stops working someday.
+**You do not need to write code.** This sends a full Excel + JSON backup of your dashboard data to your email on the **1st of every month**.
 
 **Time to set up:** about 10 minutes.
 
 ---
 
-Every month you receive an email with **two attachments**:
+## Can I do this without Resend?
 
-### 1. Excel file (`.xlsx`) — for reading and reporting
+**Yes.** Vercel cannot send email by itself — but you do **not** need a service like Resend. You can use **your existing Gmail or Outlook account** (SMTP). That is the recommended option if you already have email.
 
-Open in Excel or Google Sheets. The first tab **Backup Info** explains everything.
-
-| Sheet | What's in it |
-|-------|----------------|
-| **Backup Info** | Summary of the backup and what each sheet contains |
-| **All PSVs** | Every valve: serial number, tags, datasheet (make, model, pressure, sizes…), status, compliance dates |
-| **Installed** | PSVs currently installed |
-| **Out for Service** | PSVs out for recertification |
-| **Overdue** | Installed PSVs past their due date |
-| **Upcoming Due** | Installed PSVs due within 90 days |
-| **History Log** | **Every history entry** for every PSV — status changes, services, notes, datasheet edits. Columns include **Description** and **Note** (your free-text notes) |
-| **Repair History** | All repair/overhaul records — description, vendor, work order, **notes** |
-| **Equipment** | All equipment with name, tag, type, area, description |
-| **Locations** | All locations with name, tag, description, parent equipment |
-
-### 2. JSON file (`.json`) — for full restore
-
-This is a **100% complete copy** of everything in the database — nothing is left out. If you ever need to rebuild the dashboard, use **Data → Import data → JSON backup** and select this file.
+| Option | New account needed? | Best for |
+|--------|---------------------|----------|
+| **A. Gmail / Outlook (SMTP)** | No — use email you already have | Most people |
+| **B. Resend** | Yes — free signup at resend.com | If SMTP is blocked at work |
 
 ---
 
-## What you get
+## What you receive each month
 
-## Step 1 — Create a free Resend account (email sender)
+Two attachments:
 
-1. Go to **[resend.com](https://resend.com)** and sign up.
-   - Use the **same email address** where you want backups delivered (important on the free plan).
-2. Open **API Keys** → **Create API Key**.
-3. Copy the key (starts with `re_...`). You only see it once.
+1. **Excel (`.xlsx`)** — readable reports (PSVs, history with notes, repairs, equipment, locations)
+2. **JSON (`.json`)** — 100% complete backup for restore via **Data → Import data**
 
-> **Free plan note:** Without verifying a custom domain, Resend sends from `onboarding@resend.dev` and delivers to the email you signed up with. That is fine for personal backups.
+See the **Backup Info** tab in the Excel file for a full sheet-by-sheet guide.
 
 ---
 
-## Step 2 — Add variables in Vercel
+## Option A — Gmail or Outlook (no Resend) — recommended
 
-Go to **[vercel.com](https://vercel.com)** → your dashboard project → **Settings → Environment Variables**.
+### Gmail setup
 
-Add these for **Production**:
+1. Sign in at **[myaccount.google.com](https://myaccount.google.com)**.
+2. Turn on **2-Step Verification** (required for app passwords).
+3. Go to **Security → App passwords** (search “App passwords” in account settings).
+4. Create an app password for **Mail** → copy the 16-character password.
 
-| Variable | Value | Notes |
-|----------|-------|-------|
-| `BACKUP_EMAIL_TO` | your@email.com | Where monthly backups are sent |
-| `RESEND_API_KEY` | `re_...` from Step 1 | Email service API key |
-| `CRON_SECRET` | long random string | Protects the backup job — same as `AUTH_SECRET` style |
+### Add these in Vercel (Production)
 
-Optional:
+| Variable | Gmail example |
+|----------|----------------|
+| `BACKUP_EMAIL_TO` | `you@gmail.com` (where backups are delivered) |
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` | `you@gmail.com` |
+| `SMTP_PASS` | the 16-character app password (not your normal password) |
+| `SMTP_FROM` | `PSV Dashboard <you@gmail.com>` (optional) |
+| `CRON_SECRET` | long random string (same style as `AUTH_SECRET`) |
+
+**Do not set `RESEND_API_KEY`** if you use SMTP.
+
+### Outlook / Microsoft 365
 
 | Variable | Value |
 |----------|-------|
-| `BACKUP_EMAIL_FROM` | `PSV Dashboard <onboarding@resend.dev>` (default) |
+| `SMTP_HOST` | `smtp.office365.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` | your full email |
+| `SMTP_PASS` | your password or app password (if your org requires it) |
 
-Generate `CRON_SECRET` the same way as `AUTH_SECRET` (32+ random characters).
-
----
-
-## Step 3 — Redeploy
-
-**Deployments** → latest deployment → **⋯** → **Redeploy**.
-
-The cron schedule is already in the project: **9:00 AM US Central** on the 1st of each month (14:00 UTC).
+> **Work email (@tamu.edu):** Some universities block SMTP from outside apps. If Gmail/Outlook personal email works but TAMU does not, use a personal Gmail for backups or try Option B.
 
 ---
 
-## Step 4 — Test it now (optional)
+## Option B — Resend (optional)
 
-After redeploy, run this once in a terminal (replace values):
+Only use this if SMTP does not work for you.
+
+1. Sign up at **[resend.com](https://resend.com)** and create an API key (`re_...`).
+2. In Vercel, set:
+
+| Variable | Value |
+|----------|-------|
+| `BACKUP_EMAIL_TO` | your email |
+| `RESEND_API_KEY` | `re_...` |
+| `CRON_SECRET` | long random string |
+
+On the free plan, Resend usually only delivers to the email you signed up with unless you verify a domain.
+
+---
+
+## Redeploy and test
+
+1. **Deployments** → **⋯** → **Redeploy** after adding env vars.
+2. Schedule: **9:00 AM US Central** on the 1st of each month.
+3. Test now:
 
 ```bash
 curl -X POST "https://YOUR-VERCEL-URL.vercel.app/api/cron/monthly-backup" \
   -H "Authorization: Bearer YOUR_CRON_SECRET"
 ```
 
-You should get `{"ok":true,...}` and receive the Excel file within a minute.
+You should get `{"ok":true,...}` and both files in your inbox within a minute.
 
 ---
 
 ## What to do with the files
 
-- Save each monthly email attachment to a shared drive or OneDrive folder.
-- Name example: `PSV-Backups/2026-07/PSV-Dashboard-Backup_2026-07.xlsx`
-- If you ever need to restore, use **Data → Import data** in the dashboard (JSON import for full restore, or use the Excel as a reference).
+- Save each month to OneDrive or a shared drive.
+- Keep the **JSON** file for full restore; use **Excel** for reading and reports.
 
 ---
 
@@ -99,16 +107,18 @@ You should get `{"ok":true,...}` and receive the Excel file within a minute.
 
 | Problem | Fix |
 |---------|-----|
-| No email received | Check spam; confirm `BACKUP_EMAIL_TO` matches your Resend signup email (free plan) |
-| `Unauthorized` when testing | `CRON_SECRET` must match the `Authorization: Bearer ...` header exactly |
-| `RESEND_API_KEY is not configured` | Add the key in Vercel and redeploy |
-| Email failed from Resend | Verify API key; on free plan, recipient must be your Resend account email |
+| No email received | Check spam; confirm `BACKUP_EMAIL_TO` is correct |
+| Gmail “Username and Password not accepted” | Use an **App Password**, not your normal Gmail password |
+| `Unauthorized` when testing | `CRON_SECRET` must match the `Authorization: Bearer ...` header |
+| Work email SMTP fails | Use personal Gmail SMTP or Resend |
+| `No email sender configured` | Set SMTP vars **or** `RESEND_API_KEY`, then redeploy |
 
 ---
 
 ## Cost
 
-| Service | Cost |
-|---------|------|
-| Resend | Free — 3,000 emails/month (you need 1/month) |
+| Piece | Cost |
+|-------|------|
+| Gmail / Outlook SMTP | Free (email you already have) |
+| Resend (if used) | Free — 3,000 emails/month |
 | Vercel cron | Free on Hobby plan |
