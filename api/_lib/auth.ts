@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 import type { VercelRequest } from '@vercel/node';
 
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
