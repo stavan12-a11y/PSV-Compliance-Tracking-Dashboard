@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { bearerToken, isAuthorized, verifySessionToken } from '../_lib/auth.js';
-import { ensureSchema, getSql, STATE_ROW_ID } from '../_lib/db.js';
+import { isAuthorized } from '../_lib/auth.js';
 import { json } from '../_lib/http.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -9,6 +8,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const { ensureSchema, getSql, STATE_ROW_ID } = await import('../_lib/db.js');
     await ensureSchema();
     const sql = getSql();
 
@@ -34,9 +34,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const updatedAt = new Date().toISOString();
+      const payload = JSON.stringify(data);
       await sql`
         insert into app_state (id, data, updated_at)
-        values (${STATE_ROW_ID}, ${data}, ${updatedAt})
+        values (${STATE_ROW_ID}, ${payload}::jsonb, ${updatedAt})
         on conflict (id) do update
         set data = excluded.data,
             updated_at = excluded.updated_at
@@ -48,6 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return json(res, 405, { error: 'Method not allowed' });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Database error';
+    console.error('api/state error:', message);
     return json(res, 500, { error: message });
   }
 }
