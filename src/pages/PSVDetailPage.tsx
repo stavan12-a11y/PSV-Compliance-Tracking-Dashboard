@@ -190,15 +190,19 @@ export function PSVDetailPage() {
         </div>
       </div>
 
-      {!useAndReplace && (
       <section className="card p-5">
         <div className="mb-4 flex items-center gap-2">
           <ClipboardList className="h-5 w-5 text-maroon-700" />
-          <h3 className="text-lg font-bold text-slate-900">Datasheet</h3>
+          <h3 className="text-lg font-bold text-slate-900">
+            {useAndReplace ? 'Safety Valve Info' : 'Datasheet'}
+          </h3>
         </div>
-        <DatasheetGrid sheet={psv.datasheet} inventoryId={psv.inventoryId} />
+        <DatasheetGrid
+          sheet={psv.datasheet}
+          inventoryId={useAndReplace ? undefined : psv.inventoryId}
+          commercial={useAndReplace}
+        />
       </section>
-      )}
 
       <div className={`grid grid-cols-1 gap-6 ${useAndReplace ? '' : 'lg:grid-cols-2'}`}>
         <section className="card flex min-h-[20rem] flex-col p-4">
@@ -346,21 +350,32 @@ function KeyFact({
 function DatasheetGrid({
   sheet,
   inventoryId,
+  commercial = false,
 }: {
   sheet: PSVDatasheet;
   inventoryId?: string;
+  commercial?: boolean;
 }) {
-  const rows: Array<[string, string | number | undefined]> = [
-    ['Inventory ID', inventoryId],
-    ['Make / Manufacturer', sheet.make],
-    ['Model Number', sheet.model],
-    ['Set Pressure', `${sheet.setPressure} ${sheet.pressureUnit}`],
-    ['Capacity', sheet.capacity],
-    ['Inlet Size', sheet.inletSize],
-    ['Outlet Size', sheet.outletSize],
-    ['Service Medium', sheet.serviceMedium],
-    ['National Board No.', sheet.nationalBoardNumber],
-  ];
+  const rows: Array<[string, string | number | undefined]> = commercial
+    ? [
+        ['Make / Manufacturer', sheet.make],
+        ['Model Number', sheet.model],
+        ['Set Pressure', `${sheet.setPressure} ${sheet.pressureUnit}`],
+        ['Rating', sheet.capacity],
+        ['Inlet Size', sheet.inletSize],
+        ['Outlet Size', sheet.outletSize],
+      ]
+    : [
+        ['Inventory ID', inventoryId],
+        ['Make / Manufacturer', sheet.make],
+        ['Model Number', sheet.model],
+        ['Set Pressure', `${sheet.setPressure} ${sheet.pressureUnit}`],
+        ['Capacity', sheet.capacity],
+        ['Inlet Size', sheet.inletSize],
+        ['Outlet Size', sheet.outletSize],
+        ['Service Medium', sheet.serviceMedium],
+        ['National Board No.', sheet.nationalBoardNumber],
+      ];
   return (
     <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
       {rows.map(([label, value]) => (

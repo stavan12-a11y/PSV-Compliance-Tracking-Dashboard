@@ -102,16 +102,15 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
   const isCommercialBoiler = trackingMode === 'use_and_replace';
   const isSpecialMode = trackingMode !== 'standard';
 
-  useEffect(() => {
-    if (!open || trackingMode !== 'use_and_replace') return;
-    setSerialNumber('');
-    setInventoryId('');
-  }, [open, trackingMode]);
+  const selectTrackingMode = (mode: TrackingMode) => {
+    setTrackingMode(mode);
+    if (mode === 'use_and_replace') {
+      setSerialNumber('');
+      setInventoryId('');
+      setTag((current) => current.trim() || COMMERCIAL_BOILER_DEFAULT_LABEL);
+    }
+  };
 
-  useEffect(() => {
-    if (!open || !isCommercialBoiler || tag.trim()) return;
-    setTag(COMMERCIAL_BOILER_DEFAULT_LABEL);
-  }, [open, isCommercialBoiler, tag]);
   const canSave =
     locationId !== '' && (isCommercialBoiler || serialNumber.trim() !== '');
 
@@ -131,7 +130,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
         servicedOnSite: useAndReplace ? undefined : servicedOnSite || undefined,
         useAndReplace: useAndReplace || undefined,
       });
-      if (!useAndReplace) updateDatasheet(existing.id, cleaned);
+      updateDatasheet(existing.id, cleaned);
     } else {
       addPSV({
         serialNumber: useAndReplace ? undefined : trimmedSerial,
@@ -154,7 +153,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
       ? 'Add commercial boiler valve'
       : 'Add a PSV';
   const modalDescription = isCommercialBoiler
-    ? 'Pick a location and name for this safety (e.g. Commercial boiler safety). No serial number or datasheet required.'
+    ? 'Name this safety, pick a location, and optionally add valve specs (make, model, pressure, etc.). No serial number required.'
     : 'Serial number, assignment, tracking type, and datasheet / nameplate information.';
 
   return (
@@ -176,6 +175,56 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
       }
     >
       <div className="space-y-6">
+        <section className="space-y-3">
+          <p className="text-sm font-bold text-slate-800">How is this valve tracked?</p>
+          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3">
+            <input
+              type="radio"
+              name="trackingMode"
+              className="mt-0.5"
+              checked={trackingMode === 'standard'}
+              onChange={() => selectTrackingMode('standard')}
+            />
+            <span className="text-sm">
+              <span className="font-semibold text-slate-800">Standard (spare swap)</span>
+              <span className="block text-xs text-slate-500">
+                Installed / inventory / out-for-service with a spare valve at the location.
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3">
+            <input
+              type="radio"
+              name="trackingMode"
+              className="mt-0.5"
+              checked={trackingMode === 'on_site'}
+              onChange={() => selectTrackingMode('on_site')}
+            />
+            <span className="text-sm">
+              <span className="font-semibold text-slate-800">Serviced on site (no spare)</span>
+              <span className="block text-xs text-slate-500">
+                Recertified in place; due date is measured from the last service date.
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3">
+            <input
+              type="radio"
+              name="trackingMode"
+              className="mt-0.5"
+              checked={trackingMode === 'use_and_replace'}
+              onChange={() => selectTrackingMode('use_and_replace')}
+            />
+            <span className="text-sm">
+              <span className="font-semibold text-slate-800">Commercial boiler (use &amp; replace)</span>
+              <span className="block text-xs text-slate-600">
+                Buy a new valve when due — no spare, no recert cycle. Record each replacement in
+                history; due date resets from the replacement date.
+              </span>
+            </span>
+          </label>
+        </section>
+
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {!isCommercialBoiler && (
             <>
@@ -237,59 +286,10 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
           )}
         </section>
 
-        <section className="space-y-3">
-          <p className="text-sm font-bold text-slate-800">How is this valve tracked?</p>
-          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3">
-            <input
-              type="radio"
-              name="trackingMode"
-              className="mt-0.5"
-              checked={trackingMode === 'standard'}
-              onChange={() => setTrackingMode('standard')}
-            />
-            <span className="text-sm">
-              <span className="font-semibold text-slate-800">Standard (spare swap)</span>
-              <span className="block text-xs text-slate-500">
-                Installed / inventory / out-for-service with a spare valve at the location.
-              </span>
-            </span>
-          </label>
-          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3">
-            <input
-              type="radio"
-              name="trackingMode"
-              className="mt-0.5"
-              checked={trackingMode === 'on_site'}
-              onChange={() => setTrackingMode('on_site')}
-            />
-            <span className="text-sm">
-              <span className="font-semibold text-slate-800">Serviced on site (no spare)</span>
-              <span className="block text-xs text-slate-500">
-                Recertified in place; due date is measured from the last service date.
-              </span>
-            </span>
-          </label>
-          <label className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3">
-            <input
-              type="radio"
-              name="trackingMode"
-              className="mt-0.5"
-              checked={trackingMode === 'use_and_replace'}
-              onChange={() => setTrackingMode('use_and_replace')}
-            />
-            <span className="text-sm">
-              <span className="font-semibold text-slate-800">Commercial boiler (use &amp; replace)</span>
-              <span className="block text-xs text-slate-600">
-                Buy a new valve when due — no spare, no recert cycle. Record each replacement in
-                history; due date resets from the replacement date.
-              </span>
-            </span>
-          </label>
-        </section>
-
-        {!isCommercialBoiler && (
         <section>
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-400">Datasheet</h3>
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-400">
+            {isCommercialBoiler ? 'Safety valve info (optional)' : 'Datasheet'}
+          </h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Make / Manufacturer">
               <input className="input" value={sheet.make} onChange={(e) => set('make', e.target.value)} placeholder="e.g. Consolidated" />
@@ -303,7 +303,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
             <Field label="Pressure Unit">
               <input className="input" value={sheet.pressureUnit} onChange={(e) => set('pressureUnit', e.target.value)} placeholder="PSIG" />
             </Field>
-            <Field label="Capacity">
+            <Field label={isCommercialBoiler ? 'Rating' : 'Capacity'}>
               <input className="input" value={sheet.capacity} onChange={(e) => set('capacity', e.target.value)} placeholder="e.g. 12,500 lb/hr" />
             </Field>
             <Field label="Inlet Size">
@@ -312,15 +312,18 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
             <Field label="Outlet Size">
               <input className="input" value={sheet.outletSize} onChange={(e) => set('outletSize', e.target.value)} placeholder='e.g. 3"' />
             </Field>
-            <Field label="Service Medium">
-              <input className="input" value={sheet.serviceMedium ?? ''} onChange={(e) => set('serviceMedium', e.target.value)} placeholder="Steam / Air / Water" />
-            </Field>
-            <Field label="National Board No.">
-              <input className="input" value={sheet.nationalBoardNumber ?? ''} onChange={(e) => set('nationalBoardNumber', e.target.value)} />
-            </Field>
+            {!isCommercialBoiler && (
+              <>
+                <Field label="Service Medium">
+                  <input className="input" value={sheet.serviceMedium ?? ''} onChange={(e) => set('serviceMedium', e.target.value)} placeholder="Steam / Air / Water" />
+                </Field>
+                <Field label="National Board No.">
+                  <input className="input" value={sheet.nationalBoardNumber ?? ''} onChange={(e) => set('nationalBoardNumber', e.target.value)} />
+                </Field>
+              </>
+            )}
           </div>
         </section>
-        )}
       </div>
     </Modal>
   );
