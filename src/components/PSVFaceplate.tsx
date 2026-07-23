@@ -82,9 +82,16 @@ export function PSVFaceplate({
                 <p className="text-slate-600">
                   Installed <span className="font-semibold text-slate-900">{formatDate(certDate)}</span>
                 </p>
-                <p className={`font-semibold ${dueColor(compliance.daysRemaining)}`}>
-                  {relativeDays(compliance.daysRemaining)}
+                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-slate-600">
+                  <span className="flex items-center gap-1.5">
+                    <CalendarClock className="h-3.5 w-3.5 text-slate-400" />
+                    Due {formatDate(compliance.dueDate)}
+                    <span className={dueColor(compliance.daysRemaining)}>
+                      ({relativeDays(compliance.daysRemaining)})
+                    </span>
+                  </span>
                 </p>
+                <ComplianceBadge state={compliance.state} />
               </div>
             ) : (
               <p className="text-sm text-slate-400">No install date on record</p>

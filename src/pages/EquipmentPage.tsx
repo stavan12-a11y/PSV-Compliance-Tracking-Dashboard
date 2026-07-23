@@ -14,7 +14,7 @@ import { exportToExcel } from '../utils/excelExport';
 import { equipmentIcon } from '../utils/equipmentIcon';
 import { formatDate, relativeDays } from '../utils/dates';
 import { psvDisplayName } from '../utils/psvDisplay';
-import { useCompactLocationRow } from '../utils/sup3';
+import { isSup3Equipment } from '../utils/sup3';
 import { KPIGrid } from '../components/KPIGrid';
 import { KPIFilterModal } from '../components/KPIFilterModal';
 import { Breadcrumbs } from '../components/Breadcrumbs';
@@ -139,19 +139,26 @@ export function EquipmentPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {locations.map((loc) => (
+              {locations.map((loc) => {
+                const locPsvs = psvsForLocation(loc.id);
+                const compact =
+                  Boolean(equipment.minimalFaceplates) &&
+                  !isSup3Equipment(equipment) &&
+                  !locPsvs.some((p) => p.useAndReplace);
+                return (
                 <LocationRow
                   key={loc.id}
                   location={loc}
-                  psvs={psvsForLocation(loc.id)}
-                  compact={useCompactLocationRow(psvsForLocation(loc.id), equipment, loc)}
+                  psvs={locPsvs}
+                  compact={compact}
                   onOpen={() => navigate(`/location/${loc.id}`)}
                   onEdit={() => setEditLocationId(loc.id)}
                   onDelete={() => {
                     if (confirm(`Delete location “${loc.name}” and its PSVs?`)) deleteLocation(loc.id);
                   }}
                 />
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
@@ -257,9 +264,13 @@ function LocationRow({
                       Installed{' '}
                       <span className="font-semibold text-slate-800">{formatDate(installDate)}</span>
                     </span>
-                    <span className={`font-medium ${dueTone(compliance.daysRemaining)}`}>
-                      {relativeDays(compliance.daysRemaining)}
+                    <span className="text-slate-500">
+                      Due <span className="font-medium text-slate-700">{formatDate(compliance.dueDate)}</span>{' '}
+                      <span className={dueTone(compliance.daysRemaining)}>
+                        ({relativeDays(compliance.daysRemaining)})
+                      </span>
                     </span>
+                    <ComplianceBadge state={compliance.state} />
                   </>
                 ) : (
                   <span className="text-slate-400">No install date on record</span>
