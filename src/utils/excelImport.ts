@@ -1,6 +1,7 @@
 import type { AppData, Equipment, Location, PSV, PSVDatasheet, PSVEvent, PSVStatus } from '../types';
 import { uid } from './id';
 import { toISODate, todayISO } from './dates';
+import { COMMERCIAL_BOILER_DEFAULT_LABEL, normalizeAppData } from './psvDisplay';
 
 // ---------------------------------------------------------------------------
 // Bulk data import from Excel/CSV (and JSON backups). The Excel layout matches
@@ -227,11 +228,18 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
       });
     }
 
+    const psvTag = String(pick(raw, normMap, 'PSV Tag', 'Tag') ?? '').trim();
+    const safetyName = String(
+      pick(raw, normMap, 'Safety Name', 'Safety', 'Valve Specification') ?? '',
+    ).trim();
+
     psvs.push({
       id: psvId,
       serialNumber: useAndReplace ? '' : sn,
       inventoryId: String(pick(raw, normMap, 'Inventory ID', 'Inventory No', 'Inventory') ?? '').trim() || undefined,
-      tag: String(pick(raw, normMap, 'PSV Tag', 'Tag') ?? '').trim() || undefined,
+      tag: useAndReplace
+        ? safetyName || psvTag || COMMERCIAL_BOILER_DEFAULT_LABEL
+        : psvTag || undefined,
       locationId: loc.id,
       status,
       servicedOnSite: servicedOnSite || undefined,
@@ -244,7 +252,7 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
   }
 
   return {
-    data: { equipment, locations, psvs },
+    data: normalizeAppData({ equipment, locations, psvs }),
     counts: {
       equipment: equipment.length,
       locations: locations.length,

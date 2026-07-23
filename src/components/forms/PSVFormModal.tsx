@@ -103,6 +103,12 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
   const isSpecialMode = trackingMode !== 'standard';
 
   useEffect(() => {
+    if (!open || trackingMode !== 'use_and_replace') return;
+    setSerialNumber('');
+    setInventoryId('');
+  }, [open, trackingMode]);
+
+  useEffect(() => {
     if (!open || !isCommercialBoiler || tag.trim()) return;
     setTag(COMMERCIAL_BOILER_DEFAULT_LABEL);
   }, [open, isCommercialBoiler, tag]);

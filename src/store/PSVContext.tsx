@@ -22,7 +22,12 @@ import { seedData } from '../data/mockData';
 import { uid } from '../utils/id';
 import { todayISO } from '../utils/dates';
 import { STATUS_LABELS } from '../utils/compliance';
-import { commercialBoilerLabel } from '../utils/psvDisplay';
+import {
+  commercialBoilerLabel,
+  COMMERCIAL_BOILER_DEFAULT_LABEL,
+  normalizeAppData,
+  normalizeCommercialBoilerPsv,
+} from '../utils/psvDisplay';
 import { isCloudApiMode, cloudLoadState, cloudSaveState, CLOUD_POLL_MS } from '../lib/cloudApi';
 import { isCloudMode } from '../lib/cloudMode';
 import { useAuth } from '../auth/AuthContext';
@@ -37,7 +42,7 @@ function loadData(): AppData {
     if (raw) {
       const parsed = JSON.parse(raw) as AppData;
       if (parsed && Array.isArray(parsed.psvs) && Array.isArray(parsed.equipment)) {
-        return parsed;
+        return normalizeAppData(parsed);
       }
     }
   } catch {
@@ -228,7 +233,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       }
       if (remote) {
         applyingRemote.current = true;
-        setData(remote);
+        setData(normalizeAppData(remote));
       } else if (initial) {
         const seed = structuredClone(seedData);
         applyingRemote.current = true;
@@ -360,6 +365,9 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     const useAndReplace = Boolean(input.useAndReplace);
     const servicedOnSite = useAndReplace ? false : Boolean(input.servicedOnSite);
     const serialNumber = useAndReplace ? '' : (input.serialNumber?.trim() ?? '');
+    const tag = useAndReplace
+      ? input.tag?.trim() || COMMERCIAL_BOILER_DEFAULT_LABEL
+      : input.tag;
     // On-site and use-and-replace valves are always treated as installed.
     const status: PSVStatus =
       servicedOnSite || useAndReplace ? 'installed' : input.status;
@@ -388,11 +396,11 @@ export function PSVProvider({ children }: { children: ReactNode }) {
         recordedAt: now,
       },
     ];
-    const created: PSV = {
+    const created = normalizeCommercialBoilerPsv({
       id,
       serialNumber,
-      inventoryId: input.inventoryId?.trim() || undefined,
-      tag: input.tag,
+      inventoryId: useAndReplace ? undefined : input.inventoryId?.trim() || undefined,
+      tag,
       locationId: input.locationId,
       status,
       servicedOnSite: servicedOnSite || undefined,
@@ -401,7 +409,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       events,
       repairHistory: [],
       createdAt: now,
-    };
+    });
     setData((d) => {
       let psvs = [...d.psvs, created];
       if (status === 'installed' && !useAndReplace) {
@@ -421,7 +429,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     ) => {
       setData((d) => ({
         ...d,
-        psvs: d.psvs.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+        psvs: d.psvs.map((p) => (p.id === id ? normalizeCommercialBoilerPsv({ ...p, ...patch }) : p)),
       }));
     },
     [],
@@ -642,7 +650,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const replaceData = useCallback((d: AppData) => setData(structuredClone(d)), []);
+  const replaceData = useCallback((d: AppData) => setData(normalizeAppData(structuredClone(d))), []);
 
   const value = useMemo<PSVContextValue>(
     () => ({

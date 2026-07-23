@@ -346,7 +346,7 @@ function sortRegisterDefault(
   if (eqCmp !== 0) return eqCmp;
   const locCmp = (aCtx.loc?.name ?? '').localeCompare(bCtx.loc?.name ?? '');
   if (locCmp !== 0) return locCmp;
-  return a.serialNumber.localeCompare(b.serialNumber);
+  return psvDisplayName(a).localeCompare(psvDisplayName(b));
 }
 
 function buildRegisterRow(
@@ -391,7 +391,7 @@ function buildStatusHistoryRow(psv: PSV, event: PSVEvent, ctx: PsvContext): Row 
     'Equipment Tag': ctx.eq?.tag ?? '',
     Location: ctx.loc?.name ?? '',
     'Location Tag': ctx.loc?.tag ?? '',
-    'Serial Number': psv.serialNumber,
+    'Serial Number': psvDisplayName(psv),
     'Inventory ID': psv.inventoryId ?? '',
     'PSV Tag': psv.tag ?? '',
     'Event Date': formatDate(event.date),
@@ -429,7 +429,7 @@ function buildRepairRow(psv: PSV, record: PSVRepairRecord, ctx: PsvContext): Row
     'Equipment Tag': ctx.eq?.tag ?? '',
     Location: ctx.loc?.name ?? '',
     'Location Tag': ctx.loc?.tag ?? '',
-    'Serial Number': psv.serialNumber,
+    'Serial Number': psvDisplayName(psv),
     'Inventory ID': psv.inventoryId ?? '',
     'PSV Tag': psv.tag ?? '',
     Date: formatDate(record.date),
