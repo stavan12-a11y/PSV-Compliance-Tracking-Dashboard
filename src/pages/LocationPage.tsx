@@ -101,7 +101,11 @@ export function LocationPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {psvs.map((psv) => (
-              <PSVFaceplate key={psv.id} psv={psv} />
+              <PSVFaceplate
+                key={psv.id}
+                psv={psv}
+                compact={equipment.name.trim().toUpperCase() === 'SUP3' || equipment.tag.trim().toUpperCase() === 'SUP3'}
+              />
             ))}
           </div>
         )}

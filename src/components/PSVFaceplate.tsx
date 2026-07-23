@@ -24,7 +24,14 @@ function dueColor(days: number | null): string {
   return 'text-slate-400';
 }
 
-export function PSVFaceplate({ psv }: { psv: PSV }) {
+export function PSVFaceplate({
+  psv,
+  compact = false,
+}: {
+  psv: PSV;
+  /** Minimal faceplate: install date + days remaining only (SUP3 equipment). */
+  compact?: boolean;
+}) {
   const navigate = useNavigate();
   const { setStatus, addHistoryEvent } = usePSV();
   const [showReplace, setShowReplace] = useState(false);
@@ -85,41 +92,62 @@ export function PSVFaceplate({ psv }: { psv: PSV }) {
           </div>
 
           <div className="mt-2 space-y-1.5 text-sm text-slate-600">
-            <p className="flex items-center gap-1.5">
-              <Gauge className="h-3.5 w-3.5 text-slate-400" />
-              {useAndReplace
-                ? `Rating ${psv.datasheet.capacity} · ${psv.datasheet.inletSize} / ${psv.datasheet.outletSize}`
-                : `${psv.datasheet.make} ${psv.datasheet.model} · ${psv.datasheet.setPressure} ${psv.datasheet.pressureUnit}`}
-            </p>
-            {compliance.dueDate && (
+            {compact ? (
+              compliance.dueDate ? (
+                <>
+                  <p className="flex items-center gap-1.5">
+                    <Wrench className="h-3.5 w-3.5 text-slate-400" />
+                    {certLabel} {formatDate(certDate)}
+                  </p>
+                  <p className={`flex items-center gap-1.5 ${dueColor(compliance.daysRemaining)}`}>
+                    <CalendarClock className="h-3.5 w-3.5 text-slate-400" />
+                    {relativeDays(compliance.daysRemaining)}
+                  </p>
+                </>
+              ) : (
+                <p className="text-slate-400">Not installed</p>
+              )
+            ) : (
               <>
                 <p className="flex items-center gap-1.5">
-                  <Wrench className="h-3.5 w-3.5 text-slate-400" />
-                  {certLabel} {formatDate(certDate)}
+                  <Gauge className="h-3.5 w-3.5 text-slate-400" />
+                  {useAndReplace
+                    ? `Rating ${psv.datasheet.capacity} · ${psv.datasheet.inletSize} / ${psv.datasheet.outletSize}`
+                    : `${psv.datasheet.make} ${psv.datasheet.model} · ${psv.datasheet.setPressure} ${psv.datasheet.pressureUnit}`}
                 </p>
-                <p className="flex items-center gap-1.5">
-                  <CalendarClock className="h-3.5 w-3.5 text-slate-400" />
-                  Due {formatDate(compliance.dueDate)}
-                  <span className={dueColor(compliance.daysRemaining)}>
-                    ({relativeDays(compliance.daysRemaining)})
-                  </span>
-                </p>
+                {compliance.dueDate && (
+                  <>
+                    <p className="flex items-center gap-1.5">
+                      <Wrench className="h-3.5 w-3.5 text-slate-400" />
+                      {certLabel} {formatDate(certDate)}
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <CalendarClock className="h-3.5 w-3.5 text-slate-400" />
+                      Due {formatDate(compliance.dueDate)}
+                      <span className={dueColor(compliance.daysRemaining)}>
+                        ({relativeDays(compliance.daysRemaining)})
+                      </span>
+                    </p>
+                  </>
+                )}
+                {onSite && (
+                  <p className="flex items-center gap-1.5 text-slate-500">
+                    <Wrench className="h-3.5 w-3.5 text-slate-400" />
+                    Last serviced {formatDate(lastServiceDate(psv))}
+                  </p>
+                )}
+                {useAndReplace && (
+                  <p className="text-xs text-orange-800/80">New valve purchased when due — not recertified</p>
+                )}
               </>
-            )}
-            {onSite && (
-              <p className="flex items-center gap-1.5 text-slate-500">
-                <Wrench className="h-3.5 w-3.5 text-slate-400" />
-                Last serviced {formatDate(lastServiceDate(psv))}
-              </p>
-            )}
-            {useAndReplace && (
-              <p className="text-xs text-orange-800/80">New valve purchased when due — not recertified</p>
             )}
           </div>
 
-          <div className="mt-2">
-            <ComplianceBadge state={compliance.state} />
-          </div>
+          {!compact && (
+            <div className="mt-2">
+              <ComplianceBadge state={compliance.state} />
+            </div>
+          )}
         </button>
 
         <div className="border-t border-slate-100 p-3">
