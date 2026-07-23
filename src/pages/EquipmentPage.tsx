@@ -2,12 +2,19 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronRight, FileSpreadsheet, Loader2, MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
-import { getCompliance, summarize } from '../utils/compliance';
+import {
+  getCompliance,
+  lastInstallDate,
+  lastReplacementDate,
+  lastServiceDate,
+  summarize,
+} from '../utils/compliance';
 import type { KPIFilterKey } from '../utils/kpiFilter';
 import { exportToExcel } from '../utils/excelExport';
 import { equipmentIcon } from '../utils/equipmentIcon';
 import { formatDate, relativeDays } from '../utils/dates';
 import { psvDisplayName } from '../utils/psvDisplay';
+import { isSup3Equipment } from '../utils/sup3';
 import { KPIGrid } from '../components/KPIGrid';
 import { KPIFilterModal } from '../components/KPIFilterModal';
 import { Breadcrumbs } from '../components/Breadcrumbs';
@@ -52,6 +59,7 @@ export function EquipmentPage() {
   }
 
   const EqIcon = equipmentIcon(equipment.type, equipment.name);
+  const sup3 = isSup3Equipment(equipment);
 
   return (
     <div className="space-y-6">
@@ -137,6 +145,7 @@ export function EquipmentPage() {
                   key={loc.id}
                   location={loc}
                   psvs={psvsForLocation(loc.id)}
+                  compact={sup3}
                   onOpen={() => navigate(`/location/${loc.id}`)}
                   onEdit={() => setEditLocationId(loc.id)}
                   onDelete={() => {
@@ -175,6 +184,13 @@ export function EquipmentPage() {
   );
 }
 
+function dueTone(days: number | null): string {
+  if (days === null) return 'text-slate-400';
+  if (days < 0) return 'text-red-600';
+  if (days <= 90) return 'text-amber-600';
+  return 'text-slate-500';
+}
+
 function locationInventoryId(psvs: PSV[]): string | undefined {
   for (const psv of psvs) {
     const id = psv.inventoryId?.trim();
@@ -186,19 +202,31 @@ function locationInventoryId(psvs: PSV[]): string | undefined {
 function LocationRow({
   location,
   psvs,
+  compact = false,
   onOpen,
   onEdit,
   onDelete,
 }: {
   location: Location;
   psvs: PSV[];
+  compact?: boolean;
   onOpen: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const installed = psvs.find((p) => p.status === 'installed');
+  const installed = psvs.find(
+    (p) => p.status === 'installed' || p.useAndReplace || p.servicedOnSite,
+  );
   const compliance = installed ? getCompliance(installed) : null;
-  const inventoryId = locationInventoryId(psvs);
+  const inventoryId = compact ? undefined : locationInventoryId(psvs);
+
+  const installDate = installed
+    ? installed.useAndReplace
+      ? lastReplacementDate(installed) ?? lastInstallDate(installed)
+      : installed.servicedOnSite
+        ? lastServiceDate(installed) ?? lastInstallDate(installed)
+        : lastInstallDate(installed)
+    : null;
 
   return (
     <div
@@ -214,7 +242,7 @@ function LocationRow({
                 {inventoryId}
               </span>
             )}
-            {location.tag && (
+            {!compact && location.tag && (
               <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">
                 {location.tag}
               </span>
@@ -223,37 +251,45 @@ function LocationRow({
 
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
             {installed ? (
-              <>
-                <span className="text-slate-600">
-                  Installed:{' '}
-                  <Link
-                    to={`/psv/${installed.id}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="font-semibold text-maroon-800 hover:underline"
-                  >
-                    {psvDisplayName(installed)}
-                  </Link>
-                </span>
-                {compliance && (
+              compact ? (
+                installDate && compliance?.dueDate ? (
                   <>
-                    <span className="text-slate-500">
-                      Due <span className="font-medium text-slate-700">{formatDate(compliance.dueDate)}</span>{' '}
-                      <span
-                        className={
-                          (compliance.daysRemaining ?? 0) < 0
-                            ? 'text-red-600'
-                            : (compliance.daysRemaining ?? 0) <= 90
-                              ? 'text-amber-600'
-                              : 'text-slate-400'
-                        }
-                      >
-                        ({relativeDays(compliance.daysRemaining)})
-                      </span>
+                    <span className="text-slate-600">
+                      Installed{' '}
+                      <span className="font-semibold text-slate-800">{formatDate(installDate)}</span>
                     </span>
-                    <ComplianceBadge state={compliance.state} />
+                    <span className={`font-medium ${dueTone(compliance.daysRemaining)}`}>
+                      {relativeDays(compliance.daysRemaining)}
+                    </span>
                   </>
-                )}
-              </>
+                ) : (
+                  <span className="text-slate-400">No install date on record</span>
+                )
+              ) : (
+                <>
+                  <span className="text-slate-600">
+                    Installed:{' '}
+                    <Link
+                      to={`/psv/${installed.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-semibold text-maroon-800 hover:underline"
+                    >
+                      {psvDisplayName(installed)}
+                    </Link>
+                  </span>
+                  {compliance && (
+                    <>
+                      <span className="text-slate-500">
+                        Due <span className="font-medium text-slate-700">{formatDate(compliance.dueDate)}</span>{' '}
+                        <span className={dueTone(compliance.daysRemaining)}>
+                          ({relativeDays(compliance.daysRemaining)})
+                        </span>
+                      </span>
+                      <ComplianceBadge state={compliance.state} />
+                    </>
+                  )}
+                </>
+              )
             ) : (
               <span className="font-medium text-amber-600">No valve currently installed</span>
             )}
