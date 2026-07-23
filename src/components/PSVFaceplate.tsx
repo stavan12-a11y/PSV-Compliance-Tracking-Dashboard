@@ -7,6 +7,7 @@ import { getCompliance, lastReplacementDate, lastServiceDate, STATUS_LABELS } fr
 import { formatDate, relativeDays, todayISO } from '../utils/dates';
 import { psvDisplayName, psvPrimaryLabel } from '../utils/psvDisplay';
 import { ComplianceBadge } from './Badges';
+import { CommercialBoilerFaceplate } from './CommercialBoilerFaceplate';
 import { ReplacementFormModal } from './forms/ReplacementFormModal';
 
 const TOGGLE_ORDER: PSVStatus[] = ['installed', 'out_for_service', 'inventory'];
@@ -68,10 +69,14 @@ export function PSVFaceplate({
       : 'Installed'
     : 'Installed';
 
+  if (useAndReplace && !compact) {
+    return <CommercialBoilerFaceplate psv={psv} />;
+  }
+
   if (compact && !useAndReplace) {
     return (
       <>
-        <div className="card flex w-full max-w-md flex-col overflow-hidden">
+        <div className="card flex flex-col overflow-hidden">
           <button
             type="button"
             onClick={() => navigate(`/psv/${psv.id}`)}
@@ -152,7 +157,7 @@ export function PSVFaceplate({
       <div
         className={`card flex flex-col overflow-hidden transition-all hover:shadow-card-hover ${
           isInstalled ? 'ring-2 ring-emerald-500/60' : ''
-        } ${useAndReplace ? 'w-full max-w-md' : ''}`}
+        }`}
       >
         <div
           className={`flex items-center justify-between px-4 py-2 text-xs font-bold uppercase tracking-wide text-white ${headerColor}`}
