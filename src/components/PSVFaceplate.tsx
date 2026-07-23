@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarClock, Gauge, RefreshCw, Wrench } from 'lucide-react';
+import { ArrowRight, CalendarClock, Gauge, RefreshCw, Wrench } from 'lucide-react';
 import type { PSV, PSVStatus } from '../types';
 import { usePSV } from '../store/PSVContext';
 import { getCompliance, lastReplacementDate, lastServiceDate, STATUS_LABELS } from '../utils/compliance';
@@ -62,7 +62,13 @@ export function PSVFaceplate({
       ? lastServiceDate(psv) ?? compliance.lastInstallDate
       : compliance.lastInstallDate;
 
-  if (compact) {
+  const certLabel = useAndReplace
+    ? lastReplacementDate(psv)
+      ? 'Last replaced'
+      : 'Installed'
+    : 'Installed';
+
+  if (compact && !useAndReplace) {
     return (
       <>
         <div className="card flex flex-col overflow-hidden">
@@ -153,25 +159,34 @@ export function PSVFaceplate({
           onClick={() => navigate(`/psv/${psv.id}`)}
           className="group flex-1 px-4 py-3 text-left"
         >
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-              {psvPrimaryLabel(psv)}
-            </p>
-            <h4 className="text-lg font-bold text-slate-900">{psvDisplayName(psv)}</h4>
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              {useAndReplace ? (
+                <h4 className="text-lg font-bold text-slate-900">{psvDisplayName(psv)}</h4>
+              ) : (
+                <>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    {psvPrimaryLabel(psv)}
+                  </p>
+                  <h4 className="text-lg font-bold text-slate-900">{psvDisplayName(psv)}</h4>
+                </>
+              )}
+            </div>
+            <ArrowRight className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-maroon-700" />
           </div>
 
           <div className="mt-2 space-y-1.5 text-sm text-slate-600">
-            <p className="flex items-center gap-1.5">
-              <Gauge className="h-3.5 w-3.5 text-slate-400" />
-              {useAndReplace
-                ? `Rating ${psv.datasheet.capacity} · ${psv.datasheet.inletSize} / ${psv.datasheet.outletSize}`
-                : `${psv.datasheet.make} ${psv.datasheet.model} · ${psv.datasheet.setPressure} ${psv.datasheet.pressureUnit}`}
-            </p>
+            {!useAndReplace && (
+              <p className="flex items-center gap-1.5">
+                <Gauge className="h-3.5 w-3.5 text-slate-400" />
+                {`${psv.datasheet.make} ${psv.datasheet.model} · ${psv.datasheet.setPressure} ${psv.datasheet.pressureUnit}`}
+              </p>
+            )}
             {compliance.dueDate && (
               <>
                 <p className="flex items-center gap-1.5">
                   <Wrench className="h-3.5 w-3.5 text-slate-400" />
-                  Installed {formatDate(certDate)}
+                  {certLabel} {formatDate(certDate)}
                 </p>
                 <p className="flex items-center gap-1.5">
                   <CalendarClock className="h-3.5 w-3.5 text-slate-400" />

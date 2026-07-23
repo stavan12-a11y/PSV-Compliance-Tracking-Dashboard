@@ -6,7 +6,6 @@ import { Breadcrumbs } from '../components/Breadcrumbs';
 import { PSVFaceplate } from '../components/PSVFaceplate';
 import { PSVFormModal } from '../components/forms/PSVFormModal';
 import { LocationFormModal } from '../components/forms/LocationFormModal';
-import { useCompactPsvView } from '../utils/sup3';
 
 export function LocationPage() {
   const { locationId = '' } = useParams();
@@ -102,11 +101,7 @@ export function LocationPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {psvs.map((psv) => (
-              <PSVFaceplate
-                key={psv.id}
-                psv={psv}
-                compact={useCompactPsvView(psv, equipment, location)}
-              />
+              <PSVFaceplate key={psv.id} psv={psv} />
             ))}
           </div>
         )}
