@@ -24,15 +24,3 @@ export function psvDisplayName(psv: PSV): string {
 export function psvPrimaryLabel(psv: PSV): string {
   return psv.useAndReplace ? 'Valve specification' : 'Serial Number';
 }
-
-export function isCommercialBoilerDatasheetComplete(sheet: PSVDatasheet): boolean {
-  return Boolean(
-    sheet.make.trim() &&
-      sheet.model.trim() &&
-      sheet.setPressure > 0 &&
-      sheet.pressureUnit.trim() &&
-      sheet.capacity.trim() &&
-      sheet.inletSize.trim() &&
-      sheet.outletSize.trim(),
-  );
-}

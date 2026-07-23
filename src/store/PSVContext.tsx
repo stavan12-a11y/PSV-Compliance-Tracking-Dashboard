@@ -189,6 +189,12 @@ export function PSVProvider({ children }: { children: ReactNode }) {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(cloud ? 'loading' : 'local');
   const applyingRemote = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const syncStatusRef = useRef<SyncStatus>(cloud ? 'loading' : 'local');
+  const lastLocalEditAt = useRef(0);
+
+  useEffect(() => {
+    syncStatusRef.current = syncStatus;
+  }, [syncStatus]);
 
   // --- Local mode: persist to localStorage ---------------------------------
   useEffect(() => {
@@ -208,6 +214,12 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     setSyncStatus('loading');
 
     const loadFromServer = async (initial = false) => {
+      if (!initial) {
+        if (syncStatusRef.current === 'saving') return;
+        // Don't clobber in-progress local edits when another poll tick arrives.
+        if (Date.now() - lastLocalEditAt.current < 3000) return;
+      }
+
       const { data: remote, error } = await cloudLoadState();
       if (!active) return;
       if (error && initial) {
@@ -247,6 +259,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       applyingRemote.current = false;
       return;
     }
+    lastLocalEditAt.current = Date.now();
     setSyncStatus('saving');
     if (saveTimer.current) clearTimeout(saveTimer.current);
     const snapshot = data;

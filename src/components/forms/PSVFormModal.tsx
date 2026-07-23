@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePSV } from '../../store/PSVContext';
 import { Modal } from '../Modal';
 import { Field } from '../Field';
 import { STATUS_LABELS } from '../../utils/compliance';
 import { todayISO } from '../../utils/dates';
-import { isCommercialBoilerDatasheetComplete, psvDisplayName } from '../../utils/psvDisplay';
+import { psvDisplayName } from '../../utils/psvDisplay';
 import type { PSVDatasheet, PSVStatus } from '../../types';
 
 interface PSVFormModalProps {
@@ -43,9 +43,18 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
   const [statusDate, setStatusDate] = useState(todayISO());
   const [trackingMode, setTrackingMode] = useState<TrackingMode>('standard');
   const [sheet, setSheet] = useState<PSVDatasheet>(EMPTY_DATASHEET);
+  const formSessionRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      formSessionRef.current = null;
+      return;
+    }
+
+    const sessionKey = psvId ? `edit:${psvId}` : `add:${presetLocationId ?? 'new'}`;
+    if (formSessionRef.current === sessionKey) return;
+    formSessionRef.current = sessionKey;
+
     if (existing) {
       setSerialNumber(existing.serialNumber);
       setInventoryId(existing.inventoryId ?? '');
@@ -60,13 +69,20 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
       setSerialNumber('');
       setInventoryId('');
       setTag('');
-      setLocationId(presetLocationId ?? data.locations[0]?.id ?? '');
+      setLocationId(presetLocationId ?? '');
       setStatus('inventory');
       setStatusDate(todayISO());
       setTrackingMode('standard');
       setSheet(EMPTY_DATASHEET);
     }
-  }, [open, existing, presetLocationId, data.locations]);
+  }, [open, psvId, presetLocationId, existing]);
+
+  // If locations load after the modal opens, fill in a default location without resetting the form.
+  useEffect(() => {
+    if (!open || psvId || locationId) return;
+    const fallback = presetLocationId ?? data.locations[0]?.id ?? '';
+    if (fallback) setLocationId(fallback);
+  }, [open, psvId, presetLocationId, data.locations, locationId]);
 
   const locationOptions = useMemo(
     () =>
@@ -83,8 +99,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
   const isCommercialBoiler = trackingMode === 'use_and_replace';
   const isSpecialMode = trackingMode !== 'standard';
   const canSave =
-    locationId !== '' &&
-    (isCommercialBoiler ? isCommercialBoilerDatasheetComplete(sheet) : serialNumber.trim() !== '');
+    locationId !== '' && (isCommercialBoiler || serialNumber.trim() !== '');
 
   const handleSave = () => {
     if (!canSave) return;
@@ -95,11 +110,11 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
     if (editing && existing) {
       updatePSV(existing.id, {
         serialNumber: useAndReplace ? '' : trimmedSerial,
-        inventoryId: useAndReplace ? '' : inventoryId.trim(),
-        tag: useAndReplace ? '' : tag.trim(),
+        inventoryId: useAndReplace ? undefined : inventoryId.trim() || undefined,
+        tag: useAndReplace ? undefined : tag.trim() || undefined,
         locationId,
-        servicedOnSite,
-        useAndReplace,
+        servicedOnSite: useAndReplace ? undefined : servicedOnSite || undefined,
+        useAndReplace: useAndReplace || undefined,
       });
       updateDatasheet(existing.id, cleaned);
     } else {
@@ -250,25 +265,25 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
             {isCommercialBoiler ? 'Valve specification' : 'Datasheet'}
           </h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Make / Manufacturer" required={isCommercialBoiler}>
+            <Field label="Make / Manufacturer">
               <input className="input" value={sheet.make} onChange={(e) => set('make', e.target.value)} placeholder="e.g. Consolidated" />
             </Field>
-            <Field label="Model Number" required={isCommercialBoiler}>
+            <Field label="Model Number">
               <input className="input" value={sheet.model} onChange={(e) => set('model', e.target.value)} placeholder="e.g. 1900-30JM" />
             </Field>
-            <Field label="Set Pressure" required={isCommercialBoiler}>
+            <Field label="Set Pressure">
               <input type="number" className="input" value={sheet.setPressure} onChange={(e) => set('setPressure', Number(e.target.value))} />
             </Field>
-            <Field label="Pressure Unit" required={isCommercialBoiler}>
+            <Field label="Pressure Unit">
               <input className="input" value={sheet.pressureUnit} onChange={(e) => set('pressureUnit', e.target.value)} placeholder="PSIG" />
             </Field>
-            <Field label={isCommercialBoiler ? 'Rating' : 'Capacity'} required={isCommercialBoiler}>
-              <input className="input" value={sheet.capacity} onChange={(e) => set('capacity', e.target.value)} placeholder={isCommercialBoiler ? 'e.g. 12,500 lb/hr' : 'e.g. 12,500 lb/hr'} />
+            <Field label={isCommercialBoiler ? 'Rating' : 'Capacity'}>
+              <input className="input" value={sheet.capacity} onChange={(e) => set('capacity', e.target.value)} placeholder="e.g. 12,500 lb/hr" />
             </Field>
-            <Field label="Inlet Size" required={isCommercialBoiler}>
+            <Field label="Inlet Size">
               <input className="input" value={sheet.inletSize} onChange={(e) => set('inletSize', e.target.value)} placeholder='e.g. 2"' />
             </Field>
-            <Field label="Outlet Size" required={isCommercialBoiler}>
+            <Field label="Outlet Size">
               <input className="input" value={sheet.outletSize} onChange={(e) => set('outletSize', e.target.value)} placeholder='e.g. 3"' />
             </Field>
             {!isCommercialBoiler && (
