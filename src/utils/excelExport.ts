@@ -14,6 +14,7 @@ import {
 } from './events';
 import { lastReplacementDate } from './compliance';
 import { formatDate, formatDateTime, todayISO } from './dates';
+import { commercialBoilerSpec, psvDisplayName } from './psvDisplay';
 
 interface ExportScope {
   equipment?: Equipment;
@@ -119,36 +120,60 @@ export async function exportPSVToExcel(data: AppData, psv: PSV) {
 
   const wb = XLSX.utils.book_new();
 
-  const summaryAoa: Array<[string, string | number]> = [
-    ['PSV SUMMARY', ''],
-    ['Serial Number', psv.serialNumber],
-    ['Inventory ID', psv.inventoryId ?? ''],
-    ['PSV Tag', psv.tag ?? ''],
-    ['Equipment', ctx.eq?.name ?? ''],
-    ['Equipment Tag', ctx.eq?.tag ?? ''],
-    ['Area', ctx.eq?.area ?? ''],
-    ['Location', ctx.loc?.name ?? ''],
-    ['Location Tag', ctx.loc?.tag ?? ''],
-    ['Current Status', psv.useAndReplace ? 'Use & Replace (in service)' : STATUS_LABELS[psv.status]],
-    ['Serviced On Site', psv.servicedOnSite ? 'Yes' : 'No'],
-    ['Use And Replace', psv.useAndReplace ? 'Yes' : 'No'],
-    ['Last Install Date', formatDate(lastInstallDate(psv))],
-    ['Last Service Date', formatDate(lastServiceDate(psv))],
-    ['Last Replacement Date', formatDate(lastReplacementDate(psv))],
-    ['Recert Due Date', c.dueDate ? formatDate(c.dueDate) : 'Not installed'],
-    ['Days Remaining', c.daysRemaining ?? ''],
-    ['Compliance', COMPLIANCE_LABELS[c.state]],
-    ['', ''],
-    ['DATASHEET', ''],
-    ['Make / Manufacturer', psv.datasheet.make],
-    ['Model Number', psv.datasheet.model],
-    ['Set Pressure', `${psv.datasheet.setPressure} ${psv.datasheet.pressureUnit}`],
-    ['Capacity', psv.datasheet.capacity],
-    ['Inlet Size', psv.datasheet.inletSize],
-    ['Outlet Size', psv.datasheet.outletSize],
-    ['Service Medium', psv.datasheet.serviceMedium ?? ''],
-    ['National Board No.', psv.datasheet.nationalBoardNumber ?? ''],
-  ];
+  const summaryAoa: Array<[string, string | number]> = psv.useAndReplace
+    ? [
+        ['PSV SUMMARY', ''],
+        ['Valve Specification', psvDisplayName(psv)],
+        ['Equipment', ctx.eq?.name ?? ''],
+        ['Equipment Tag', ctx.eq?.tag ?? ''],
+        ['Area', ctx.eq?.area ?? ''],
+        ['Location', ctx.loc?.name ?? ''],
+        ['Location Tag', ctx.loc?.tag ?? ''],
+        ['Tracking Mode', 'Commercial boiler (use & replace)'],
+        ['Last Install Date', formatDate(lastInstallDate(psv))],
+        ['Last Replacement Date', formatDate(lastReplacementDate(psv))],
+        ['Recert Due Date', c.dueDate ? formatDate(c.dueDate) : 'Not installed'],
+        ['Days Remaining', c.daysRemaining ?? ''],
+        ['Compliance', COMPLIANCE_LABELS[c.state]],
+        ['', ''],
+        ['VALVE SPECIFICATION', ''],
+        ['Make / Manufacturer', psv.datasheet.make],
+        ['Model Number', psv.datasheet.model],
+        ['Set Pressure', `${psv.datasheet.setPressure} ${psv.datasheet.pressureUnit}`],
+        ['Rating', psv.datasheet.capacity],
+        ['Inlet Size', psv.datasheet.inletSize],
+        ['Outlet Size', psv.datasheet.outletSize],
+      ]
+    : [
+        ['PSV SUMMARY', ''],
+        ['Serial Number', psv.serialNumber],
+        ['Inventory ID', psv.inventoryId ?? ''],
+        ['PSV Tag', psv.tag ?? ''],
+        ['Equipment', ctx.eq?.name ?? ''],
+        ['Equipment Tag', ctx.eq?.tag ?? ''],
+        ['Area', ctx.eq?.area ?? ''],
+        ['Location', ctx.loc?.name ?? ''],
+        ['Location Tag', ctx.loc?.tag ?? ''],
+        ['Current Status', STATUS_LABELS[psv.status]],
+        ['Serviced On Site', psv.servicedOnSite ? 'Yes' : 'No'],
+        ['Use And Replace', 'No'],
+        ['Last Install Date', formatDate(lastInstallDate(psv))],
+        ['Last Service Date', formatDate(lastServiceDate(psv))],
+        ['Last Replacement Date', formatDate(lastReplacementDate(psv))],
+        ['Recert Due Date', c.dueDate ? formatDate(c.dueDate) : 'Not installed'],
+        ['Days Remaining', c.daysRemaining ?? ''],
+        ['Compliance', COMPLIANCE_LABELS[c.state]],
+        ['', ''],
+        ['DATASHEET', ''],
+        ['Make / Manufacturer', psv.datasheet.make],
+        ['Model Number', psv.datasheet.model],
+        ['Set Pressure', `${psv.datasheet.setPressure} ${psv.datasheet.pressureUnit}`],
+        ['Capacity', psv.datasheet.capacity],
+        ['Inlet Size', psv.datasheet.inletSize],
+        ['Outlet Size', psv.datasheet.outletSize],
+        ['Service Medium', psv.datasheet.serviceMedium ?? ''],
+        ['National Board No.', psv.datasheet.nationalBoardNumber ?? ''],
+      ];
   const wsSummary = XLSX.utils.aoa_to_sheet(summaryAoa);
   wsSummary['!cols'] = [{ wch: 28 }, { wch: 40 }];
   XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
@@ -182,8 +207,10 @@ export async function exportPSVToExcel(data: AppData, psv: PSV) {
     appendSheet(wb, XLSX, 'Repair History', repairRows, REPAIR_COLUMNS);
   }
 
-  const safeSn = psv.serialNumber.replace(/[^\w.-]+/g, '-');
-  XLSX.writeFile(wb, `PSV_${safeSn}_${todayISO()}.xlsx`);
+  const safeName = (psv.useAndReplace ? commercialBoilerSpec(psv.datasheet) : psv.serialNumber)
+    .replace(/[^\w.-]+/g, '-')
+    .slice(0, 48) || psv.id;
+  XLSX.writeFile(wb, `PSV_${safeName}_${todayISO()}.xlsx`);
 }
 
 // ---------------------------------------------------------------------------
@@ -252,13 +279,9 @@ const REPLACEMENT_HISTORY_COLUMNS = [
   'Equipment Tag',
   'Location',
   'Location Tag',
-  'Serial Number',
-  'Inventory ID',
-  'PSV Tag',
+  'Valve Specification',
   'Event Date',
   'Event Type',
-  'Previous S/N',
-  'New S/N',
   'Description',
   'Note',
   'Recorded At',
@@ -339,7 +362,7 @@ function buildRegisterRow(
     Area: ctx.eq?.area ?? '',
     Location: ctx.loc?.name ?? '',
     'Location Tag': ctx.loc?.tag ?? '',
-    'Serial Number': psv.serialNumber,
+    'Serial Number': psv.useAndReplace ? commercialBoilerSpec(psv.datasheet) : psv.serialNumber,
     'Inventory ID': psv.inventoryId ?? '',
     'PSV Tag': psv.tag ?? '',
     Status: STATUS_LABELS[psv.status],
@@ -391,13 +414,9 @@ function buildReplacementHistoryRow(psv: PSV, event: PSVEvent, ctx: PsvContext):
     'Equipment Tag': ctx.eq?.tag ?? '',
     Location: ctx.loc?.name ?? '',
     'Location Tag': ctx.loc?.tag ?? '',
-    'Serial Number': psv.serialNumber,
-    'Inventory ID': psv.inventoryId ?? '',
-    'PSV Tag': psv.tag ?? '',
+    'Valve Specification': commercialBoilerSpec(psv.datasheet),
     'Event Date': formatDate(event.date),
     'Event Type': eventType,
-    'Previous S/N': event.previousSerialNumber ?? '',
-    'New S/N': event.newSerialNumber ?? (event.status === 'installed' ? psv.serialNumber : ''),
     Description: event.description,
     Note: event.note ?? '',
     'Recorded At': formatDateTime(event.recordedAt),

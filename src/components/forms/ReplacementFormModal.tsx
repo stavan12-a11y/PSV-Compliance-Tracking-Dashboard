@@ -3,6 +3,7 @@ import { usePSV } from '../../store/PSVContext';
 import { Modal } from '../Modal';
 import { Field } from '../Field';
 import { todayISO } from '../../utils/dates';
+import { psvDisplayName } from '../../utils/psvDisplay';
 
 interface ReplacementFormModalProps {
   open: boolean;
@@ -19,41 +20,31 @@ export function ReplacementFormModal({ open, onClose, psvId, eventId }: Replacem
   const editing = Boolean(existing);
 
   const [date, setDate] = useState(todayISO());
-  const [newSerialNumber, setNewSerialNumber] = useState('');
   const [note, setNote] = useState('');
 
   useEffect(() => {
     if (!open || !psv) return;
     if (existing) {
       setDate(existing.date);
-      setNewSerialNumber(existing.newSerialNumber ?? '');
       setNote(existing.note ?? '');
       return;
     }
     setDate(todayISO());
-    setNewSerialNumber('');
     setNote('');
   }, [open, psv, existing]);
 
   if (!psv) return null;
 
-  const canSave = newSerialNumber.trim() !== '';
-
   const handleSave = () => {
-    if (!canSave) return;
-    const trimmedSerial = newSerialNumber.trim();
     if (editing && existing) {
-      const previousSerial = existing.previousSerialNumber ?? psv.serialNumber;
       updateHistoryEvent(psvId, existing.id, {
         date,
-        newSerialNumber: trimmedSerial,
         note: note.trim() || undefined,
-        description: `Valve replaced — disposed S/N ${previousSerial}, installed S/N ${trimmedSerial}`,
+        description: 'Valve replaced — new unit installed',
       });
     } else {
       recordReplacement(psvId, {
         date,
-        newSerialNumber: trimmedSerial,
         note: note.trim() || undefined,
       });
     }
@@ -68,14 +59,14 @@ export function ReplacementFormModal({ open, onClose, psvId, eventId }: Replacem
       description={
         editing
           ? `Update the replacement dated ${existing?.date}.`
-          : `Commercial boiler valve at this location is replaced with a new unit when due. Current S/N: ${psv.serialNumber}`
+          : `Log when a new valve was installed for ${psvDisplayName(psv)}. Serial numbers are not tracked.`
       }
       footer={
         <>
           <button className="btn-secondary" onClick={onClose}>
             Cancel
           </button>
-          <button className="btn-primary" onClick={handleSave} disabled={!canSave}>
+          <button className="btn-primary" onClick={handleSave}>
             {editing ? 'Save changes' : 'Save replacement'}
           </button>
         </>
@@ -85,27 +76,18 @@ export function ReplacementFormModal({ open, onClose, psvId, eventId }: Replacem
         <Field label="Replacement date" required>
           <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
-        <Field label="New serial number (S/N)" required>
-          <input
-            className="input"
-            value={newSerialNumber}
-            onChange={(e) => setNewSerialNumber(e.target.value)}
-            placeholder="S/N on the new valve"
-            autoFocus={!editing}
-          />
-        </Field>
         <Field label="Note (optional)">
           <textarea
             className="input min-h-[4.5rem]"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Vendor, PO number, disposal note, etc."
+            placeholder="Vendor, PO number, work order, etc."
           />
         </Field>
         {!editing && (
           <p className="text-xs text-slate-500">
-            The previous S/N ({psv.serialNumber}) will be kept in the replacement history. The due date
-            resets from the replacement date (+ 3 years).
+            The due date resets from the replacement date (+ 3 years). Only the replacement date is
+            recorded — no serial number is required.
           </p>
         )}
       </div>

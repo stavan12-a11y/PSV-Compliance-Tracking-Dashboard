@@ -4,6 +4,7 @@ import type { PSV } from '../types';
 import { usePSV } from '../store/PSVContext';
 import { getCompliance, STATUS_LABELS } from '../utils/compliance';
 import { formatDate, relativeDays } from '../utils/dates';
+import { psvDisplayName } from '../utils/psvDisplay';
 import { KPI_FILTER_LABELS, filterPSVsByKPI, type KPIFilterKey } from '../utils/kpiFilter';
 import { ComplianceBadge, StatusBadge } from './Badges';
 import { Modal } from './Modal';
@@ -40,7 +41,7 @@ export function KPIFilterModal({ open, filter, psvs, onClose }: KPIFilterModalPr
         const da = a.compliance.daysRemaining ?? 99999;
         const db = b.compliance.daysRemaining ?? 99999;
         if (da !== db) return da - db;
-        return a.psv.serialNumber.localeCompare(b.psv.serialNumber);
+        return psvDisplayName(a.psv).localeCompare(psvDisplayName(b.psv));
       });
   }, [psvs, filter, data.equipment, data.locations]);
 
@@ -83,7 +84,7 @@ export function KPIFilterModal({ open, filter, psvs, onClose }: KPIFilterModalPr
                   className="cursor-pointer transition-colors hover:bg-maroon-50/40"
                 >
                   <td className="px-4 py-3">
-                    <p className="font-semibold text-slate-900">{psv.serialNumber}</p>
+                    <p className="font-semibold text-slate-900">{psvDisplayName(psv)}</p>
                     {psv.tag && <p className="text-xs text-slate-400">{psv.tag}</p>}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-700">

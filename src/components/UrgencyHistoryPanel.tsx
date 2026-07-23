@@ -17,6 +17,7 @@ import { getCompliance } from '../utils/compliance';
 import { buildActivityFeed } from '../utils/activity';
 import { isStatusChangeEvent } from '../utils/events';
 import { formatDate, formatDateTime, relativeDays } from '../utils/dates';
+import { psvDisplayName } from '../utils/psvDisplay';
 import { ComplianceBadge } from './Badges';
 import type { PSVEventType } from '../types';
 
@@ -81,7 +82,7 @@ export function UrgencyHistoryPanel({ equipmentId }: { equipmentId?: string }) {
                     className="block rounded-lg border border-slate-200 p-3 transition-colors hover:border-maroon-300 hover:bg-maroon-50/40"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-slate-800">{psv.serialNumber}</span>
+                      <span className="font-semibold text-slate-800">{psvDisplayName(psv)}</span>
                       <ComplianceBadge state={compliance.state} />
                     </div>
                     <p className="mt-1 truncate text-xs text-slate-500">

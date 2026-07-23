@@ -1,4 +1,5 @@
 import type { AppData, PSVEvent } from '../types';
+import { psvDisplayName } from './psvDisplay';
 
 export interface ActivityItem {
   event: PSVEvent;
@@ -24,7 +25,7 @@ export function buildActivityFeed(data: AppData, limit?: number): ActivityItem[]
       items.push({
         event,
         psvId: psv.id,
-        serialNumber: psv.serialNumber,
+        serialNumber: psvDisplayName(psv),
         inventoryId: psv.inventoryId,
         locationId: psv.locationId,
         locationName: loc?.name ?? 'Unknown location',

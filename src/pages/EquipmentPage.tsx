@@ -7,6 +7,7 @@ import type { KPIFilterKey } from '../utils/kpiFilter';
 import { exportToExcel } from '../utils/excelExport';
 import { equipmentIcon } from '../utils/equipmentIcon';
 import { formatDate, relativeDays } from '../utils/dates';
+import { psvDisplayName } from '../utils/psvDisplay';
 import { KPIGrid } from '../components/KPIGrid';
 import { KPIFilterModal } from '../components/KPIFilterModal';
 import { Breadcrumbs } from '../components/Breadcrumbs';
@@ -230,7 +231,7 @@ function LocationRow({
                     onClick={(e) => e.stopPropagation()}
                     className="font-semibold text-maroon-800 hover:underline"
                   >
-                    {installed.serialNumber}
+                    {psvDisplayName(installed)}
                   </Link>
                 </span>
                 {compliance && (

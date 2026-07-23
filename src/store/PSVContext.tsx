@@ -22,6 +22,7 @@ import { seedData } from '../data/mockData';
 import { uid } from '../utils/id';
 import { todayISO } from '../utils/dates';
 import { STATUS_LABELS } from '../utils/compliance';
+import { commercialBoilerSpec } from '../utils/psvDisplay';
 import { isCloudApiMode, cloudLoadState, cloudSaveState, CLOUD_POLL_MS } from '../lib/cloudApi';
 import { isCloudMode } from '../lib/cloudMode';
 import { useAuth } from '../auth/AuthContext';
@@ -98,7 +99,7 @@ interface PSVContextValue {
 }
 
 export interface NewPSVInput {
-  serialNumber: string;
+  serialNumber?: string;
   inventoryId?: string;
   tag?: string;
   locationId: string;
@@ -112,7 +113,6 @@ export interface NewPSVInput {
 
 export interface NewReplacementInput {
   date: string;
-  newSerialNumber: string;
   note?: string;
 }
 
@@ -346,19 +346,23 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     const date = input.statusDate ?? todayISO();
     const useAndReplace = Boolean(input.useAndReplace);
     const servicedOnSite = useAndReplace ? false : Boolean(input.servicedOnSite);
+    const serialNumber = useAndReplace ? '' : (input.serialNumber?.trim() ?? '');
     // On-site and use-and-replace valves are always treated as installed.
     const status: PSVStatus =
       servicedOnSite || useAndReplace ? 'installed' : input.status;
     const installDescription = useAndReplace
-      ? `Initial installation (use & replace) — S/N ${input.serialNumber}`
+      ? 'Initial installation (use & replace)'
       : `Status set to ${STATUS_LABELS[status]}`;
+    const createdDescription = useAndReplace
+      ? `Commercial boiler valve added — ${commercialBoilerSpec(input.datasheet) || 'spec pending'}`
+      : `PSV ${serialNumber} added to the tracking system`;
     const events: PSVEvent[] = [
       {
         id: uid('evt'),
         psvId: id,
         type: 'created',
         date,
-        description: `PSV ${input.serialNumber} added to the tracking system`,
+        description: createdDescription,
         recordedAt: now,
       },
       {
@@ -373,7 +377,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     ];
     const created: PSV = {
       id,
-      serialNumber: input.serialNumber,
+      serialNumber,
       inventoryId: input.inventoryId?.trim() || undefined,
       tag: input.tag,
       locationId: input.locationId,
@@ -526,12 +530,6 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     return statusEvents.length ? statusEvents[statusEvents.length - 1].status! : fallback;
   };
 
-  const latestReplacement = (events: PSVEvent[]): PSVEvent | undefined =>
-    [...events]
-      .filter((e) => e.type === 'replacement')
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .pop();
-
   const updateHistoryEvent = useCallback(
     (id: string, eventId: string, patch: Partial<PSVEvent>) => {
       setData((d) => ({
@@ -539,12 +537,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
         psvs: d.psvs.map((p) => {
           if (p.id !== id) return p;
           const events = p.events.map((e) => (e.id === eventId ? { ...e, ...patch } : e));
-          const updated = events.find((e) => e.id === eventId);
-          const serialNumber =
-            p.useAndReplace && updated?.type === 'replacement' && latestReplacement(events)?.id === eventId
-              ? updated.newSerialNumber ?? p.serialNumber
-              : p.serialNumber;
-          return { ...p, events, serialNumber, status: recomputeStatus(events, p.status) };
+          return { ...p, events, status: recomputeStatus(events, p.status) };
         }),
       }));
     },
@@ -556,14 +549,8 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       ...d,
       psvs: d.psvs.map((p) => {
         if (p.id !== id) return p;
-        const removed = p.events.find((e) => e.id === eventId);
         const events = p.events.filter((e) => e.id !== eventId);
-        let serialNumber = p.serialNumber;
-        if (p.useAndReplace && removed?.type === 'replacement' && latestReplacement(p.events)?.id === eventId) {
-          const remainingLatest = latestReplacement(events);
-          serialNumber = remainingLatest?.newSerialNumber ?? removed.previousSerialNumber ?? p.serialNumber;
-        }
-        return { ...p, events, serialNumber, status: recomputeStatus(events, p.status) };
+        return { ...p, events, status: recomputeStatus(events, p.status) };
       }),
     }));
   }, []);
@@ -574,23 +561,17 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       ...d,
       psvs: d.psvs.map((p) => {
         if (p.id !== id || !p.useAndReplace) return p;
-        const previousSerial = p.serialNumber;
-        const newSerial = input.newSerialNumber.trim();
-        const description = `Valve replaced — disposed S/N ${previousSerial}, installed S/N ${newSerial}`;
         const newEvent: PSVEvent = {
           id: uid('evt'),
           psvId: id,
           type: 'replacement',
           date: input.date,
-          description,
+          description: 'Valve replaced — new unit installed',
           note: input.note,
-          previousSerialNumber: previousSerial,
-          newSerialNumber: newSerial,
           recordedAt: now,
         };
         return {
           ...p,
-          serialNumber: newSerial,
           status: 'installed' as PSVStatus,
           events: [...p.events, newEvent],
         };

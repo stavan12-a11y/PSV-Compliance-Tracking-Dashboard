@@ -12,11 +12,11 @@ import {
   Wrench,
 } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
-import { getCompliance, lastServiceDate } from '../utils/compliance';
+import { getCompliance, lastReplacementDate, lastServiceDate } from '../utils/compliance';
 import { sortEventsNewestFirst, statusChangeEvents, useAndReplaceHistory } from '../utils/events';
 import { exportPSVToExcel } from '../utils/excelExport';
+import { psvDisplayName, psvPrimaryLabel } from '../utils/psvDisplay';
 import { formatDate, formatDateTime, relativeDays, RECERT_INTERVAL_YEARS } from '../utils/dates';
-import { lastReplacementDate } from '../utils/compliance';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { ComplianceBadge, StatusBadge } from '../components/Badges';
 import { PSVFormModal } from '../components/forms/PSVFormModal';
@@ -92,7 +92,7 @@ export function PSVDetailPage() {
         items={[
           ...(equipment ? [{ label: equipment.name, to: `/equipment/${equipment.id}` }] : []),
           ...(location ? [{ label: location.name, to: `/location/${location.id}` }] : []),
-          { label: psv.serialNumber },
+          { label: psvDisplayName(psv) },
         ]}
       />
 
@@ -100,16 +100,16 @@ export function PSVDetailPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Serial Number
+              {psvPrimaryLabel(psv)}
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-2xl font-bold text-slate-900">{psv.serialNumber}</h2>
-              {psv.inventoryId && (
+              <h2 className="text-2xl font-bold text-slate-900">{psvDisplayName(psv)}</h2>
+              {!useAndReplace && psv.inventoryId && (
                 <span className="rounded-md bg-sky-50 px-2 py-0.5 text-sm font-semibold text-sky-800">
                   {psv.inventoryId}
                 </span>
               )}
-              {psv.tag && (
+              {!useAndReplace && psv.tag && (
                 <span className="rounded-md bg-slate-100 px-2 py-0.5 text-sm font-semibold text-slate-600">
                   {psv.tag}
                 </span>
@@ -149,7 +149,7 @@ export function PSVDetailPage() {
             <button
               className="btn-secondary text-red-600 hover:bg-red-50"
               onClick={() => {
-                if (confirm(`Delete PSV ${psv.serialNumber}? This cannot be undone.`)) {
+                if (confirm(`Delete PSV ${psvDisplayName(psv)}? This cannot be undone.`)) {
                   deletePSV(psv.id);
                   navigate(location ? `/location/${location.id}` : '/');
                 }
@@ -195,7 +195,7 @@ export function PSVDetailPage() {
           <ClipboardList className="h-5 w-5 text-maroon-700" />
           <h3 className="text-lg font-bold text-slate-900">Datasheet</h3>
         </div>
-        <DatasheetGrid sheet={psv.datasheet} inventoryId={psv.inventoryId} />
+        <DatasheetGrid sheet={psv.datasheet} inventoryId={psv.inventoryId} useAndReplace={useAndReplace} />
       </section>
 
       <div className={`grid grid-cols-1 gap-6 ${useAndReplace ? '' : 'lg:grid-cols-2'}`}>
@@ -341,18 +341,35 @@ function KeyFact({
   );
 }
 
-function DatasheetGrid({ sheet, inventoryId }: { sheet: PSVDatasheet; inventoryId?: string }) {
-  const rows: Array<[string, string | number | undefined]> = [
-    ['Inventory ID', inventoryId],
-    ['Make / Manufacturer', sheet.make],
-    ['Model Number', sheet.model],
-    ['Set Pressure', `${sheet.setPressure} ${sheet.pressureUnit}`],
-    ['Capacity', sheet.capacity],
-    ['Inlet Size', sheet.inletSize],
-    ['Outlet Size', sheet.outletSize],
-    ['Service Medium', sheet.serviceMedium],
-    ['National Board No.', sheet.nationalBoardNumber],
-  ];
+function DatasheetGrid({
+  sheet,
+  inventoryId,
+  useAndReplace,
+}: {
+  sheet: PSVDatasheet;
+  inventoryId?: string;
+  useAndReplace?: boolean;
+}) {
+  const rows: Array<[string, string | number | undefined]> = useAndReplace
+    ? [
+        ['Make / Manufacturer', sheet.make],
+        ['Model Number', sheet.model],
+        ['Set Pressure', `${sheet.setPressure} ${sheet.pressureUnit}`],
+        ['Rating', sheet.capacity],
+        ['Inlet Size', sheet.inletSize],
+        ['Outlet Size', sheet.outletSize],
+      ]
+    : [
+        ['Inventory ID', inventoryId],
+        ['Make / Manufacturer', sheet.make],
+        ['Model Number', sheet.model],
+        ['Set Pressure', `${sheet.setPressure} ${sheet.pressureUnit}`],
+        ['Capacity', sheet.capacity],
+        ['Inlet Size', sheet.inletSize],
+        ['Outlet Size', sheet.outletSize],
+        ['Service Medium', sheet.serviceMedium],
+        ['National Board No.', sheet.nationalBoardNumber],
+      ];
   return (
     <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
       {rows.map(([label, value]) => (
@@ -415,11 +432,6 @@ function HistoryItem({
           )}
         </div>
         <p className="text-xs font-medium text-slate-600">{formatDate(event.date)}</p>
-        {event.previousSerialNumber && event.newSerialNumber && (
-          <p className="mt-0.5 text-xs text-slate-500">
-            {event.previousSerialNumber} → {event.newSerialNumber}
-          </p>
-        )}
         {event.note && <p className="mt-0.5 text-xs italic text-slate-500">“{event.note}”</p>}
         <p className="text-[11px] text-slate-400">Recorded {formatDateTime(event.recordedAt)}</p>
       </div>

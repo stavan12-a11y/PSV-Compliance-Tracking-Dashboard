@@ -5,6 +5,7 @@ import type { PSV, PSVStatus } from '../types';
 import { usePSV } from '../store/PSVContext';
 import { getCompliance, lastReplacementDate, lastServiceDate, STATUS_LABELS } from '../utils/compliance';
 import { formatDate, relativeDays, todayISO } from '../utils/dates';
+import { psvDisplayName, psvPrimaryLabel } from '../utils/psvDisplay';
 import { ComplianceBadge } from './Badges';
 import { ReplacementFormModal } from './forms/ReplacementFormModal';
 
@@ -75,8 +76,10 @@ export function PSVFaceplate({ psv }: { psv: PSV }) {
         <button onClick={() => navigate(`/psv/${psv.id}`)} className="group flex-1 px-4 py-3 text-left">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Serial No.</p>
-              <h4 className="text-lg font-bold text-slate-900">{psv.serialNumber}</h4>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                {psvPrimaryLabel(psv)}
+              </p>
+              <h4 className="text-lg font-bold text-slate-900">{psvDisplayName(psv)}</h4>
             </div>
             <ArrowRight className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-maroon-700" />
           </div>
@@ -84,8 +87,9 @@ export function PSVFaceplate({ psv }: { psv: PSV }) {
           <div className="mt-2 space-y-1.5 text-sm text-slate-600">
             <p className="flex items-center gap-1.5">
               <Gauge className="h-3.5 w-3.5 text-slate-400" />
-              {psv.datasheet.make} {psv.datasheet.model} · {psv.datasheet.setPressure}{' '}
-              {psv.datasheet.pressureUnit}
+              {useAndReplace
+                ? `Rating ${psv.datasheet.capacity} · ${psv.datasheet.inletSize} / ${psv.datasheet.outletSize}`
+                : `${psv.datasheet.make} ${psv.datasheet.model} · ${psv.datasheet.setPressure} ${psv.datasheet.pressureUnit}`}
             </p>
             {compliance.dueDate && (
               <>

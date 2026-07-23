@@ -112,8 +112,11 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
 
     const sn = String(pick(raw, normMap, 'Serial Number', 'S/N', 'SN', 'Serial') ?? '').trim();
     const eqName = String(pick(raw, normMap, 'Equipment', 'Equipment Name') ?? '').trim();
+    const useAndReplace = isYes(
+      pick(raw, normMap, 'Use And Replace', 'Commercial Boiler', 'Use and Replace'),
+    );
     if (!sn && !eqName) continue; // skip blank lines
-    if (!sn) {
+    if (!sn && !useAndReplace) {
       warnings.push(`Row ${rowNum}: missing Serial Number — skipped.`);
       continue;
     }
@@ -153,9 +156,6 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
       locations.push(loc);
     }
 
-    const useAndReplace = isYes(
-      pick(raw, normMap, 'Use And Replace', 'Commercial Boiler', 'Use and Replace'),
-    );
     const servicedOnSite =
       !useAndReplace && isYes(pick(raw, normMap, 'Serviced On Site', 'On Site Service', 'No Spare'));
     let status = normStatus(pick(raw, normMap, 'Status'));
@@ -169,7 +169,7 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
       model: String(pick(raw, normMap, 'Model', 'Model Number') ?? '').trim(),
       setPressure: Number(pick(raw, normMap, 'Set Pressure', 'Set Point')) || 0,
       pressureUnit: String(pick(raw, normMap, 'Pressure Unit', 'Unit') ?? 'PSIG').trim() || 'PSIG',
-      capacity: String(pick(raw, normMap, 'Capacity') ?? '').trim(),
+      capacity: String(pick(raw, normMap, 'Capacity', 'Rating') ?? '').trim(),
       inletSize: String(pick(raw, normMap, 'Inlet Size', 'Inlet') ?? '').trim(),
       outletSize: String(pick(raw, normMap, 'Outlet Size', 'Outlet') ?? '').trim(),
       nationalBoardNumber: String(pick(raw, normMap, 'National Board No.', 'National Board', 'NB No') ?? '').trim(),
@@ -184,7 +184,7 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
         psvId,
         type: 'created',
         date: createdDate,
-        description: `PSV ${sn} imported`,
+        description: useAndReplace ? 'Commercial boiler valve imported' : `PSV ${sn} imported`,
         recordedAt: now,
       },
     ];
@@ -197,7 +197,7 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
         status: servicedOnSite ? 'installed' : status,
         date: installDate,
         description: useAndReplace
-          ? `Initial installation (use & replace) — S/N ${sn}`
+          ? 'Initial installation (use & replace)'
           : servicedOnSite
             ? 'Installed in service'
             : 'Installed in service',
@@ -229,7 +229,7 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
 
     psvs.push({
       id: psvId,
-      serialNumber: sn,
+      serialNumber: useAndReplace ? '' : sn,
       inventoryId: String(pick(raw, normMap, 'Inventory ID', 'Inventory No', 'Inventory') ?? '').trim() || undefined,
       tag: String(pick(raw, normMap, 'PSV Tag', 'Tag') ?? '').trim() || undefined,
       locationId: loc.id,
