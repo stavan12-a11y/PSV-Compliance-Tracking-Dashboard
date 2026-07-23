@@ -284,7 +284,11 @@ function LocationRow({
                       onClick={(e) => e.stopPropagation()}
                       className="font-semibold text-maroon-800 hover:underline"
                     >
-                      {psvDisplayName(installed)}
+                      {installed.useAndReplace
+                        ? installDate
+                          ? formatDate(installDate)
+                          : '—'
+                        : psvDisplayName(installed)}
                     </Link>
                   </span>
                   {compliance && (
