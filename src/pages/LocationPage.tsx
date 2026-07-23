@@ -31,6 +31,7 @@ export function LocationPage() {
 
   const installedCount = psvs.filter((p) => p.status === 'installed' || p.useAndReplace || p.servicedOnSite).length;
   const inventoryId = psvs.find((p) => p.inventoryId?.trim())?.inventoryId?.trim();
+  const allCommercial = psvs.length > 0 && psvs.every((p) => p.useAndReplace);
 
   return (
     <div className="space-y-6">
@@ -99,7 +100,13 @@ export function LocationPage() {
             No PSVs assigned yet. Use “Add PSV” to assign one.
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div
+            className={
+              allCommercial
+                ? 'flex flex-col items-start gap-4'
+                : 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'
+            }
+          >
             {psvs.map((psv) => (
               <PSVFaceplate key={psv.id} psv={psv} />
             ))}

@@ -85,9 +85,10 @@ export function PSVDetailPage() {
         psv.servicedOnSite ? lastServiceDate(psv) ?? compliance.lastInstallDate : compliance.lastInstallDate,
       );
   const dueBasis = useAndReplace ? 'replacement' : psv.servicedOnSite ? 'service' : 'install';
+  const commercialLayout = useAndReplace ? 'mx-auto w-full max-w-lg space-y-5' : 'space-y-6';
 
   return (
-    <div className="space-y-6">
+    <div className={commercialLayout}>
       <Breadcrumbs
         items={[
           ...(equipment ? [{ label: equipment.name, to: `/equipment/${equipment.id}` }] : []),
@@ -96,7 +97,7 @@ export function PSVDetailPage() {
         ]}
       />
 
-      <div className="card p-5">
+      <div className={`card ${useAndReplace ? 'p-4' : 'p-5'}`}>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -161,7 +162,9 @@ export function PSVDetailPage() {
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div
+          className={`mt-5 grid grid-cols-1 gap-3 ${useAndReplace ? '' : 'sm:grid-cols-3'}`}
+        >
           <KeyFact icon={Wrench} label={certAnchorLabel} value={certAnchorValue} />
           <KeyFact
             icon={CalendarClock}
@@ -190,7 +193,7 @@ export function PSVDetailPage() {
         </div>
       </div>
 
-      <section className="card p-5">
+      <section className={`card ${useAndReplace ? 'p-4' : 'p-5'}`}>
         <div className="mb-4 flex items-center gap-2">
           <ClipboardList className="h-5 w-5 text-maroon-700" />
           <h3 className="text-lg font-bold text-slate-900">
@@ -205,7 +208,9 @@ export function PSVDetailPage() {
       </section>
 
       <div className={`grid grid-cols-1 gap-6 ${useAndReplace ? '' : 'lg:grid-cols-2'}`}>
-        <section className="card flex min-h-[20rem] flex-col p-4">
+        <section
+          className={`card flex flex-col p-4 ${useAndReplace ? 'min-h-0' : 'min-h-[20rem]'}`}
+        >
           <div className="mb-3 flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
               <CalendarClock className="h-4 w-4 text-maroon-700" />
@@ -381,7 +386,7 @@ function DatasheetGrid({
         ['National Board No.', sheet.nationalBoardNumber],
       ];
   return (
-    <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+    <dl className={`grid grid-cols-1 gap-x-6 gap-y-3 ${commercial ? '' : 'sm:grid-cols-2'}`}>
       {rows.map(([label, value]) => (
         <div key={label} className="flex justify-between gap-3 border-b border-slate-100 pb-2">
           <dt className="text-sm text-slate-500">{label}</dt>

@@ -71,7 +71,7 @@ export function PSVFaceplate({
   if (compact && !useAndReplace) {
     return (
       <>
-        <div className="card flex flex-col overflow-hidden">
+        <div className="card flex w-full max-w-md flex-col overflow-hidden">
           <button
             type="button"
             onClick={() => navigate(`/psv/${psv.id}`)}
@@ -152,7 +152,7 @@ export function PSVFaceplate({
       <div
         className={`card flex flex-col overflow-hidden transition-all hover:shadow-card-hover ${
           isInstalled ? 'ring-2 ring-emerald-500/60' : ''
-        }`}
+        } ${useAndReplace ? 'w-full max-w-md' : ''}`}
       >
         <div
           className={`flex items-center justify-between px-4 py-2 text-xs font-bold uppercase tracking-wide text-white ${headerColor}`}
