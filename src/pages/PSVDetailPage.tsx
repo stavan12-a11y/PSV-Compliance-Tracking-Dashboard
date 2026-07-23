@@ -407,12 +407,12 @@ function CommercialStat({
 
 function CommercialSpecGrid({ sheet }: { sheet: PSVDatasheet }) {
   const specs: Array<[string, string]> = [
-    ['Make', sheet.make],
-    ['Model', sheet.model],
-    ['Set pressure', sheet.setPressure ? `${sheet.setPressure} ${sheet.pressureUnit}` : ''],
-    ['Rating', sheet.capacity],
-    ['Inlet', sheet.inletSize],
-    ['Outlet', sheet.outletSize],
+    ['Make', sheet.make ?? ''],
+    ['Model', sheet.model ?? ''],
+    ['Set pressure', sheet.setPressure ? `${sheet.setPressure} ${sheet.pressureUnit ?? 'PSIG'}` : ''],
+    ['Rating', sheet.capacity ?? ''],
+    ['Inlet', sheet.inletSize ?? ''],
+    ['Outlet', sheet.outletSize ?? ''],
   ].filter(([, value]) => value.trim() !== '') as Array<[string, string]>;
 
   if (specs.length === 0) {

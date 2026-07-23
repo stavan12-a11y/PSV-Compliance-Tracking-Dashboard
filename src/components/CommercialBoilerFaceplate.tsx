@@ -66,7 +66,7 @@ export function CommercialBoilerFaceplate({ psv }: { psv: PSV }) {
           </button>
 
           <div className="flex items-center p-4 lg:w-52 lg:shrink-0 lg:justify-center lg:bg-slate-50/80">
-            <button className="btn-secondary w-full" onClick={() => setShowReplace(true)}>
+            <button type="button" className="btn-secondary w-full" onClick={() => setShowReplace(true)}>
               <RefreshCw className="h-4 w-4" />
               Record Replacement
             </button>

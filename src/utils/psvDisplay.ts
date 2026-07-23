@@ -33,6 +33,17 @@ export function normalizeCommercialBoilerPsv(psv: PSV): PSV {
     servicedOnSite: undefined,
     status: 'installed',
     tag: commercialBoilerLabel(psv),
+    datasheet: {
+      make: psv.datasheet?.make ?? '',
+      model: psv.datasheet?.model ?? '',
+      setPressure: psv.datasheet?.setPressure ?? 0,
+      pressureUnit: psv.datasheet?.pressureUnit ?? 'PSIG',
+      capacity: psv.datasheet?.capacity ?? '',
+      inletSize: psv.datasheet?.inletSize ?? '',
+      outletSize: psv.datasheet?.outletSize ?? '',
+      serviceMedium: psv.datasheet?.serviceMedium,
+      nationalBoardNumber: psv.datasheet?.nationalBoardNumber,
+    },
   };
 }
 
