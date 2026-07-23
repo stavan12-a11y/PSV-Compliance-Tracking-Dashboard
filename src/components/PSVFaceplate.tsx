@@ -161,16 +161,10 @@ export function PSVFaceplate({
         >
           <div className="flex items-center justify-between gap-2">
             <div>
-              {useAndReplace ? (
-                <h4 className="text-lg font-bold text-slate-900">{psvDisplayName(psv)}</h4>
-              ) : (
-                <>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                    {psvPrimaryLabel(psv)}
-                  </p>
-                  <h4 className="text-lg font-bold text-slate-900">{psvDisplayName(psv)}</h4>
-                </>
-              )}
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                {psvPrimaryLabel(psv)}
+              </p>
+              <h4 className="text-lg font-bold text-slate-900">{psvDisplayName(psv)}</h4>
             </div>
             <ArrowRight className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-maroon-700" />
           </div>
@@ -182,20 +176,23 @@ export function PSVFaceplate({
                 {`${psv.datasheet.make} ${psv.datasheet.model} · ${psv.datasheet.setPressure} ${psv.datasheet.pressureUnit}`}
               </p>
             )}
+            {certDate && (
+              <p className="flex items-center gap-1.5">
+                <Wrench className="h-3.5 w-3.5 text-slate-400" />
+                {certLabel} {formatDate(certDate)}
+              </p>
+            )}
             {compliance.dueDate && (
-              <>
-                <p className="flex items-center gap-1.5">
-                  <Wrench className="h-3.5 w-3.5 text-slate-400" />
-                  {certLabel} {formatDate(certDate)}
-                </p>
-                <p className="flex items-center gap-1.5">
-                  <CalendarClock className="h-3.5 w-3.5 text-slate-400" />
-                  Due {formatDate(compliance.dueDate)}
-                  <span className={dueColor(compliance.daysRemaining)}>
-                    ({relativeDays(compliance.daysRemaining)})
-                  </span>
-                </p>
-              </>
+              <p className="flex items-center gap-1.5">
+                <CalendarClock className="h-3.5 w-3.5 text-slate-400" />
+                Due {formatDate(compliance.dueDate)}
+                <span className={dueColor(compliance.daysRemaining)}>
+                  ({relativeDays(compliance.daysRemaining)})
+                </span>
+              </p>
+            )}
+            {!certDate && !compliance.dueDate && (
+              <p className="text-slate-400">No install date on record</p>
             )}
             {onSite && (
               <p className="flex items-center gap-1.5 text-slate-500">
