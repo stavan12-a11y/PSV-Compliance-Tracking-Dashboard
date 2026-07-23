@@ -22,7 +22,7 @@ import { seedData } from '../data/mockData';
 import { uid } from '../utils/id';
 import { todayISO } from '../utils/dates';
 import { STATUS_LABELS } from '../utils/compliance';
-import { commercialBoilerSpec } from '../utils/psvDisplay';
+import { commercialBoilerLabel } from '../utils/psvDisplay';
 import { isCloudApiMode, cloudLoadState, cloudSaveState, CLOUD_POLL_MS } from '../lib/cloudApi';
 import { isCloudMode } from '../lib/cloudMode';
 import { useAuth } from '../auth/AuthContext';
@@ -367,7 +367,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       ? 'Initial installation (use & replace)'
       : `Status set to ${STATUS_LABELS[status]}`;
     const createdDescription = useAndReplace
-      ? `Commercial boiler valve added — ${commercialBoilerSpec(input.datasheet) || 'spec pending'}`
+      ? `Commercial boiler valve added — ${commercialBoilerLabel({ tag: input.tag, useAndReplace: true })}`
       : `PSV ${serialNumber} added to the tracking system`;
     const events: PSVEvent[] = [
       {

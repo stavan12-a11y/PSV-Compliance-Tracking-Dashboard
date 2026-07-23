@@ -4,7 +4,7 @@ import { Modal } from '../Modal';
 import { Field } from '../Field';
 import { STATUS_LABELS } from '../../utils/compliance';
 import { todayISO } from '../../utils/dates';
-import { psvDisplayName } from '../../utils/psvDisplay';
+import { COMMERCIAL_BOILER_DEFAULT_LABEL, psvDisplayName } from '../../utils/psvDisplay';
 import type { PSVDatasheet, PSVStatus } from '../../types';
 
 interface PSVFormModalProps {
@@ -58,7 +58,10 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
     if (existing) {
       setSerialNumber(existing.serialNumber);
       setInventoryId(existing.inventoryId ?? '');
-      setTag(existing.tag ?? '');
+      setTag(
+        existing.tag?.trim() ||
+          (existing.useAndReplace ? COMMERCIAL_BOILER_DEFAULT_LABEL : ''),
+      );
       setLocationId(existing.locationId);
       setStatus(existing.status);
       setTrackingMode(
@@ -98,6 +101,11 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
 
   const isCommercialBoiler = trackingMode === 'use_and_replace';
   const isSpecialMode = trackingMode !== 'standard';
+
+  useEffect(() => {
+    if (!open || !isCommercialBoiler || tag.trim()) return;
+    setTag(COMMERCIAL_BOILER_DEFAULT_LABEL);
+  }, [open, isCommercialBoiler, tag]);
   const canSave =
     locationId !== '' && (isCommercialBoiler || serialNumber.trim() !== '');
 
@@ -107,21 +115,22 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
     const servicedOnSite = trackingMode === 'on_site';
     const useAndReplace = isCommercialBoiler;
     const trimmedSerial = serialNumber.trim();
+    const commercialLabel = tag.trim() || COMMERCIAL_BOILER_DEFAULT_LABEL;
     if (editing && existing) {
       updatePSV(existing.id, {
         serialNumber: useAndReplace ? '' : trimmedSerial,
         inventoryId: useAndReplace ? undefined : inventoryId.trim() || undefined,
-        tag: useAndReplace ? undefined : tag.trim() || undefined,
+        tag: useAndReplace ? commercialLabel : tag.trim() || undefined,
         locationId,
         servicedOnSite: useAndReplace ? undefined : servicedOnSite || undefined,
         useAndReplace: useAndReplace || undefined,
       });
-      updateDatasheet(existing.id, cleaned);
+      if (!useAndReplace) updateDatasheet(existing.id, cleaned);
     } else {
       addPSV({
         serialNumber: useAndReplace ? undefined : trimmedSerial,
         inventoryId: useAndReplace ? undefined : inventoryId.trim() || undefined,
-        tag: useAndReplace ? undefined : tag.trim(),
+        tag: useAndReplace ? commercialLabel : tag.trim(),
         locationId,
         datasheet: cleaned,
         status,
@@ -139,7 +148,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
       ? 'Add commercial boiler valve'
       : 'Add a PSV';
   const modalDescription = isCommercialBoiler
-    ? 'Location, valve rating/spec, and tracking — serial numbers are not tracked for use & replace valves.'
+    ? 'Pick a location and name for this safety (e.g. Commercial boiler safety). No serial number or datasheet required.'
     : 'Serial number, assignment, tracking type, and datasheet / nameplate information.';
 
   return (
@@ -174,6 +183,18 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
                 <input className="input" value={tag} onChange={(e) => setTag(e.target.value)} placeholder="e.g. BLR-001-PSV-A" />
               </Field>
             </>
+          )}
+          {isCommercialBoiler && (
+            <div className="sm:col-span-2">
+              <Field label="Safety name">
+                <input
+                  className="input"
+                  value={tag}
+                  onChange={(e) => setTag(e.target.value)}
+                  placeholder={COMMERCIAL_BOILER_DEFAULT_LABEL}
+                />
+              </Field>
+            </div>
           )}
           <Field label="Assigned Location" required>
             <select className="input" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
@@ -260,10 +281,9 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
           </label>
         </section>
 
+        {!isCommercialBoiler && (
         <section>
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-400">
-            {isCommercialBoiler ? 'Valve specification' : 'Datasheet'}
-          </h3>
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-400">Datasheet</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Make / Manufacturer">
               <input className="input" value={sheet.make} onChange={(e) => set('make', e.target.value)} placeholder="e.g. Consolidated" />
@@ -277,7 +297,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
             <Field label="Pressure Unit">
               <input className="input" value={sheet.pressureUnit} onChange={(e) => set('pressureUnit', e.target.value)} placeholder="PSIG" />
             </Field>
-            <Field label={isCommercialBoiler ? 'Rating' : 'Capacity'}>
+            <Field label="Capacity">
               <input className="input" value={sheet.capacity} onChange={(e) => set('capacity', e.target.value)} placeholder="e.g. 12,500 lb/hr" />
             </Field>
             <Field label="Inlet Size">
@@ -286,18 +306,15 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
             <Field label="Outlet Size">
               <input className="input" value={sheet.outletSize} onChange={(e) => set('outletSize', e.target.value)} placeholder='e.g. 3"' />
             </Field>
-            {!isCommercialBoiler && (
-              <>
-                <Field label="Service Medium">
-                  <input className="input" value={sheet.serviceMedium ?? ''} onChange={(e) => set('serviceMedium', e.target.value)} placeholder="Steam / Air / Water" />
-                </Field>
-                <Field label="National Board No.">
-                  <input className="input" value={sheet.nationalBoardNumber ?? ''} onChange={(e) => set('nationalBoardNumber', e.target.value)} />
-                </Field>
-              </>
-            )}
+            <Field label="Service Medium">
+              <input className="input" value={sheet.serviceMedium ?? ''} onChange={(e) => set('serviceMedium', e.target.value)} placeholder="Steam / Air / Water" />
+            </Field>
+            <Field label="National Board No.">
+              <input className="input" value={sheet.nationalBoardNumber ?? ''} onChange={(e) => set('nationalBoardNumber', e.target.value)} />
+            </Field>
           </div>
         </section>
+        )}
       </div>
     </Modal>
   );

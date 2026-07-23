@@ -14,7 +14,7 @@ import {
 } from './events';
 import { lastReplacementDate } from './compliance';
 import { formatDate, formatDateTime, todayISO } from './dates';
-import { commercialBoilerSpec, psvDisplayName } from './psvDisplay';
+import { psvDisplayName } from './psvDisplay';
 
 interface ExportScope {
   equipment?: Equipment;
@@ -207,7 +207,7 @@ export async function exportPSVToExcel(data: AppData, psv: PSV) {
     appendSheet(wb, XLSX, 'Repair History', repairRows, REPAIR_COLUMNS);
   }
 
-  const safeName = (psv.useAndReplace ? commercialBoilerSpec(psv.datasheet) : psv.serialNumber)
+  const safeName = (psv.useAndReplace ? psvDisplayName(psv) : psv.serialNumber)
     .replace(/[^\w.-]+/g, '-')
     .slice(0, 48) || psv.id;
   XLSX.writeFile(wb, `PSV_${safeName}_${todayISO()}.xlsx`);
@@ -362,7 +362,7 @@ function buildRegisterRow(
     Area: ctx.eq?.area ?? '',
     Location: ctx.loc?.name ?? '',
     'Location Tag': ctx.loc?.tag ?? '',
-    'Serial Number': psv.useAndReplace ? commercialBoilerSpec(psv.datasheet) : psv.serialNumber,
+    'Serial Number': psv.useAndReplace ? psvDisplayName(psv) : psv.serialNumber,
     'Inventory ID': psv.inventoryId ?? '',
     'PSV Tag': psv.tag ?? '',
     Status: STATUS_LABELS[psv.status],
@@ -414,7 +414,7 @@ function buildReplacementHistoryRow(psv: PSV, event: PSVEvent, ctx: PsvContext):
     'Equipment Tag': ctx.eq?.tag ?? '',
     Location: ctx.loc?.name ?? '',
     'Location Tag': ctx.loc?.tag ?? '',
-    'Valve Specification': commercialBoilerSpec(psv.datasheet),
+    'Valve Specification': psvDisplayName(psv),
     'Event Date': formatDate(event.date),
     'Event Type': eventType,
     Description: event.description,
