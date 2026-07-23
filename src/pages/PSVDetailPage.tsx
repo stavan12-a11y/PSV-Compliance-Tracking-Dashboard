@@ -234,7 +234,11 @@ export function PSVDetailPage() {
                     event={event}
                     useAndReplace={useAndReplace}
                     onEdit={() => {
-                      if (useAndReplace && event.type === 'replacement') {
+                      if (
+                        useAndReplace &&
+                        (event.type === 'replacement' ||
+                          (event.type === 'status-change' && event.status === 'installed'))
+                      ) {
                         setEditReplacementId(event.id);
                       } else {
                         setEditEventId(event.id);
@@ -411,7 +415,10 @@ function HistoryItem({
       : event.status
         ? DOT_COLORS[event.status]
         : 'bg-slate-400';
-  const canEdit = !useAndReplace || event.type === 'replacement';
+  const isCommercialHistoryEvent =
+    event.type === 'replacement' ||
+    (event.type === 'status-change' && event.status === 'installed');
+  const canEdit = !useAndReplace || isCommercialHistoryEvent;
   return (
     <li className="group relative flex gap-3 rounded-lg py-2 pl-1 pr-1 hover:bg-slate-50">
       <span className={`relative z-10 mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full ring-4 ring-white ${dot}`} />
@@ -419,7 +426,11 @@ function HistoryItem({
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-semibold text-slate-800">{event.description}</p>
           {canEdit && (
-            <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            <div
+              className={`flex items-center gap-1 ${
+                useAndReplace ? 'opacity-100' : 'opacity-0 transition-opacity group-hover:opacity-100'
+              }`}
+            >
             <button
               onClick={onEdit}
               className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"

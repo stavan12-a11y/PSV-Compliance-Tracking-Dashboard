@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePSV } from '../../store/PSVContext';
 import { Modal } from '../Modal';
 import { Field } from '../Field';
@@ -16,14 +16,33 @@ interface ReplacementFormModalProps {
 export function ReplacementFormModal({ open, onClose, psvId, eventId }: ReplacementFormModalProps) {
   const { getPSV, recordReplacement, updateHistoryEvent } = usePSV();
   const psv = getPSV(psvId);
-  const existing = eventId ? psv?.events.find((e) => e.id === eventId && e.type === 'replacement') : undefined;
+  const existing = eventId
+    ? psv?.events.find((e) => {
+        if (e.id !== eventId) return false;
+        return (
+          e.type === 'replacement' ||
+          (e.type === 'status-change' && e.status === 'installed')
+        );
+      })
+    : undefined;
   const editing = Boolean(existing);
+  const editingInstall = existing?.type === 'status-change';
 
   const [date, setDate] = useState(todayISO());
   const [note, setNote] = useState('');
+  const formSessionRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!open || !psv) return;
+    if (!open) {
+      formSessionRef.current = null;
+      return;
+    }
+    if (!psv) return;
+
+    const sessionKey = eventId ? `edit:${eventId}` : `add:${psvId}`;
+    if (formSessionRef.current === sessionKey) return;
+    formSessionRef.current = sessionKey;
+
     if (existing) {
       setDate(existing.date);
       setNote(existing.note ?? '');
@@ -31,7 +50,7 @@ export function ReplacementFormModal({ open, onClose, psvId, eventId }: Replacem
     }
     setDate(todayISO());
     setNote('');
-  }, [open, psv, existing]);
+  }, [open, psv, eventId, existing?.id, existing?.date, existing?.note]);
 
   if (!psv) return null;
 
@@ -40,7 +59,9 @@ export function ReplacementFormModal({ open, onClose, psvId, eventId }: Replacem
       updateHistoryEvent(psvId, existing.id, {
         date,
         note: note.trim() || undefined,
-        description: 'Valve replaced — new unit installed',
+        description: editingInstall
+          ? existing.description || 'Initial installation (use & replace)'
+          : 'Valve replaced — new unit installed',
       });
     } else {
       recordReplacement(psvId, {
@@ -55,10 +76,18 @@ export function ReplacementFormModal({ open, onClose, psvId, eventId }: Replacem
     <Modal
       open={open}
       onClose={onClose}
-      title={editing ? 'Edit replacement record' : 'Record valve replacement'}
+      title={
+        editing
+          ? editingInstall
+            ? 'Edit installation record'
+            : 'Edit replacement record'
+          : 'Record valve replacement'
+      }
       description={
         editing
-          ? `Update the replacement dated ${existing?.date}.`
+          ? editingInstall
+            ? `Update the installation dated ${existing?.date}.`
+            : `Update the replacement dated ${existing?.date}.`
           : `Log when a new valve was installed for ${psvDisplayName(psv)}. Serial numbers are not tracked.`
       }
       footer={
@@ -73,7 +102,7 @@ export function ReplacementFormModal({ open, onClose, psvId, eventId }: Replacem
       }
     >
       <div className="space-y-4">
-        <Field label="Replacement date" required>
+        <Field label={editingInstall ? 'Installation date' : 'Replacement date'} required>
           <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
         <Field label="Note (optional)">
