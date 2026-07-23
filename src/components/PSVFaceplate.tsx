@@ -24,18 +24,12 @@ function dueColor(days: number | null): string {
   return 'text-slate-500';
 }
 
-function activePsvLabel(psv: PSV): string {
-  if (psv.useAndReplace) return 'Use & replace';
-  if (psv.servicedOnSite) return 'On site';
-  return STATUS_LABELS[psv.status];
-}
-
 export function PSVFaceplate({
   psv,
   compact = false,
 }: {
   psv: PSV;
-  /** SUP3: minimal card — status, install date, days remaining only. */
+  /** Minimal card: install date + days remaining only. */
   compact?: boolean;
 }) {
   const navigate = useNavigate();
@@ -77,20 +71,17 @@ export function PSVFaceplate({
             onClick={() => navigate(`/psv/${psv.id}`)}
             className="flex-1 px-4 py-3 text-left transition-colors hover:bg-slate-50"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-              {activePsvLabel(psv)}
-            </p>
             {certDate && compliance.dueDate ? (
-              <div className="mt-2 space-y-1 text-sm">
-                <p className="text-slate-700">
+              <div className="space-y-1 text-sm">
+                <p className="text-slate-600">
                   Installed <span className="font-semibold text-slate-900">{formatDate(certDate)}</span>
                 </p>
-                <p className={`font-medium ${dueColor(compliance.daysRemaining)}`}>
+                <p className={`font-semibold ${dueColor(compliance.daysRemaining)}`}>
                   {relativeDays(compliance.daysRemaining)}
                 </p>
               </div>
             ) : (
-              <p className="mt-2 text-sm text-slate-400">No install date on record</p>
+              <p className="text-sm text-slate-400">No install date on record</p>
             )}
           </button>
 

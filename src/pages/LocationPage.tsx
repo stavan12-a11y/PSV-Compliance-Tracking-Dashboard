@@ -6,7 +6,7 @@ import { Breadcrumbs } from '../components/Breadcrumbs';
 import { PSVFaceplate } from '../components/PSVFaceplate';
 import { PSVFormModal } from '../components/forms/PSVFormModal';
 import { LocationFormModal } from '../components/forms/LocationFormModal';
-import { isSup3Equipment } from '../utils/sup3';
+import { useCompactPsvView } from '../utils/sup3';
 
 export function LocationPage() {
   const { locationId = '' } = useParams();
@@ -32,7 +32,6 @@ export function LocationPage() {
 
   const installedCount = psvs.filter((p) => p.status === 'installed' || p.useAndReplace || p.servicedOnSite).length;
   const inventoryId = psvs.find((p) => p.inventoryId?.trim())?.inventoryId?.trim();
-  const sup3 = isSup3Equipment(equipment);
 
   return (
     <div className="space-y-6">
@@ -103,7 +102,11 @@ export function LocationPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {psvs.map((psv) => (
-              <PSVFaceplate key={psv.id} psv={psv} compact={sup3} />
+              <PSVFaceplate
+                key={psv.id}
+                psv={psv}
+                compact={useCompactPsvView(psv, equipment, location)}
+              />
             ))}
           </div>
         )}

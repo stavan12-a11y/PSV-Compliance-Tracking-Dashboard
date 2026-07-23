@@ -14,7 +14,7 @@ import { exportToExcel } from '../utils/excelExport';
 import { equipmentIcon } from '../utils/equipmentIcon';
 import { formatDate, relativeDays } from '../utils/dates';
 import { psvDisplayName } from '../utils/psvDisplay';
-import { isSup3Equipment } from '../utils/sup3';
+import { useCompactLocationRow } from '../utils/sup3';
 import { KPIGrid } from '../components/KPIGrid';
 import { KPIFilterModal } from '../components/KPIFilterModal';
 import { Breadcrumbs } from '../components/Breadcrumbs';
@@ -59,7 +59,6 @@ export function EquipmentPage() {
   }
 
   const EqIcon = equipmentIcon(equipment.type, equipment.name);
-  const sup3 = isSup3Equipment(equipment);
 
   return (
     <div className="space-y-6">
@@ -145,7 +144,7 @@ export function EquipmentPage() {
                   key={loc.id}
                   location={loc}
                   psvs={psvsForLocation(loc.id)}
-                  compact={sup3}
+                  compact={useCompactLocationRow(psvsForLocation(loc.id), equipment, loc)}
                   onOpen={() => navigate(`/location/${loc.id}`)}
                   onEdit={() => setEditLocationId(loc.id)}
                   onDelete={() => {

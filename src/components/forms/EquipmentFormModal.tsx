@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePSV } from '../../store/PSVContext';
 import { Modal } from '../Modal';
 import { Field } from '../Field';
+import { isSup3Equipment } from '../../utils/sup3';
 
 interface EquipmentFormModalProps {
   open: boolean;
@@ -13,32 +14,50 @@ export function EquipmentFormModal({ open, onClose, equipmentId }: EquipmentForm
   const { getEquipment, addEquipment, updateEquipment } = usePSV();
   const existing = equipmentId ? getEquipment(equipmentId) : undefined;
   const editing = Boolean(existing);
+  const sessionRef = useRef<string | null>(null);
 
   const [name, setName] = useState('');
   const [tag, setTag] = useState('');
   const [type, setType] = useState('');
   const [area, setArea] = useState('');
   const [description, setDescription] = useState('');
+  const [minimalFaceplates, setMinimalFaceplates] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      sessionRef.current = null;
+      return;
+    }
+    const sessionKey = equipmentId ?? 'new';
+    if (sessionRef.current === sessionKey) return;
+    sessionRef.current = sessionKey;
+
     setName(existing?.name ?? '');
     setTag(existing?.tag ?? '');
     setType(existing?.type ?? '');
     setArea(existing?.area ?? '');
     setDescription(existing?.description ?? '');
-  }, [open, existing]);
+    setMinimalFaceplates(
+      Boolean(existing?.minimalFaceplates) ||
+        Boolean(existing && isSup3Equipment(existing)),
+    );
+  }, [open, equipmentId, existing]);
 
   const canSave = name.trim() !== '';
 
   const handleSave = () => {
     if (!canSave) return;
-    const payload = {
+    const draft = {
       name: name.trim(),
       tag: tag.trim(),
       type: type.trim(),
       area: area.trim(),
+    };
+    const payload = {
+      ...draft,
       description: description.trim(),
+      minimalFaceplates:
+        minimalFaceplates || isSup3Equipment({ ...draft, minimalFaceplates: false }) || undefined,
     };
     if (editing && existing) updateEquipment(existing.id, payload);
     else addEquipment(payload);
@@ -72,12 +91,29 @@ export function EquipmentFormModal({ open, onClose, equipmentId }: EquipmentForm
           <input className="input" value={type} onChange={(e) => setType(e.target.value)} placeholder="e.g. Watertube Boiler" />
         </Field>
         <Field label="Area / Plant">
-          <input className="input" value={area} onChange={(e) => setArea(e.target.value)} placeholder="e.g. Central Utility Plant" />
+          <input className="input" value={area} onChange={(e) => setArea(e.target.value)} placeholder="e.g. SUP3" />
         </Field>
         <div className="sm:col-span-2">
           <Field label="Description">
             <textarea className="input min-h-[64px] resize-y" value={description} onChange={(e) => setDescription(e.target.value)} />
           </Field>
+        </div>
+        <div className="sm:col-span-2">
+          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={minimalFaceplates}
+              onChange={(e) => setMinimalFaceplates(e.target.checked)}
+            />
+            <span className="text-sm">
+              <span className="font-semibold text-slate-800">Minimal PSV cards</span>
+              <span className="mt-0.5 block text-xs text-slate-500">
+                On location pages, show only install date and days remaining (recommended for SUP3 /
+                commercial boilers).
+              </span>
+            </span>
+          </label>
         </div>
       </div>
     </Modal>

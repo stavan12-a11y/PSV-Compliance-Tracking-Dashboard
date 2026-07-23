@@ -112,6 +112,8 @@ export interface Equipment {
   type: string;
   area: string;
   description?: string;
+  /** When true, location list + PSV cards show only install date and days remaining. */
+  minimalFaceplates?: boolean;
 }
 
 /** The full persisted application state. */
