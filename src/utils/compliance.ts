@@ -31,14 +31,28 @@ export function lastServiceDate(psv: PSV): string | null {
   return services.length ? services[services.length - 1] : null;
 }
 
+/** Returns the most recent use-and-replace replacement date, or null. */
+export function lastReplacementDate(psv: PSV): string | null {
+  const replacements = psv.events
+    .filter((e) => e.type === 'replacement')
+    .map((e) => e.date)
+    .sort();
+  return replacements.length ? replacements[replacements.length - 1] : null;
+}
+
 /**
  * Returns the date the recertification clock starts from.
  * - Swap valves: the most recent INSTALL date (a spare's off-site service does
  *   not start the clock — only installation does).
  * - On-site serviced valves (no spare): the most recent SERVICE date, since they
  *   are recertified in place; falls back to the install date if never serviced.
+ * - Use-and-replace (commercial boiler): the most recent REPLACEMENT date, or
+ *   the initial install if never replaced yet.
  */
 export function getCertDate(psv: PSV): string | null {
+  if (psv.useAndReplace) {
+    return lastReplacementDate(psv) ?? lastInstallDate(psv);
+  }
   if (psv.servicedOnSite) {
     return lastServiceDate(psv) ?? lastInstallDate(psv);
   }
@@ -53,7 +67,7 @@ export function getCertDate(psv: PSV): string | null {
 export function getCompliance(psv: PSV): ComplianceInfo {
   const installDate = lastInstallDate(psv);
   const certDate = getCertDate(psv);
-  const active = psv.servicedOnSite || psv.status === 'installed';
+  const active = psv.useAndReplace || psv.servicedOnSite || psv.status === 'installed';
 
   if (!active || !certDate) {
     return {

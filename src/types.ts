@@ -17,6 +17,7 @@ export type PSVEventType =
   | 'created'
   | 'status-change'
   | 'service'
+  | 'replacement'
   | 'datasheet-update'
   | 'history-edit'
   | 'note';
@@ -34,6 +35,10 @@ export interface PSVEvent {
   description: string;
   /** Optional free-form note. */
   note?: string;
+  /** When type is `replacement`, the S/N removed/disposed. */
+  previousSerialNumber?: string;
+  /** When type is `replacement`, the new S/N installed. */
+  newSerialNumber?: string;
   /** Timestamp (ISO) of when the entry was recorded in the system. */
   recordedAt: string;
 }
@@ -79,6 +84,11 @@ export interface PSV {
    * install/inventory swaps; their due date is measured from the last service.
    */
   servicedOnSite?: boolean;
+  /**
+   * Commercial boiler valves: use-and-replace (buy new when due, no spare/recert cycle).
+   * Tracked by install/replacement date; history logs each replacement.
+   */
+  useAndReplace?: boolean;
   datasheet: PSVDatasheet;
   events: PSVEvent[];
   repairHistory?: PSVRepairRecord[];

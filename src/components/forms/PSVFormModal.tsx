@@ -15,6 +15,8 @@ interface PSVFormModalProps {
   presetLocationId?: string;
 }
 
+type TrackingMode = 'standard' | 'on_site' | 'use_and_replace';
+
 const EMPTY_DATASHEET: PSVDatasheet = {
   make: '',
   model: '',
@@ -38,7 +40,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
   const [locationId, setLocationId] = useState('');
   const [status, setStatus] = useState<PSVStatus>('inventory');
   const [statusDate, setStatusDate] = useState(todayISO());
-  const [servicedOnSite, setServicedOnSite] = useState(false);
+  const [trackingMode, setTrackingMode] = useState<TrackingMode>('standard');
   const [sheet, setSheet] = useState<PSVDatasheet>(EMPTY_DATASHEET);
 
   useEffect(() => {
@@ -49,7 +51,9 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
       setTag(existing.tag ?? '');
       setLocationId(existing.locationId);
       setStatus(existing.status);
-      setServicedOnSite(Boolean(existing.servicedOnSite));
+      setTrackingMode(
+        existing.useAndReplace ? 'use_and_replace' : existing.servicedOnSite ? 'on_site' : 'standard',
+      );
       setSheet({ ...EMPTY_DATASHEET, ...existing.datasheet });
     } else {
       setSerialNumber('');
@@ -58,7 +62,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
       setLocationId(presetLocationId ?? data.locations[0]?.id ?? '');
       setStatus('inventory');
       setStatusDate(todayISO());
-      setServicedOnSite(false);
+      setTrackingMode('standard');
       setSheet(EMPTY_DATASHEET);
     }
   }, [open, existing, presetLocationId, data.locations]);
@@ -75,11 +79,14 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
   const set = <K extends keyof PSVDatasheet>(key: K, value: PSVDatasheet[K]) =>
     setSheet((s) => ({ ...s, [key]: value }));
 
+  const isSpecialMode = trackingMode !== 'standard';
   const canSave = serialNumber.trim() !== '' && locationId !== '';
 
   const handleSave = () => {
     if (!canSave) return;
     const cleaned: PSVDatasheet = { ...sheet, setPressure: Number(sheet.setPressure) || 0 };
+    const servicedOnSite = trackingMode === 'on_site';
+    const useAndReplace = trackingMode === 'use_and_replace';
     if (editing && existing) {
       updatePSV(existing.id, {
         serialNumber: serialNumber.trim(),
@@ -87,6 +94,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
         tag: tag.trim(),
         locationId,
         servicedOnSite,
+        useAndReplace,
       });
       updateDatasheet(existing.id, cleaned);
     } else {
@@ -98,6 +106,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
         datasheet: cleaned,
         status,
         servicedOnSite,
+        useAndReplace,
         statusDate,
       });
     }
@@ -110,7 +119,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
       onClose={onClose}
       size="lg"
       title={editing ? `Edit PSV ${existing?.serialNumber ?? ''}` : 'Add a PSV'}
-      description="Serial number, assignment, and datasheet / nameplate information."
+      description="Serial number, assignment, tracking type, and datasheet / nameplate information."
       footer={
         <>
           <button className="btn-secondary" onClick={onClose}>
@@ -145,8 +154,8 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
               ))}
             </select>
           </Field>
-          {!editing && !servicedOnSite && (
-            <div className="grid grid-cols-2 gap-3">
+          {!editing && !isSpecialMode && (
+            <div className="grid grid-cols-2 gap-3 sm:col-span-2">
               <Field label="Initial Status">
                 <select className="input" value={status} onChange={(e) => setStatus(e.target.value as PSVStatus)}>
                   {(Object.keys(STATUS_LABELS) as PSVStatus[]).map((s) => (
@@ -161,23 +170,62 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
               </Field>
             </div>
           )}
+          {!editing && isSpecialMode && (
+            <Field label={trackingMode === 'use_and_replace' ? 'Installation Date' : 'Initial Service Date'}>
+              <input type="date" className="input" value={statusDate} onChange={(e) => setStatusDate(e.target.value)} />
+            </Field>
+          )}
         </section>
 
-        <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <input
-            type="checkbox"
-            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-maroon-700 focus:ring-maroon-700"
-            checked={servicedOnSite}
-            onChange={(e) => setServicedOnSite(e.target.checked)}
-          />
-          <span className="text-sm">
-            <span className="font-semibold text-slate-800">Serviced on site (no spare)</span>
-            <span className="block text-xs text-slate-500">
-              This valve has no spare and is recertified in place. It stays installed and is tracked
-              by service date — the recert due date is measured from the last service.
+        <section className="space-y-3">
+          <p className="text-sm font-bold text-slate-800">How is this valve tracked?</p>
+          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3">
+            <input
+              type="radio"
+              name="trackingMode"
+              className="mt-0.5"
+              checked={trackingMode === 'standard'}
+              onChange={() => setTrackingMode('standard')}
+            />
+            <span className="text-sm">
+              <span className="font-semibold text-slate-800">Standard (spare swap)</span>
+              <span className="block text-xs text-slate-500">
+                Installed / inventory / out-for-service with a spare valve at the location.
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3">
+            <input
+              type="radio"
+              name="trackingMode"
+              className="mt-0.5"
+              checked={trackingMode === 'on_site'}
+              onChange={() => setTrackingMode('on_site')}
+            />
+            <span className="text-sm">
+              <span className="font-semibold text-slate-800">Serviced on site (no spare)</span>
+              <span className="block text-xs text-slate-500">
+                Recertified in place; due date is measured from the last service date.
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3">
+            <input
+              type="radio"
+              name="trackingMode"
+              className="mt-0.5"
+              checked={trackingMode === 'use_and_replace'}
+              onChange={() => setTrackingMode('use_and_replace')}
+            />
+            <span className="text-sm">
+              <span className="font-semibold text-slate-800">Commercial boiler (use &amp; replace)</span>
+              <span className="block text-xs text-slate-600">
+                Buy a new valve when due — no spare, no recert cycle. Record each replacement in
+                history; due date resets from the replacement date.
+              </span>
+            </span>
+          </label>
+        </section>
 
         <section>
           <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-400">Datasheet</h3>

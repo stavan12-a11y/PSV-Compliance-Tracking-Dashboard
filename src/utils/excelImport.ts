@@ -153,9 +153,13 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
       locations.push(loc);
     }
 
-    const servicedOnSite = isYes(pick(raw, normMap, 'Serviced On Site', 'On Site Service', 'No Spare'));
+    const useAndReplace = isYes(
+      pick(raw, normMap, 'Use And Replace', 'Commercial Boiler', 'Use and Replace'),
+    );
+    const servicedOnSite =
+      !useAndReplace && isYes(pick(raw, normMap, 'Serviced On Site', 'On Site Service', 'No Spare'));
     let status = normStatus(pick(raw, normMap, 'Status'));
-    if (servicedOnSite) status = 'installed';
+    if (servicedOnSite || useAndReplace) status = 'installed';
 
     const installDate = toIso(pick(raw, normMap, 'Install Date', 'Last Install Date', 'Installation Date'));
     const serviceDate = toIso(pick(raw, normMap, 'Service Date', 'Last Service Date'));
@@ -192,7 +196,11 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
         type: 'status-change',
         status: servicedOnSite ? 'installed' : status,
         date: installDate,
-        description: 'Installed in service',
+        description: useAndReplace
+          ? `Initial installation (use & replace) — S/N ${sn}`
+          : servicedOnSite
+            ? 'Installed in service'
+            : 'Installed in service',
         recordedAt: now,
       });
     } else {
@@ -227,6 +235,7 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
       locationId: loc.id,
       status,
       servicedOnSite: servicedOnSite || undefined,
+      useAndReplace: useAndReplace || undefined,
       datasheet,
       events,
       repairHistory: [],
@@ -261,6 +270,7 @@ export async function downloadImportTemplate() {
     'PSV Tag': 'BLR-001-PSV-A',
     Status: 'Installed',
     'Serviced On Site': 'No',
+    'Use And Replace': 'No',
     Make: 'Consolidated',
     Model: '1900-30JM',
     Type: 'Conventional Spring',

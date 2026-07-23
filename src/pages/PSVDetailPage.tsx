@@ -7,19 +7,22 @@ import {
   Pencil,
   Plus,
   ToggleRight,
+  RefreshCw,
   Trash2,
   Wrench,
 } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 import { getCompliance, lastServiceDate } from '../utils/compliance';
-import { sortEventsNewestFirst, statusChangeEvents } from '../utils/events';
+import { sortEventsNewestFirst, statusChangeEvents, useAndReplaceHistory } from '../utils/events';
 import { exportPSVToExcel } from '../utils/excelExport';
 import { formatDate, formatDateTime, relativeDays, RECERT_INTERVAL_YEARS } from '../utils/dates';
+import { lastReplacementDate } from '../utils/compliance';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { ComplianceBadge, StatusBadge } from '../components/Badges';
 import { PSVFormModal } from '../components/forms/PSVFormModal';
 import { EventFormModal } from '../components/forms/EventFormModal';
 import { RepairFormModal } from '../components/forms/RepairFormModal';
+import { ReplacementFormModal } from '../components/forms/ReplacementFormModal';
 import type { PSVDatasheet, PSVEvent, PSVRepairRecord } from '../types';
 
 export function PSVDetailPage() {
@@ -37,9 +40,14 @@ export function PSVDetailPage() {
   const [editEventId, setEditEventId] = useState<string | null>(null);
   const [addRepair, setAddRepair] = useState(false);
   const [editRepairId, setEditRepairId] = useState<string | null>(null);
+  const [showReplace, setShowReplace] = useState(false);
+  const [editReplacementId, setEditReplacementId] = useState<string | null>(null);
 
   const sortedEvents = useMemo(() => {
     if (!psv) return [];
+    if (psv.useAndReplace) {
+      return sortEventsNewestFirst(useAndReplaceHistory(psv.events));
+    }
     return sortEventsNewestFirst(statusChangeEvents(psv.events));
   }, [psv]);
 
@@ -63,6 +71,20 @@ export function PSVDetailPage() {
   }
 
   const compliance = getCompliance(psv);
+  const useAndReplace = Boolean(psv.useAndReplace);
+  const certAnchorLabel = useAndReplace
+    ? lastReplacementDate(psv)
+      ? 'Last Replacement'
+      : 'Installed'
+    : psv.servicedOnSite
+      ? 'Last Service Date'
+      : 'Last Install Date';
+  const certAnchorValue = useAndReplace
+    ? formatDate(lastReplacementDate(psv) ?? compliance.lastInstallDate)
+    : formatDate(
+        psv.servicedOnSite ? lastServiceDate(psv) ?? compliance.lastInstallDate : compliance.lastInstallDate,
+      );
+  const dueBasis = useAndReplace ? 'replacement' : psv.servicedOnSite ? 'service' : 'install';
 
   return (
     <div className="space-y-6">
@@ -92,7 +114,13 @@ export function PSVDetailPage() {
                   {psv.tag}
                 </span>
               )}
-              <StatusBadge status={psv.status} />
+              {useAndReplace ? (
+                <span className="rounded-md bg-orange-100 px-2 py-0.5 text-sm font-semibold text-orange-900">
+                  Use &amp; Replace
+                </span>
+              ) : (
+                <StatusBadge status={psv.status} />
+              )}
               <ComplianceBadge state={compliance.state} />
             </div>
             <p className="mt-1 text-sm text-slate-500">
@@ -112,6 +140,12 @@ export function PSVDetailPage() {
               <Pencil className="h-4 w-4" />
               Edit PSV
             </button>
+            {useAndReplace && (
+              <button className="btn-primary" onClick={() => setShowReplace(true)}>
+                <RefreshCw className="h-4 w-4" />
+                Record Replacement
+              </button>
+            )}
             <button
               className="btn-secondary text-red-600 hover:bg-red-50"
               onClick={() => {
@@ -128,16 +162,10 @@ export function PSVDetailPage() {
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <KeyFact
-            icon={Wrench}
-            label={psv.servicedOnSite ? 'Last Service Date' : 'Last Install Date'}
-            value={formatDate(
-              psv.servicedOnSite ? lastServiceDate(psv) ?? compliance.lastInstallDate : compliance.lastInstallDate,
-            )}
-          />
+          <KeyFact icon={Wrench} label={certAnchorLabel} value={certAnchorValue} />
           <KeyFact
             icon={CalendarClock}
-            label={`Recert Due (${psv.servicedOnSite ? 'service' : 'install'} + ${RECERT_INTERVAL_YEARS} yrs)`}
+            label={`Recert Due (${dueBasis} + ${RECERT_INTERVAL_YEARS} yrs)`}
             value={compliance.dueDate ? formatDate(compliance.dueDate) : 'Not installed'}
             sub={compliance.dueDate ? relativeDays(compliance.daysRemaining) : undefined}
             tone={
@@ -150,8 +178,14 @@ export function PSVDetailPage() {
           />
           <KeyFact
             icon={ToggleRight}
-            label="Current Status"
-            value={psv.servicedOnSite ? 'Serviced on site' : statusText(psv.status)}
+            label="Tracking"
+            value={
+              useAndReplace
+                ? 'Commercial boiler (use & replace)'
+                : psv.servicedOnSite
+                  ? 'Serviced on site'
+                  : statusText(psv.status)
+            }
           />
         </div>
       </div>
@@ -164,29 +198,42 @@ export function PSVDetailPage() {
         <DatasheetGrid sheet={psv.datasheet} inventoryId={psv.inventoryId} />
       </section>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className={`grid grid-cols-1 gap-6 ${useAndReplace ? '' : 'lg:grid-cols-2'}`}>
         <section className="card flex min-h-[20rem] flex-col p-4">
           <div className="mb-3 flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
               <CalendarClock className="h-4 w-4 text-maroon-700" />
-              <h3 className="text-base font-bold text-slate-900">Status History</h3>
+              <h3 className="text-base font-bold text-slate-900">
+                {useAndReplace ? 'Replacement History' : 'Status History'}
+              </h3>
             </div>
-            <button className="btn-primary px-2.5 py-1.5 text-xs" onClick={() => setAddEvent(true)}>
-              <Plus className="h-3.5 w-3.5" />
-              Add Entry
-            </button>
+            {!useAndReplace && (
+              <button className="btn-primary px-2.5 py-1.5 text-xs" onClick={() => setAddEvent(true)}>
+                <Plus className="h-3.5 w-3.5" />
+                Add Entry
+              </button>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto">
             {sortedEvents.length === 0 ? (
-              <p className="py-8 text-center text-sm text-slate-400">No status history recorded yet.</p>
+              <p className="py-8 text-center text-sm text-slate-400">
+                {useAndReplace ? 'No installation or replacement recorded yet.' : 'No status history recorded yet.'}
+              </p>
             ) : (
               <ol className="relative space-y-1 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-slate-200">
                 {sortedEvents.map((event) => (
                   <HistoryItem
                     key={event.id}
                     event={event}
-                    onEdit={() => setEditEventId(event.id)}
+                    useAndReplace={useAndReplace}
+                    onEdit={() => {
+                      if (useAndReplace && event.type === 'replacement') {
+                        setEditReplacementId(event.id);
+                      } else {
+                        setEditEventId(event.id);
+                      }
+                    }}
                     onDelete={() => {
                       if (confirm('Delete this history entry?')) deleteHistoryEvent(psv.id, event.id);
                     }}
@@ -197,6 +244,7 @@ export function PSVDetailPage() {
           </div>
         </section>
 
+        {!useAndReplace && (
         <section className="card flex min-h-[20rem] flex-col p-4">
           <div className="mb-3 flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
@@ -228,9 +276,17 @@ export function PSVDetailPage() {
             )}
           </div>
         </section>
+        )}
       </div>
 
       <PSVFormModal open={editPSV} psvId={psv.id} onClose={() => setEditPSV(false)} />
+      <ReplacementFormModal open={showReplace} psvId={psv.id} onClose={() => setShowReplace(false)} />
+      <ReplacementFormModal
+        open={editReplacementId !== null}
+        psvId={psv.id}
+        eventId={editReplacementId ?? undefined}
+        onClose={() => setEditReplacementId(null)}
+      />
       <EventFormModal open={addEvent} psvId={psv.id} statusChangesOnly onClose={() => setAddEvent(false)} />
       <EventFormModal
         open={editEventId !== null}
@@ -317,21 +373,30 @@ const DOT_COLORS: Record<string, string> = {
 
 function HistoryItem({
   event,
+  useAndReplace,
   onEdit,
   onDelete,
 }: {
   event: PSVEvent;
+  useAndReplace?: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const dot = event.status ? DOT_COLORS[event.status] : 'bg-slate-400';
+  const dot =
+    event.type === 'replacement'
+      ? 'bg-orange-500'
+      : event.status
+        ? DOT_COLORS[event.status]
+        : 'bg-slate-400';
+  const canEdit = !useAndReplace || event.type === 'replacement';
   return (
     <li className="group relative flex gap-3 rounded-lg py-2 pl-1 pr-1 hover:bg-slate-50">
       <span className={`relative z-10 mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full ring-4 ring-white ${dot}`} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-semibold text-slate-800">{event.description}</p>
-          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          {canEdit && (
+            <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
             <button
               onClick={onEdit}
               className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
@@ -347,8 +412,14 @@ function HistoryItem({
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
+          )}
         </div>
         <p className="text-xs font-medium text-slate-600">{formatDate(event.date)}</p>
+        {event.previousSerialNumber && event.newSerialNumber && (
+          <p className="mt-0.5 text-xs text-slate-500">
+            {event.previousSerialNumber} → {event.newSerialNumber}
+          </p>
+        )}
         {event.note && <p className="mt-0.5 text-xs italic text-slate-500">“{event.note}”</p>}
         <p className="text-[11px] text-slate-400">Recorded {formatDateTime(event.recordedAt)}</p>
       </div>

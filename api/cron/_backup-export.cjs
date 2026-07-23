@@ -21,6 +21,7 @@ const EVENT_TYPE_LABELS = {
   'datasheet-update': 'Datasheet Update',
   'history-edit': 'History Edit',
   note: 'Note',
+  replacement: 'Replacement',
 };
 
 function todayISO() {
@@ -89,7 +90,16 @@ function lastServiceDate(psv) {
   return services.length ? services[services.length - 1] : null;
 }
 
+function lastReplacementDate(psv) {
+  const replacements = psv.events
+    .filter((e) => e.type === 'replacement')
+    .map((e) => e.date)
+    .sort();
+  return replacements.length ? replacements[replacements.length - 1] : null;
+}
+
 function getCertDate(psv) {
+  if (psv.useAndReplace) return lastReplacementDate(psv) ?? lastInstallDate(psv);
   if (psv.servicedOnSite) return lastServiceDate(psv) ?? lastInstallDate(psv);
   return lastInstallDate(psv);
 }
@@ -97,7 +107,7 @@ function getCertDate(psv) {
 function getCompliance(psv) {
   const installDate = lastInstallDate(psv);
   const certDate = getCertDate(psv);
-  const active = psv.servicedOnSite || psv.status === 'installed';
+  const active = psv.useAndReplace || psv.servicedOnSite || psv.status === 'installed';
 
   if (!active || !certDate) {
     return {
@@ -139,6 +149,7 @@ function buildRegisterRow(psv, locById, eqById) {
     'PSV Tag': psv.tag ?? '',
     Status: STATUS_LABELS[psv.status] ?? psv.status,
     'Serviced On Site': psv.servicedOnSite ? 'Yes' : 'No',
+    'Use And Replace': psv.useAndReplace ? 'Yes' : 'No',
     'Created At': psv.createdAt ? formatDateTime(psv.createdAt) : '',
     Make: psv.datasheet?.make ?? '',
     Model: psv.datasheet?.model ?? '',
@@ -151,6 +162,7 @@ function buildRegisterRow(psv, locById, eqById) {
     'National Board No.': psv.datasheet?.nationalBoardNumber ?? '',
     'Last Install Date': formatDate(lastInstallDate(psv)),
     'Last Service Date': formatDate(lastServiceDate(psv)),
+    'Last Replacement Date': formatDate(lastReplacementDate(psv)),
     'Due Date': c.dueDate ? formatDate(c.dueDate) : '',
     'Days Remaining': c.daysRemaining ?? '',
     Compliance: COMPLIANCE_LABELS[c.state] ?? c.state,
@@ -169,6 +181,7 @@ const REGISTER_COLUMNS = [
   'PSV Tag',
   'Status',
   'Serviced On Site',
+  'Use And Replace',
   'Created At',
   'Make',
   'Model',
@@ -181,6 +194,7 @@ const REGISTER_COLUMNS = [
   'National Board No.',
   'Last Install Date',
   'Last Service Date',
+  'Last Replacement Date',
   'Due Date',
   'Days Remaining',
   'Compliance',
@@ -199,6 +213,8 @@ const HISTORY_COLUMNS = [
   'Event Date',
   'Status',
   'Description',
+  'Previous S/N',
+  'New S/N',
   'Note',
   'Recorded At',
 ];
@@ -347,6 +363,8 @@ function buildBackupWorkbook(data, generatedAt = new Date().toISOString()) {
         'Event Date': formatDate(event.date),
         Status: event.status ? (STATUS_LABELS[event.status] ?? event.status) : '',
         Description: event.description ?? '',
+        'Previous S/N': event.previousSerialNumber ?? '',
+        'New S/N': event.newSerialNumber ?? '',
         Note: event.note ?? '',
         'Recorded At': formatDateTime(event.recordedAt),
       });

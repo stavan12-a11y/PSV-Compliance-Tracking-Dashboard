@@ -29,7 +29,7 @@ export function LocationPage() {
     );
   }
 
-  const installedCount = psvs.filter((p) => p.status === 'installed').length;
+  const installedCount = psvs.filter((p) => p.status === 'installed' || p.useAndReplace || p.servicedOnSite).length;
   const inventoryId = psvs.find((p) => p.inventoryId?.trim())?.inventoryId?.trim();
 
   return (

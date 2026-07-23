@@ -7,7 +7,12 @@ import {
   lastInstallDate,
   lastServiceDate,
 } from './compliance';
-import { sortEventsNewestFirst, statusChangeEvents } from './events';
+import {
+  sortEventsNewestFirst,
+  statusChangeEvents,
+  useAndReplaceHistory,
+} from './events';
+import { lastReplacementDate } from './compliance';
 import { formatDate, formatDateTime, todayISO } from './dates';
 
 interface ExportScope {
@@ -124,10 +129,12 @@ export async function exportPSVToExcel(data: AppData, psv: PSV) {
     ['Area', ctx.eq?.area ?? ''],
     ['Location', ctx.loc?.name ?? ''],
     ['Location Tag', ctx.loc?.tag ?? ''],
-    ['Current Status', STATUS_LABELS[psv.status]],
+    ['Current Status', psv.useAndReplace ? 'Use & Replace (in service)' : STATUS_LABELS[psv.status]],
     ['Serviced On Site', psv.servicedOnSite ? 'Yes' : 'No'],
+    ['Use And Replace', psv.useAndReplace ? 'Yes' : 'No'],
     ['Last Install Date', formatDate(lastInstallDate(psv))],
     ['Last Service Date', formatDate(lastServiceDate(psv))],
+    ['Last Replacement Date', formatDate(lastReplacementDate(psv))],
     ['Recert Due Date', c.dueDate ? formatDate(c.dueDate) : 'Not installed'],
     ['Days Remaining', c.daysRemaining ?? ''],
     ['Compliance', COMPLIANCE_LABELS[c.state]],
@@ -146,15 +153,34 @@ export async function exportPSVToExcel(data: AppData, psv: PSV) {
   wsSummary['!cols'] = [{ wch: 28 }, { wch: 40 }];
   XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
 
-  const statusRows = sortEventsNewestFirst(statusChangeEvents(psv.events)).map((event) =>
-    buildStatusHistoryRow(psv, event, ctx),
+  const historyEvents = psv.useAndReplace
+    ? sortEventsNewestFirst(useAndReplaceHistory(psv.events))
+    : psv.servicedOnSite
+      ? sortEventsNewestFirst(psv.events.filter((e) => e.type === 'service'))
+      : sortEventsNewestFirst(statusChangeEvents(psv.events));
+  const historySheetName = psv.useAndReplace
+    ? 'Replacement History'
+    : psv.servicedOnSite
+      ? 'Service History'
+      : 'Status History';
+  const historyColumns = psv.useAndReplace
+    ? REPLACEMENT_HISTORY_COLUMNS
+    : psv.servicedOnSite
+      ? SERVICE_HISTORY_COLUMNS
+      : STATUS_HISTORY_COLUMNS;
+  const historyRows = historyEvents.map((event) =>
+    psv.useAndReplace
+      ? buildReplacementHistoryRow(psv, event, ctx)
+      : buildStatusHistoryRow(psv, event, ctx),
   );
-  appendSheet(wb, XLSX, 'Status History', statusRows, STATUS_HISTORY_COLUMNS);
+  appendSheet(wb, XLSX, historySheetName, historyRows, historyColumns);
 
-  const repairRows = sortRepairsNewestFirst(psv.repairHistory ?? []).map((record) =>
-    buildRepairRow(psv, record, ctx),
-  );
-  appendSheet(wb, XLSX, 'Repair History', repairRows, REPAIR_COLUMNS);
+  if (!psv.useAndReplace) {
+    const repairRows = sortRepairsNewestFirst(psv.repairHistory ?? []).map((record) =>
+      buildRepairRow(psv, record, ctx),
+    );
+    appendSheet(wb, XLSX, 'Repair History', repairRows, REPAIR_COLUMNS);
+  }
 
   const safeSn = psv.serialNumber.replace(/[^\w.-]+/g, '-');
   XLSX.writeFile(wb, `PSV_${safeSn}_${todayISO()}.xlsx`);
@@ -175,6 +201,7 @@ const REGISTER_COLUMNS = [
   'PSV Tag',
   'Status',
   'Serviced On Site',
+  'Use And Replace',
   'Make',
   'Model',
   'Set Pressure',
@@ -201,6 +228,37 @@ const STATUS_HISTORY_COLUMNS = [
   'PSV Tag',
   'Event Date',
   'Status',
+  'Description',
+  'Note',
+  'Recorded At',
+] as const;
+
+const SERVICE_HISTORY_COLUMNS = [
+  'Equipment',
+  'Equipment Tag',
+  'Location',
+  'Location Tag',
+  'Serial Number',
+  'Inventory ID',
+  'PSV Tag',
+  'Event Date',
+  'Description',
+  'Note',
+  'Recorded At',
+] as const;
+
+const REPLACEMENT_HISTORY_COLUMNS = [
+  'Equipment',
+  'Equipment Tag',
+  'Location',
+  'Location Tag',
+  'Serial Number',
+  'Inventory ID',
+  'PSV Tag',
+  'Event Date',
+  'Event Type',
+  'Previous S/N',
+  'New S/N',
   'Description',
   'Note',
   'Recorded At',
@@ -286,6 +344,7 @@ function buildRegisterRow(
     'PSV Tag': psv.tag ?? '',
     Status: STATUS_LABELS[psv.status],
     'Serviced On Site': psv.servicedOnSite ? 'Yes' : 'No',
+    'Use And Replace': psv.useAndReplace ? 'Yes' : 'No',
     Make: psv.datasheet.make,
     Model: psv.datasheet.model,
     'Set Pressure': psv.datasheet.setPressure,
@@ -314,6 +373,31 @@ function buildStatusHistoryRow(psv: PSV, event: PSVEvent, ctx: PsvContext): Row 
     'PSV Tag': psv.tag ?? '',
     'Event Date': formatDate(event.date),
     Status: event.status ? STATUS_LABELS[event.status] : '',
+    Description: event.description,
+    Note: event.note ?? '',
+    'Recorded At': formatDateTime(event.recordedAt),
+  };
+}
+
+function buildReplacementHistoryRow(psv: PSV, event: PSVEvent, ctx: PsvContext): Row {
+  const eventType =
+    event.type === 'replacement'
+      ? 'Replacement'
+      : event.status === 'installed'
+        ? 'Initial Install'
+        : event.description;
+  return {
+    Equipment: ctx.eq?.name ?? '',
+    'Equipment Tag': ctx.eq?.tag ?? '',
+    Location: ctx.loc?.name ?? '',
+    'Location Tag': ctx.loc?.tag ?? '',
+    'Serial Number': psv.serialNumber,
+    'Inventory ID': psv.inventoryId ?? '',
+    'PSV Tag': psv.tag ?? '',
+    'Event Date': formatDate(event.date),
+    'Event Type': eventType,
+    'Previous S/N': event.previousSerialNumber ?? '',
+    'New S/N': event.newSerialNumber ?? (event.status === 'installed' ? psv.serialNumber : ''),
     Description: event.description,
     Note: event.note ?? '',
     'Recorded At': formatDateTime(event.recordedAt),
