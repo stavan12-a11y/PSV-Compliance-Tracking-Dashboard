@@ -247,6 +247,7 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
       datasheet,
       events,
       repairHistory: [],
+      notes: [],
       createdAt: now,
     });
   }

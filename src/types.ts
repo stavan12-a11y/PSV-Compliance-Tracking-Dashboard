@@ -56,6 +56,16 @@ export interface PSVRepairRecord {
   recordedAt: string;
 }
 
+/** A free-form note on a safety, kept separate from status and repair history. */
+export interface PSVNote {
+  id: string;
+  psvId: string;
+  /** Date the note applies to (YYYY-MM-DD). */
+  date: string;
+  text: string;
+  recordedAt: string;
+}
+
 /** Nameplate / datasheet information for a PSV. */
 export interface PSVDatasheet {
   make: string;
@@ -92,6 +102,8 @@ export interface PSV {
   datasheet: PSVDatasheet;
   events: PSVEvent[];
   repairHistory?: PSVRepairRecord[];
+  /** Scratch notes that do not affect compliance dates. */
+  notes?: PSVNote[];
   createdAt: string;
 }
 

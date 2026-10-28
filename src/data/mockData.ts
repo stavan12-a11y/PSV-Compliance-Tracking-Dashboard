@@ -58,6 +58,7 @@ function buildValve(args: {
   createdAt: string;
   servicedOnSite?: boolean;
   timeline: TimelineEntry[];
+  notes?: Array<{ date: string; text: string }>;
 }): PSV {
   const events: PSVEvent[] = [
     {
@@ -110,6 +111,13 @@ function buildValve(args: {
     servicedOnSite: args.servicedOnSite || undefined,
     datasheet: args.datasheet,
     events,
+    notes: (args.notes ?? []).map((n) => ({
+      id: eid(),
+      psvId: args.id,
+      date: n.date,
+      text: n.text,
+      recordedAt: isoDateTime(n.date),
+    })),
     createdAt: isoDateTime(args.createdAt),
   };
 }
@@ -180,6 +188,7 @@ const psvs: PSV[] = [
     datasheet: ds({ make: 'Consolidated', model: '1900-30JM', setPressure: 650, capacity: '185,000 lb/hr', inletSize: '4"', outletSize: '6"', serviceMedium: 'Saturated Steam', nationalBoardNumber: 'NB-19842' }),
     createdAt: '2018-05-01',
     timeline: [{ date: '2023-01-15', status: 'installed' }],
+    notes: [{ date: '2024-11-02', text: 'Spare CV-1002 is on the shelf in the valve shop.' }],
   }),
   buildValve({
     id: 'psv-1002', sn: 'CV-1002', tag: 'BLR-001-PSV-A', locationId: 'loc-blr1-drum',
@@ -241,6 +250,7 @@ const psvs: PSV[] = [
       { date: '2020-05-02', service: true, note: 'On-site test & reset' },
       { date: '2023-04-20', service: true, note: 'On-site recertification (OVERDUE next cycle)' },
     ],
+    notes: [{ date: '2024-06-12', text: 'Seat weeps slightly when cold. Recheck after warmup.' }],
   }),
   buildValve({
     id: 'psv-3002', sn: 'HW-3002', tag: 'HWB-101-PSV-B', locationId: 'loc-hwb1-exp',

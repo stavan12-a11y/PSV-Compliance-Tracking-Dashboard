@@ -1,5 +1,5 @@
 import type { WorkBook, WorkSheet } from 'xlsx';
-import type { AppData, Equipment, Location, PSV, PSVEvent, PSVRepairRecord } from '../types';
+import type { AppData, Equipment, Location, PSV, PSVEvent, PSVNote, PSVRepairRecord } from '../types';
 import {
   COMPLIANCE_LABELS,
   STATUS_LABELS,
@@ -207,6 +207,9 @@ export async function exportPSVToExcel(data: AppData, psv: PSV) {
     appendSheet(wb, XLSX, 'Repair History', repairRows, REPAIR_COLUMNS);
   }
 
+  const noteRows = sortNotesNewestFirst(psv.notes ?? []).map((note) => buildNoteRow(psv, note, ctx));
+  appendSheet(wb, XLSX, 'Notes', noteRows, NOTE_COLUMNS);
+
   const safeName = (psv.useAndReplace ? psvDisplayName(psv) : psv.serialNumber)
     .replace(/[^\w.-]+/g, '-')
     .slice(0, 48) || psv.id;
@@ -283,6 +286,19 @@ const REPLACEMENT_HISTORY_COLUMNS = [
   'Event Date',
   'Event Type',
   'Description',
+  'Note',
+  'Recorded At',
+] as const;
+
+const NOTE_COLUMNS = [
+  'Equipment',
+  'Equipment Tag',
+  'Location',
+  'Location Tag',
+  'Serial Number',
+  'Inventory ID',
+  'PSV Tag',
+  'Date',
   'Note',
   'Recorded At',
 ] as const;
@@ -439,6 +455,28 @@ function buildRepairRow(psv: PSV, record: PSVRepairRecord, ctx: PsvContext): Row
     Note: record.note ?? '',
     'Recorded At': formatDateTime(record.recordedAt),
   };
+}
+
+function buildNoteRow(psv: PSV, note: PSVNote, ctx: PsvContext): Row {
+  return {
+    Equipment: ctx.eq?.name ?? '',
+    'Equipment Tag': ctx.eq?.tag ?? '',
+    Location: ctx.loc?.name ?? '',
+    'Location Tag': ctx.loc?.tag ?? '',
+    'Serial Number': psvDisplayName(psv),
+    'Inventory ID': psv.inventoryId ?? '',
+    'PSV Tag': psv.tag ?? '',
+    Date: formatDate(note.date),
+    Note: note.text,
+    'Recorded At': formatDateTime(note.recordedAt),
+  };
+}
+
+function sortNotesNewestFirst(notes: PSVNote[]): PSVNote[] {
+  return [...notes].sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return a.recordedAt < b.recordedAt ? 1 : -1;
+  });
 }
 
 function sortRepairsNewestFirst(records: PSVRepairRecord[]): PSVRepairRecord[] {

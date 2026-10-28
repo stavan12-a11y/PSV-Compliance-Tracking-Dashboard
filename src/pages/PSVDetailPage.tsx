@@ -8,6 +8,7 @@ import {
   Plus,
   ToggleRight,
   RefreshCw,
+  StickyNote,
   Trash2,
   Wrench,
 } from 'lucide-react';
@@ -22,13 +23,14 @@ import { ComplianceBadge, StatusBadge } from '../components/Badges';
 import { PSVFormModal } from '../components/forms/PSVFormModal';
 import { EventFormModal } from '../components/forms/EventFormModal';
 import { RepairFormModal } from '../components/forms/RepairFormModal';
+import { NoteFormModal } from '../components/forms/NoteFormModal';
 import { ReplacementFormModal } from '../components/forms/ReplacementFormModal';
-import type { PSVDatasheet, PSVEvent, PSVRepairRecord } from '../types';
+import type { PSVDatasheet, PSVEvent, PSVNote, PSVRepairRecord } from '../types';
 
 export function PSVDetailPage() {
   const { psvId = '' } = useParams();
   const navigate = useNavigate();
-  const { data, getPSV, getLocation, getEquipment, deletePSV, deleteHistoryEvent, deleteRepairRecord } =
+  const { data, getPSV, getLocation, getEquipment, deletePSV, deleteHistoryEvent, deleteRepairRecord, deleteNote } =
     usePSV();
 
   const psv = getPSV(psvId);
@@ -40,6 +42,9 @@ export function PSVDetailPage() {
   const [editEventId, setEditEventId] = useState<string | null>(null);
   const [addRepair, setAddRepair] = useState(false);
   const [editRepairId, setEditRepairId] = useState<string | null>(null);
+  const [sideTab, setSideTab] = useState<'repairs' | 'notes'>('repairs');
+  const [addNote, setAddNote] = useState(false);
+  const [editNoteId, setEditNoteId] = useState<string | null>(null);
   const [showReplace, setShowReplace] = useState(false);
   const [editReplacementId, setEditReplacementId] = useState<string | null>(null);
 
@@ -57,6 +62,14 @@ export function PSVDetailPage() {
   const sortedRepairs = useMemo(() => {
     if (!psv?.repairHistory?.length) return [];
     return [...psv.repairHistory].sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return a.recordedAt < b.recordedAt ? 1 : -1;
+    });
+  }, [psv]);
+
+  const sortedNotes = useMemo(() => {
+    if (!psv?.notes?.length) return [];
+    return [...psv.notes].sort((a, b) => {
       if (a.date !== b.date) return a.date < b.date ? 1 : -1;
       return a.recordedAt < b.recordedAt ? 1 : -1;
     });
@@ -200,6 +213,22 @@ export function PSVDetailPage() {
               />
             </section>
           </div>
+
+          <RepairNotesPanel
+            tab={sideTab}
+            onTab={setSideTab}
+            repairs={sortedRepairs}
+            notes={sortedNotes}
+            onAdd={() => (sideTab === 'repairs' ? setAddRepair(true) : setAddNote(true))}
+            onEditRepair={setEditRepairId}
+            onDeleteRepair={(id) => {
+              if (confirm('Delete this repair / overhaul entry?')) deleteRepairRecord(psv.id, id);
+            }}
+            onEditNote={setEditNoteId}
+            onDeleteNote={(id) => {
+              if (confirm('Delete this note?')) deleteNote(psv.id, id);
+            }}
+          />
         </>
       ) : (
         <>
@@ -324,37 +353,21 @@ export function PSVDetailPage() {
           </div>
         </section>
 
-        <section className="card flex min-h-[20rem] flex-col p-4">
-          <div className="mb-3 flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <Wrench className="h-4 w-4 text-maroon-700" />
-              <h3 className="text-base font-bold text-slate-900">Repair / Overhaul</h3>
-            </div>
-            <button className="btn-primary px-2.5 py-1.5 text-xs" onClick={() => setAddRepair(true)}>
-              <Plus className="h-3.5 w-3.5" />
-              Add Repair
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            {sortedRepairs.length === 0 ? (
-              <p className="py-8 text-center text-sm text-slate-400">No repair or overhaul records yet.</p>
-            ) : (
-              <ol className="relative space-y-1 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-slate-200">
-                {sortedRepairs.map((record) => (
-                  <RepairItem
-                    key={record.id}
-                    record={record}
-                    onEdit={() => setEditRepairId(record.id)}
-                    onDelete={() => {
-                      if (confirm('Delete this repair / overhaul entry?')) deleteRepairRecord(psv.id, record.id);
-                    }}
-                  />
-                ))}
-              </ol>
-            )}
-          </div>
-        </section>
+        <RepairNotesPanel
+          tab={sideTab}
+          onTab={setSideTab}
+          repairs={sortedRepairs}
+          notes={sortedNotes}
+          onAdd={() => (sideTab === 'repairs' ? setAddRepair(true) : setAddNote(true))}
+          onEditRepair={setEditRepairId}
+          onDeleteRepair={(id) => {
+            if (confirm('Delete this repair / overhaul entry?')) deleteRepairRecord(psv.id, id);
+          }}
+          onEditNote={setEditNoteId}
+          onDeleteNote={(id) => {
+            if (confirm('Delete this note?')) deleteNote(psv.id, id);
+          }}
+        />
       </div>
         </>
       )}
@@ -388,6 +401,13 @@ export function PSVDetailPage() {
         psvId={psv.id}
         repairId={editRepairId ?? undefined}
         onClose={() => setEditRepairId(null)}
+      />
+      <NoteFormModal open={addNote} psvId={psv.id} onClose={() => setAddNote(false)} />
+      <NoteFormModal
+        open={editNoteId !== null}
+        psvId={psv.id}
+        noteId={editNoteId ?? undefined}
+        onClose={() => setEditNoteId(null)}
       />
     </div>
   );
@@ -617,6 +637,133 @@ function HistoryItem({
         <p className="text-xs font-medium text-slate-600">{formatDate(event.date)}</p>
         {event.note && <p className="mt-0.5 text-xs italic text-slate-500">“{event.note}”</p>}
         <p className="text-[11px] text-slate-400">Recorded {formatDateTime(event.recordedAt)}</p>
+      </div>
+    </li>
+  );
+}
+
+function RepairNotesPanel({
+  tab,
+  onTab,
+  repairs,
+  notes,
+  onAdd,
+  onEditRepair,
+  onDeleteRepair,
+  onEditNote,
+  onDeleteNote,
+}: {
+  tab: 'repairs' | 'notes';
+  onTab: (tab: 'repairs' | 'notes') => void;
+  repairs: PSVRepairRecord[];
+  notes: PSVNote[];
+  onAdd: () => void;
+  onEditRepair: (id: string) => void;
+  onDeleteRepair: (id: string) => void;
+  onEditNote: (id: string) => void;
+  onDeleteNote: (id: string) => void;
+}) {
+  const showingNotes = tab === 'notes';
+  return (
+    <section className="card flex min-h-[20rem] flex-col p-4">
+      <div className="mb-3 flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+        <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-0.5">
+          <button
+            type="button"
+            onClick={() => onTab('repairs')}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold ${
+              tab === 'repairs' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Wrench className="h-3.5 w-3.5" />
+            Repairs
+          </button>
+          <button
+            type="button"
+            onClick={() => onTab('notes')}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold ${
+              tab === 'notes' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <StickyNote className="h-3.5 w-3.5" />
+            Notes
+          </button>
+        </div>
+        <button className="btn-primary px-2.5 py-1.5 text-xs" onClick={onAdd}>
+          <Plus className="h-3.5 w-3.5" />
+          {showingNotes ? 'Add Note' : 'Add Repair'}
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {showingNotes ? (
+          notes.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-400">No notes yet.</p>
+          ) : (
+            <ol className="relative space-y-1 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-slate-200">
+              {notes.map((note) => (
+                <NoteItem
+                  key={note.id}
+                  note={note}
+                  onEdit={() => onEditNote(note.id)}
+                  onDelete={() => onDeleteNote(note.id)}
+                />
+              ))}
+            </ol>
+          )
+        ) : repairs.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-400">No repair or overhaul records yet.</p>
+        ) : (
+          <ol className="relative space-y-1 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-slate-200">
+            {repairs.map((record) => (
+              <RepairItem
+                key={record.id}
+                record={record}
+                onEdit={() => onEditRepair(record.id)}
+                onDelete={() => onDeleteRepair(record.id)}
+              />
+            ))}
+          </ol>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function NoteItem({
+  note,
+  onEdit,
+  onDelete,
+}: {
+  note: PSVNote;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <li className="group relative flex gap-3 rounded-lg py-2 pl-1 pr-1 hover:bg-slate-50">
+      <span className="relative z-10 mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full bg-maroon-700 ring-4 ring-white" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <p className="whitespace-pre-wrap text-sm font-medium text-slate-800">{note.text}</p>
+          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            <button
+              onClick={onEdit}
+              className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+              title="Edit note"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={onDelete}
+              className="rounded p-1 text-slate-400 hover:bg-red-100 hover:text-red-600"
+              title="Delete note"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+        <p className="text-xs font-medium text-slate-600">{formatDate(note.date)}</p>
+        <p className="text-[11px] text-slate-400">Recorded {formatDateTime(note.recordedAt)}</p>
       </div>
     </li>
   );

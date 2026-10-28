@@ -15,6 +15,7 @@ import type {
   PSV,
   PSVDatasheet,
   PSVEvent,
+  PSVNote,
   PSVRepairRecord,
   PSVStatus,
 } from '../types';
@@ -99,6 +100,11 @@ interface PSVContextValue {
   updateRepairRecord: (id: string, repairId: string, patch: Partial<NewRepairInput>) => void;
   deleteRepairRecord: (id: string, repairId: string) => void;
 
+  // free-form notes
+  addNote: (id: string, note: NewNoteInput) => void;
+  updateNote: (id: string, noteId: string, patch: Partial<NewNoteInput>) => void;
+  deleteNote: (id: string, noteId: string) => void;
+
   // bulk
   replaceData: (data: AppData) => void;
 }
@@ -135,6 +141,11 @@ export interface NewRepairInput {
   vendor?: string;
   workOrder?: string;
   note?: string;
+}
+
+export interface NewNoteInput {
+  date: string;
+  text: string;
 }
 
 const PSVContext = createContext<PSVContextValue | null>(null);
@@ -419,6 +430,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       datasheet: input.datasheet,
       events,
       repairHistory: [],
+      notes: [],
       createdAt: now,
     });
     setData((d) => {
@@ -661,6 +673,46 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const addNote = useCallback((id: string, note: NewNoteInput) => {
+    const now = new Date().toISOString();
+    setData((d) => ({
+      ...d,
+      psvs: d.psvs.map((p) => {
+        if (p.id !== id) return p;
+        const entry: PSVNote = {
+          id: uid('note'),
+          psvId: id,
+          date: note.date,
+          text: note.text,
+          recordedAt: now,
+        };
+        return { ...p, notes: [...(p.notes ?? []), entry] };
+      }),
+    }));
+  }, []);
+
+  const updateNote = useCallback((id: string, noteId: string, patch: Partial<NewNoteInput>) => {
+    setData((d) => ({
+      ...d,
+      psvs: d.psvs.map((p) => {
+        if (p.id !== id) return p;
+        return {
+          ...p,
+          notes: (p.notes ?? []).map((n) => (n.id === noteId ? { ...n, ...patch } : n)),
+        };
+      }),
+    }));
+  }, []);
+
+  const deleteNote = useCallback((id: string, noteId: string) => {
+    setData((d) => ({
+      ...d,
+      psvs: d.psvs.map((p) =>
+        p.id === id ? { ...p, notes: (p.notes ?? []).filter((n) => n.id !== noteId) } : p,
+      ),
+    }));
+  }, []);
+
   const replaceData = useCallback((d: AppData) => setData(normalizeAppData(structuredClone(d))), []);
 
   const value = useMemo<PSVContextValue>(
@@ -691,6 +743,9 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       addRepairRecord,
       updateRepairRecord,
       deleteRepairRecord,
+      addNote,
+      updateNote,
+      deleteNote,
       replaceData,
     }),
     [
@@ -720,6 +775,9 @@ export function PSVProvider({ children }: { children: ReactNode }) {
       addRepairRecord,
       updateRepairRecord,
       deleteRepairRecord,
+      addNote,
+      updateNote,
+      deleteNote,
       replaceData,
     ],
   );
