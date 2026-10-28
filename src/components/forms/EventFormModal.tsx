@@ -14,11 +14,20 @@ interface EventFormModalProps {
   eventId?: string;
   /** When true, only status-change entries can be added or edited. */
   statusChangesOnly?: boolean;
+  /** When true, only in-place test / service entries can be added or edited. */
+  servicesOnly?: boolean;
 }
 
 type EntryKind = 'status-change' | 'service' | 'note';
 
-export function EventFormModal({ open, onClose, psvId, eventId, statusChangesOnly }: EventFormModalProps) {
+export function EventFormModal({
+  open,
+  onClose,
+  psvId,
+  eventId,
+  statusChangesOnly,
+  servicesOnly,
+}: EventFormModalProps) {
   const { getPSV, addHistoryEvent, updateHistoryEvent } = usePSV();
   const psv = getPSV(psvId);
   const existing = eventId ? psv?.events.find((e) => e.id === eventId) : undefined;
@@ -45,23 +54,23 @@ export function EventFormModal({ open, onClose, psvId, eventId, statusChangesOnl
       setDescription(existing.description);
       setNote(existing.note ?? '');
     } else {
-      setKind('status-change');
+      setKind(servicesOnly ? 'service' : 'status-change');
       setStatus('installed');
       setDate(todayISO());
       setDescription('');
       setNote('');
     }
-  }, [open, existing]);
+  }, [open, existing, servicesOnly]);
 
   const handleSave = () => {
-    const entryKind = statusChangesOnly ? 'status-change' : kind;
+    const entryKind = servicesOnly ? 'service' : statusChangesOnly ? 'status-change' : kind;
     const isStatus = entryKind === 'status-change';
     const desc =
       description.trim() ||
       (isStatus
         ? `Status set to ${STATUS_LABELS[status]}`
         : entryKind === 'service'
-          ? 'Serviced on site'
+          ? 'Tested in place'
           : 'History note');
 
     const payload = {
@@ -85,11 +94,21 @@ export function EventFormModal({ open, onClose, psvId, eventId, statusChangesOnl
       open={open}
       onClose={onClose}
       size="sm"
-      title={editing ? 'Edit status change' : 'Add status change'}
+      title={
+        servicesOnly
+          ? editing
+            ? 'Edit in-place test'
+            : 'Record in-place test'
+          : editing
+            ? 'Edit status change'
+            : 'Add status change'
+      }
       description={
-        statusChangesOnly
-          ? 'Log an install, out-for-service, or inventory transition.'
-          : 'Correct a mistake or log an install / service / inventory event.'
+        servicesOnly
+          ? 'Log the date this valve was tested in place. The due date is measured from the latest test.'
+          : statusChangesOnly
+            ? 'Log an install, out-for-service, or inventory transition.'
+            : 'Correct a mistake or log an install / service / inventory event.'
       }
       footer={
         <>
@@ -103,7 +122,7 @@ export function EventFormModal({ open, onClose, psvId, eventId, statusChangesOnl
       }
     >
       <div className="space-y-4">
-        {!statusChangesOnly && (
+        {!statusChangesOnly && !servicesOnly && (
           <Field label="Entry Type">
             <select className="input" value={kind} onChange={(e) => setKind(e.target.value as EntryKind)}>
               <option value="status-change">Status change (install / out for service / inventory)</option>
@@ -112,7 +131,7 @@ export function EventFormModal({ open, onClose, psvId, eventId, statusChangesOnl
             </select>
           </Field>
         )}
-        {(statusChangesOnly || kind === 'status-change') && (
+        {!servicesOnly && (statusChangesOnly || kind === 'status-change') && (
           <Field label="Status" hint="Install dates drive the 3-year recertification due date.">
             <select className="input" value={status} onChange={(e) => setStatus(e.target.value as PSVStatus)}>
               {(Object.keys(STATUS_LABELS) as PSVStatus[]).map((s) => (
@@ -126,7 +145,14 @@ export function EventFormModal({ open, onClose, psvId, eventId, statusChangesOnl
         <Field label="Date" required>
           <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
-        <Field label="Description" hint="Leave blank to auto-generate from the status.">
+        <Field
+          label="Description"
+          hint={
+            servicesOnly
+              ? 'Leave blank to record this as “Tested in place”.'
+              : 'Leave blank to auto-generate from the status.'
+          }
+        >
           <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} />
         </Field>
         <Field label="Note (optional)">

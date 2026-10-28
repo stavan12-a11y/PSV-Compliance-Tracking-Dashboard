@@ -9,6 +9,28 @@ export function statusChangeEvents(events: PSVEvent[]): PSVEvent[] {
   return events.filter(isStatusChangeEvent);
 }
 
+/** In-place test / recertification entries. These valves stay installed. */
+export function isServiceEvent(event: PSVEvent): boolean {
+  return event.type === 'service';
+}
+
+export function serviceEvents(events: PSVEvent[]): PSVEvent[] {
+  return events.filter(isServiceEvent);
+}
+
+/**
+ * Events that belong in the history feed for a valve.
+ * Tested-in-place valves have no meaningful status changes (they stay installed),
+ * so the feed is their service dates. Swap valves keep status transitions.
+ */
+export function dashboardHistoryEvent(
+  psv: { servicedOnSite?: boolean } | undefined,
+  event: PSVEvent,
+): boolean {
+  if (psv?.servicedOnSite) return isServiceEvent(event);
+  return isStatusChangeEvent(event);
+}
+
 export function replacementEvents(events: PSVEvent[]): PSVEvent[] {
   return events.filter((e) => e.type === 'replacement');
 }

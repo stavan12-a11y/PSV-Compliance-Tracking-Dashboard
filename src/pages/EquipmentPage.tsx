@@ -261,7 +261,7 @@ function LocationRow({
                 installDate && compliance?.dueDate ? (
                   <>
                     <span className="text-slate-600">
-                      Installed{' '}
+                      {installed.servicedOnSite && lastServiceDate(installed) ? 'Tested' : 'Installed'}{' '}
                       <span className="font-semibold text-slate-800">{formatDate(installDate)}</span>
                     </span>
                     <span className="text-slate-500">

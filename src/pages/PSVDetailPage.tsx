@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 import { getCompliance, lastReplacementDate, lastServiceDate } from '../utils/compliance';
-import { sortEventsNewestFirst, statusChangeEvents, useAndReplaceHistory } from '../utils/events';
+import { serviceEvents, sortEventsNewestFirst, statusChangeEvents, useAndReplaceHistory } from '../utils/events';
 import { exportPSVToExcel } from '../utils/excelExport';
 import { psvDisplayName, psvPrimaryLabel } from '../utils/psvDisplay';
 import { formatDate, formatDateTime, relativeDays, RECERT_INTERVAL_YEARS } from '../utils/dates';
@@ -48,6 +48,9 @@ export function PSVDetailPage() {
     if (psv.useAndReplace) {
       return sortEventsNewestFirst(useAndReplaceHistory(psv.events));
     }
+    if (psv.servicedOnSite) {
+      return sortEventsNewestFirst(serviceEvents(psv.events));
+    }
     return sortEventsNewestFirst(statusChangeEvents(psv.events));
   }, [psv]);
 
@@ -77,14 +80,14 @@ export function PSVDetailPage() {
       ? 'Last Replacement'
       : 'Installed'
     : psv.servicedOnSite
-      ? 'Last Service Date'
+      ? 'Last Test'
       : 'Last Install Date';
   const certAnchorValue = useAndReplace
     ? formatDate(lastReplacementDate(psv) ?? compliance.lastInstallDate)
     : formatDate(
         psv.servicedOnSite ? lastServiceDate(psv) ?? compliance.lastInstallDate : compliance.lastInstallDate,
       );
-  const dueBasis = useAndReplace ? 'replacement' : psv.servicedOnSite ? 'service' : 'install';
+  const dueBasis = useAndReplace ? 'replacement' : psv.servicedOnSite ? 'test' : 'install';
 
   return (
     <div className="space-y-6">
@@ -271,11 +274,7 @@ export function PSVDetailPage() {
           <KeyFact
             icon={ToggleRight}
             label="Tracking"
-            value={
-              psv.servicedOnSite
-                ? 'Serviced on site'
-                : statusText(psv.status)
-            }
+            value={psv.servicedOnSite ? 'Tested in place' : statusText(psv.status)}
           />
         </div>
       </div>
@@ -293,17 +292,21 @@ export function PSVDetailPage() {
           <div className="mb-3 flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
               <CalendarClock className="h-4 w-4 text-maroon-700" />
-              <h3 className="text-base font-bold text-slate-900">Status History</h3>
+              <h3 className="text-base font-bold text-slate-900">
+                {psv.servicedOnSite ? 'Service History' : 'Status History'}
+              </h3>
             </div>
             <button className="btn-primary px-2.5 py-1.5 text-xs" onClick={() => setAddEvent(true)}>
               <Plus className="h-3.5 w-3.5" />
-              Add Entry
+              {psv.servicedOnSite ? 'Add Test' : 'Add Entry'}
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto">
             {sortedEvents.length === 0 ? (
-              <p className="py-8 text-center text-sm text-slate-400">No status history recorded yet.</p>
+              <p className="py-8 text-center text-sm text-slate-400">
+                {psv.servicedOnSite ? 'No in-place tests recorded yet.' : 'No status history recorded yet.'}
+              </p>
             ) : (
               <ol className="relative space-y-1 before:absolute before:left-[7px] before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-slate-200">
                 {sortedEvents.map((event) => (
@@ -364,12 +367,19 @@ export function PSVDetailPage() {
         eventId={editReplacementId ?? undefined}
         onClose={() => setEditReplacementId(null)}
       />
-      <EventFormModal open={addEvent} psvId={psv.id} statusChangesOnly onClose={() => setAddEvent(false)} />
+      <EventFormModal
+        open={addEvent}
+        psvId={psv.id}
+        statusChangesOnly={!psv.servicedOnSite}
+        servicesOnly={Boolean(psv.servicedOnSite)}
+        onClose={() => setAddEvent(false)}
+      />
       <EventFormModal
         open={editEventId !== null}
         psvId={psv.id}
         eventId={editEventId ?? undefined}
-        statusChangesOnly
+        statusChangesOnly={!psv.servicedOnSite}
+        servicesOnly={Boolean(psv.servicedOnSite)}
         onClose={() => setEditEventId(null)}
       />
       <RepairFormModal open={addRepair} psvId={psv.id} onClose={() => setAddRepair(false)} />
@@ -566,9 +576,11 @@ function HistoryItem({
   const dot =
     event.type === 'replacement'
       ? 'bg-orange-500'
-      : event.status
-        ? DOT_COLORS[event.status]
-        : 'bg-slate-400';
+      : event.type === 'service'
+        ? 'bg-maroon-700'
+        : event.status
+          ? DOT_COLORS[event.status]
+          : 'bg-slate-400';
   const isCommercialHistoryEvent =
     event.type === 'replacement' ||
     (event.type === 'status-change' && event.status === 'installed');

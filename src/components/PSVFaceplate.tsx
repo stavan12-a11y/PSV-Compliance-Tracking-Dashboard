@@ -54,7 +54,7 @@ export function PSVFaceplate({
   const headerLabel = useAndReplace
     ? 'Use & Replace'
     : onSite
-      ? 'Serviced On Site'
+      ? 'Tested In Place'
       : STATUS_LABELS[psv.status];
 
   const certDate = useAndReplace
@@ -67,7 +67,9 @@ export function PSVFaceplate({
     ? lastReplacementDate(psv)
       ? 'Last replaced'
       : 'Installed'
-    : 'Installed';
+    : onSite && lastServiceDate(psv)
+      ? 'Last tested'
+      : 'Installed';
 
   if (useAndReplace && !compact) {
     return <CommercialBoilerFaceplate psv={psv} />;
@@ -85,7 +87,8 @@ export function PSVFaceplate({
             {certDate && compliance.dueDate ? (
               <div className="space-y-1 text-sm">
                 <p className="text-slate-600">
-                  Installed <span className="font-semibold text-slate-900">{formatDate(certDate)}</span>
+                  {onSite && lastServiceDate(psv) ? 'Tested' : 'Installed'}{' '}
+                  <span className="font-semibold text-slate-900">{formatDate(certDate)}</span>
                 </p>
                 <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-slate-600">
                   <span className="flex items-center gap-1.5">
@@ -116,12 +119,12 @@ export function PSVFaceplate({
                   addHistoryEvent(psv.id, {
                     type: 'service',
                     date: todayISO(),
-                    description: 'Serviced on site',
+                    description: 'Tested in place',
                   })
                 }
               >
                 <Wrench className="h-3.5 w-3.5" />
-                Record service
+                Record test
               </button>
             ) : (
               <div className="grid grid-cols-3 gap-1">
@@ -206,12 +209,6 @@ export function PSVFaceplate({
             {!certDate && !compliance.dueDate && (
               <p className="text-slate-400">No install date on record</p>
             )}
-            {onSite && (
-              <p className="flex items-center gap-1.5 text-slate-500">
-                <Wrench className="h-3.5 w-3.5 text-slate-400" />
-                Last serviced {formatDate(lastServiceDate(psv))}
-              </p>
-            )}
             {useAndReplace && (
               <p className="text-xs text-orange-800/80">New valve purchased when due — not recertified</p>
             )}
@@ -235,13 +232,13 @@ export function PSVFaceplate({
                 addHistoryEvent(psv.id, {
                   type: 'service',
                   date: todayISO(),
-                  description: 'Serviced on site',
+                  description: 'Tested in place',
                 })
               }
-              title="Record an on-site service / recertification (uses today's date)"
+              title="Record an in-place test (uses today's date)"
             >
               <Wrench className="h-4 w-4" />
-              Record Service (today)
+              Record Test (today)
             </button>
           ) : (
             <>

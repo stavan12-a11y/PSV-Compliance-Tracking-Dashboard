@@ -201,9 +201,9 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
               onChange={() => selectTrackingMode('on_site')}
             />
             <span className="text-sm">
-              <span className="font-semibold text-slate-800">Serviced on site (no spare)</span>
+              <span className="font-semibold text-slate-800">Tested in place (no spare)</span>
               <span className="block text-xs text-slate-500">
-                Recertified in place; due date is measured from the last service date.
+                Stays installed. Due date is measured from the last in-place test.
               </span>
             </span>
           </label>
@@ -280,7 +280,7 @@ export function PSVFormModal({ open, onClose, psvId, presetLocationId }: PSVForm
             </div>
           )}
           {!editing && isSpecialMode && (
-            <Field label={trackingMode === 'use_and_replace' ? 'Installation Date' : 'Initial Service Date'}>
+            <Field label={trackingMode === 'use_and_replace' ? 'Installation Date' : 'Initial Test Date'}>
               <input type="date" className="input" value={statusDate} onChange={(e) => setStatusDate(e.target.value)} />
             </Field>
           )}

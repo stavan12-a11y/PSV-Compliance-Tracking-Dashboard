@@ -386,7 +386,18 @@ export function PSVProvider({ children }: { children: ReactNode }) {
         description: createdDescription,
         recordedAt: now,
       },
-      {
+    ];
+    if (servicedOnSite) {
+      events.push({
+        id: uid('evt'),
+        psvId: id,
+        type: 'service',
+        date,
+        description: 'Tested in place',
+        recordedAt: now,
+      });
+    } else {
+      events.push({
         id: uid('evt'),
         psvId: id,
         type: 'status-change',
@@ -394,8 +405,8 @@ export function PSVProvider({ children }: { children: ReactNode }) {
         date,
         description: installDescription,
         recordedAt: now,
-      },
-    ];
+      });
+    }
     const created = normalizeCommercialBoilerPsv({
       id,
       serialNumber,
@@ -412,7 +423,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
     });
     setData((d) => {
       let psvs = [...d.psvs, created];
-      if (status === 'installed' && !useAndReplace) {
+      if (status === 'installed' && !useAndReplace && !servicedOnSite) {
         psvs = enforceSingleInstalled(psvs, created.locationId, id, now);
       }
       return { ...d, psvs };
@@ -510,7 +521,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
         if (p.id !== id) return p;
         const defaultDescription =
           event.type === 'service'
-            ? 'Serviced on site'
+            ? 'Tested in place'
             : event.status
               ? `Status set to ${STATUS_LABELS[event.status]}`
               : 'History entry';
@@ -534,7 +545,7 @@ export function PSVProvider({ children }: { children: ReactNode }) {
             .pop();
           if (!latestDate || event.date >= latestDate) status = event.status;
         }
-        if (status === 'installed') installedAtLoc = p.locationId;
+        if (event.type === 'status-change' && status === 'installed') installedAtLoc = p.locationId;
         return { ...p, status, events: [...p.events, newEvent] };
       });
       return {

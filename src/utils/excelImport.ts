@@ -223,7 +223,7 @@ function buildFromRows(rows: Record<string, unknown>[]): ImportResult {
         type: servicedOnSite ? 'service' : 'status-change',
         status: servicedOnSite ? undefined : 'out_for_service',
         date: serviceDate,
-        description: servicedOnSite ? 'Serviced on site' : 'Service / recertification recorded',
+        description: servicedOnSite ? 'Tested in place' : 'Service / recertification recorded',
         recordedAt: now,
       });
     }
@@ -303,7 +303,7 @@ export async function downloadImportTemplate() {
     ['• One row per PSV (serial number). Equipment & Location are created automatically from the names/tags.'],
     ['• Two PSVs that share the same Equipment + Location are treated as the installed valve + its spare.'],
     ['• Status: Installed, Out for Service, or In Inventory.'],
-    ['• Serviced On Site: "Yes" for valves with no spare that are recertified in place.'],
+    ['• Serviced On Site: "Yes" for valves with no spare that are tested in place.'],
     ['• Install Date drives the recert due date (install + 3 years). For on-site valves, Service Date is used.'],
     ['• Dates can be YYYY-MM-DD or any Excel date cell.'],
     ['• Delete this example row and the Instructions sheet is optional — only the data sheet is read.'],

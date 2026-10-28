@@ -79,7 +79,7 @@ function buildValve(args: {
         psvId: args.id,
         type: 'service',
         date: t.date,
-        description: 'Serviced on site',
+        description: 'Tested in place',
         note: t.note,
         recordedAt: isoDateTime(t.date),
       });

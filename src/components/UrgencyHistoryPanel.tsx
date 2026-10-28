@@ -15,8 +15,8 @@ import type { LucideIcon } from 'lucide-react';
 import { usePSV } from '../store/PSVContext';
 import { getCompliance } from '../utils/compliance';
 import { buildActivityFeed } from '../utils/activity';
-import { isStatusChangeEvent } from '../utils/events';
-import { formatDate, formatDateTime, relativeDays } from '../utils/dates';
+import { dashboardHistoryEvent } from '../utils/events';
+import { formatDate, relativeDays } from '../utils/dates';
 import { psvDisplayName } from '../utils/psvDisplay';
 import { ComplianceBadge } from './Badges';
 import type { PSVEventType } from '../types';
@@ -47,7 +47,10 @@ export function UrgencyHistoryPanel({ equipmentId }: { equipmentId?: string }) {
   }, [scopedPsvs]);
 
   const activity = useMemo(() => {
-    const feed = buildActivityFeed(data, undefined).filter((item) => isStatusChangeEvent(item.event));
+    const psvById = new Map(data.psvs.map((psv) => [psv.id, psv]));
+    const feed = buildActivityFeed(data, undefined).filter((item) =>
+      dashboardHistoryEvent(psvById.get(item.psvId), item.event),
+    );
     const filtered = equipmentId ? feed.filter((a) => a.equipmentId === equipmentId) : feed;
     return filtered.slice(0, 40);
   }, [data, equipmentId]);
@@ -65,7 +68,7 @@ export function UrgencyHistoryPanel({ equipmentId }: { equipmentId?: string }) {
           Upcoming Due
         </TabButton>
         <TabButton active={tab === 'history'} onClick={() => setTab('history')} icon={History}>
-          Status Changes
+          History
         </TabButton>
       </div>
 
@@ -110,7 +113,7 @@ export function UrgencyHistoryPanel({ equipmentId }: { equipmentId?: string }) {
             </ul>
           )
         ) : activity.length === 0 ? (
-          <Empty icon={History} text="No history recorded yet." />
+          <Empty icon={History} text="No status changes or in-place tests recorded yet." />
         ) : (
           <ul className="space-y-1">
             {activity.map((item) => {
@@ -132,7 +135,8 @@ export function UrgencyHistoryPanel({ equipmentId }: { equipmentId?: string }) {
                         <p className="truncate text-xs italic text-slate-400">“{item.event.note}”</p>
                       )}
                       <p className="text-xs text-slate-400">
-                        {item.equipmentName} · {item.locationName} · {formatDateTime(item.event.recordedAt)}
+                        {item.event.type === 'service' ? 'Tested ' : ''}
+                        {formatDate(item.event.date)} · {item.equipmentName} · {item.locationName}
                       </p>
                     </div>
                   </Link>
